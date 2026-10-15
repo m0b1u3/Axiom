@@ -1,13 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# 旧开发环境的 dump 下载工具；Beta 正式备份使用 deploy/ops/stack.py。
+# 必须显式设置有权访问的 SSH 主机和本机私钥。
 # 用法：
 #   ./pull-vps-backup.sh [remote_backups_dir] [remote_dump]
 # 示例：
-#   ./pull-vps-backup.sh /opt/Axiom-backups/task-management-20260910-005733 axiom.dump
+#   AXIOM_VPS_HOST=operator@example-host AXIOM_VPS_KEY=/absolute/private/id_ed25519 ./pull-vps-backup.sh /absolute/private/backups/example axiom.dump
 
-VPS_HOST=${AXIOM_VPS_HOST:-root@8.145.59.173}
-VPS_KEY=${AXIOM_VPS_KEY:-/Users/noah/Documents/ToolsDev/dev.pem}
+VPS_HOST=${AXIOM_VPS_HOST:?Set AXIOM_VPS_HOST to an explicitly authorized SSH destination}
+VPS_KEY=${AXIOM_VPS_KEY:?Set AXIOM_VPS_KEY to your private SSH key path}
+if [ ! -f "$VPS_KEY" ] || [ ! -r "$VPS_KEY" ]; then
+  printf '%s\n' 'AXIOM_VPS_KEY must name a readable private key file' >&2
+  exit 2
+fi
 BACKUPS_DIR=$(cd "$(dirname "$0")" && pwd)/backups
 
 REMOTE_DIR=${1:-/opt/Axiom-backups}

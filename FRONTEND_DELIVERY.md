@@ -18,7 +18,7 @@
 npm ci
 npm test
 npm run build
-AXIOM_API_TARGET=http://8.145.59.173 npm run dev -- --host 127.0.0.1 --port 5179
+AXIOM_API_TARGET=http://127.0.0.1:8080 npm run dev -- --host 127.0.0.1 --port 5179
 ```
 
 默认开发接口目标是 `http://127.0.0.1:8080`，可通过 `AXIOM_API_TARGET` 覆盖。生产构建输出 `dist/`，部署时由 Web 服务提供静态文件与 SPA fallback，并将 `/api` 转发给现有后端。生产运行不需要 Vite 开发服务器。
@@ -56,4 +56,4 @@ AXIOM_API_TARGET=http://127.0.0.1:4319 npm run dev -- --host 127.0.0.1 --port 51
 
 ## 开发 VPS 同步记录
 
-2026-09-09：已同步到 `8.145.59.173:/opt/Axiom/code-audit-web`。服务器三项测试和生产构建均通过，公网登录、工作台真实数据、模型配置及深色模式验证正常。继续使用既有 Nginx + Vite 开发服务。回退包：`/opt/Axiom-backups/frontend-before-redesign-20260909-2025.tar.gz`。
+2026-09-09：已同步到 `原开发环境的私有前端目录`。服务器三项测试和生产构建均通过，公网登录、工作台真实数据、模型配置及深色模式验证正常。继续使用既有 Nginx + Vite 开发服务。回退包：由维护者在原开发环境私有保存。

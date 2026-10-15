@@ -177,7 +177,7 @@ Existing `/api/v1` contracts remain connected for authentication, projects, scan
 
 Model add/edit, provider model-list retrieval, connection testing, deletion and enablement use existing APIs. Enabling a model selects the exclusive default for new scans. A blank key during editing preserves the existing server credential by omitting the key field; adding a model requires a key. These are live configuration controls, not the prototype's simulated actions. Shared Reka dialogs provide accessible titles, focus handling and portaled content behavior; confirmations and toast feedback use application components. The shell includes a skip link and Ctrl/Cmd+K search.
 
-Validation evidence at this documentation update: local Vite on port 5179 proxies the existing server at `8.145.59.173`; real login and read-only dashboard, model and evidence views were exercised. Three client contract/compiled-CSS root inversion regression tests in `tests/contracts.test.mjs` passed. The final production build passed. An isolated local fixture also verified retry polling through pending → scanning → completed without refresh, and Enter-key expansion of raw JSON. No production writes or deployment were performed during these checks. This is bounded implementation evidence, not a certification of commercial readiness, complete accessibility, backend security, or every mutation workflow.
+Validation evidence at this documentation update: local Vite on port 5179 proxies the the original private development server; real login and read-only dashboard, model and evidence views were exercised. Three client contract/compiled-CSS root inversion regression tests in `tests/contracts.test.mjs` passed. The final production build passed. An isolated local fixture also verified retry polling through pending → scanning → completed without refresh, and Enter-key expansion of raw JSON. No production writes or deployment were performed during these checks. This is bounded implementation evidence, not a certification of commercial readiness, complete accessibility, backend security, or every mutation workflow.
 
 ## Do's and Don'ts
 
@@ -190,7 +190,7 @@ Validation evidence at this documentation update: local Vite on port 5179 proxie
 - Don't imply untested writes, deployment or commercial readiness certification.
 
 
-Deployment update (2026-09-09): user clarified that VPS is the development environment. Frontend synchronized to 8.145.59.173:/opt/Axiom/code-audit-web, prior version backed up, server tests and production build passed. Remote login, real data and dark mode verified. Backend business-data mutations remain untested.
+Deployment update (2026-09-09): user clarified that VPS is the development environment. Frontend synchronized to 原开发环境的私有前端目录, prior version backed up, server tests and production build passed. Remote login, real data and dark mode verified. Backend business-data mutations remain untested.
 
 ## Scan activity stream update
 
