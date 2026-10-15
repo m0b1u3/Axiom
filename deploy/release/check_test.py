@@ -1,25 +1,38 @@
 import copy
 import json
+from pathlib import Path
+import tempfile
 import unittest
 from unittest.mock import patch
 
-from check import WORKFLOWS, remote_check
+from check import WORKFLOWS, git_inventory, remote_check
 
 
 class RemoteEvidenceGuards(unittest.TestCase):
     def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        (self.root/"VERSION").write_text("0.1.0-beta.1\n")
+        (self.root/"README.md").write_text("Fixture source\n")
         self.revision = "a"*40
         self.runs = [{"path":".github/workflows/"+name, "head_sha":self.revision,
                       "run_number":1, "status":"completed", "conclusion":"success",
                       "html_url":"https://github.com/fixture/project/actions/runs/"+str(index)}
                      for index, name in enumerate(WORKFLOWS, start=1)]
 
-    def check(self, runs=None, enabled=True):
+    def check(self, runs=None, enabled=True, wrong_tree=False):
         def output(command, **kwargs):
-            return json.dumps({"enabled":enabled} if command[-1].endswith("private-vulnerability-reporting")
-                              else {"workflow_runs":self.runs if runs is None else runs})
+            if command[-1].endswith("private-vulnerability-reporting"):
+                return json.dumps({"enabled":enabled})
+            if "/git/trees/" in command[-1]:
+                rows = [{"path":name, "type":"blob", **entry} for name,entry in git_inventory(self.root).items()]
+                if wrong_tree:
+                    rows[0]["sha"] = "b"*40
+                return json.dumps({"tree":rows,"truncated":False})
+            return json.dumps({"workflow_runs":self.runs if runs is None else runs})
         with patch("check.subprocess.check_output", side_effect=output):
-            return remote_check("https://github.com/fixture/project", self.revision)
+            return remote_check("https://github.com/fixture/project", self.revision, self.root)
 
     def test_all_five_exact_revision_runs_are_required(self):
         result = self.check()
@@ -47,6 +60,10 @@ class RemoteEvidenceGuards(unittest.TestCase):
     def test_short_revision_cannot_be_accepted(self):
         with self.assertRaisesRegex(ValueError, "full commit"):
             remote_check("https://github.com/fixture/project", "abc123")
+
+    def test_successful_ci_for_different_local_source_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            self.check(wrong_tree=True)
 
 
 if __name__ == "__main__":

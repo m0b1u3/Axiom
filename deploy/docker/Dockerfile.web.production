@@ -11,6 +11,7 @@ ARG AXIOM_BUILD_VERSION=development
 LABEL org.opencontainers.image.version=$AXIOM_BUILD_VERSION \
       org.opencontainers.image.source="https://github.com/m0b1u3/Axiom" \
       org.opencontainers.image.licenses="Apache-2.0"
+COPY LICENSE NOTICE /usr/share/doc/axiom/
 COPY deploy/docker/nginx.conf /etc/nginx/nginx.conf
 COPY --from=build /workspace/code-audit-web/dist /usr/share/nginx/html
 USER 101:101

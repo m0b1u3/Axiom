@@ -37,7 +37,7 @@ python3 deploy/release/source.py verify /absolute/private/candidate-source
 python3 deploy/release/check.py --remote --revision FULL_COMMIT_SHA --report /absolute/private/beta-readiness.json
 ```
 
-检查同时确认 GitHub 私密漏洞报告已启用。报告仅含版本、平台、提交、工作流链接和状态；CI 只保留明确列出的源码包及公共验收摘要，不上传 env、备份、数据库、运行日志、浏览器存储状态或任意整个工作目录。CI Artifact 有保留期限，不能作为永久发布下载地址。
+检查同时确认 GitHub 私密漏洞报告已启用，并将本地交付源码的 Git blob 与权限逐项对应到该提交，拒绝借用其他源码的 CI 成功记录。报告仅含版本、平台、源码树哈希、提交、工作流链接和状态；CI 只保留明确列出的源码包及公共验收摘要，不上传 env、备份、数据库、运行日志、浏览器存储状态或任意整个工作目录。CI Artifact 有保留期限，不能作为永久发布下载地址。
 
 ## 安装、升级与回滚证据
 

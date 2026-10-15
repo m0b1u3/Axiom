@@ -297,6 +297,7 @@ networks:
             candidate.call("stop", "web", "agent", "server", stdout=subprocess.DEVNULL)
             for service in ("server", "agent", "web"):
                 candidate.call("up", "-d", "--no-build", "--wait", "--wait-timeout", "120", service, stdout=subprocess.DEVNULL)
+            web.base = Web(candidate).base
             assert web.data("GET", "/api/v1/auth/me")["role"] == "admin", "upgrade discarded a valid session"
             assert web.data("GET", result_path) == before and web.raw("GET", artifact_path)[1] == artifact_bytes
             assert web.data("GET", budget_path) == spent_budget and web.data("GET", unknown_path) == unknown_budget

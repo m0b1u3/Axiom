@@ -8,7 +8,7 @@ import re
 import subprocess
 from urllib.parse import urlparse
 
-from source import ROOT, selected_files, version
+from source import ROOT, entry_for, selected_files, tree_hash, version
 
 WORKFLOWS = ["contracts.yml", "go-boundaries.yml", "input-chain.yml", "production-stack.yml", "release-candidate.yml"]
 REQUIRED = ["LICENSE", "NOTICE", "README.md", "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md",
@@ -55,10 +55,23 @@ def check(root=ROOT):
     files = selected_files(root)
     return {"version": release["version"], "platforms": release["platforms"],
             "localReleaseChecks": "passed", "sourceFiles": len(files), "realSDKAcceptance": "not-run",
+            "sourceTreeSha256": tree_hash([entry_for(path, root) for path in files]),
             "repository": repo, "securityReportUrl": release["securityReportUrl"]}
 
 
-def remote_check(repository, revision):
+def git_inventory(root):
+    root = Path(root).resolve()
+    result = {}
+    for path in selected_files(root):
+        data = path.read_bytes()
+        header = f"blob {len(data)}\0".encode()
+        result[path.relative_to(root).as_posix()] = {
+            "sha":hashlib.sha1(header+data, usedforsecurity=False).hexdigest(),
+            "mode":"100755" if path.stat().st_mode & 0o111 else "100644"}
+    return result
+
+
+def remote_check(repository, revision, root=ROOT):
     if not re.fullmatch(r"[0-9a-f]{40}", revision or ""):
         raise ValueError("Remote checks require --revision with a full commit SHA")
     slug = urlparse(repository).path.strip("/")
@@ -77,7 +90,15 @@ def remote_check(repository, revision):
         if latest.get("status") != "completed" or latest.get("conclusion") != "success":
             raise ValueError(f"Remote workflow has not passed: {name}: {latest['html_url']}")
         evidence.append({"workflow": name, "url": latest["html_url"], "conclusion": "success"})
-    return {"revision": revision, "privateVulnerabilityReporting": "enabled", "workflows": evidence}
+    tree = api(f"repos/{slug}/git/trees/{revision}?recursive=1")
+    if tree.get("truncated") is not False:
+        raise ValueError("Remote source inventory is incomplete")
+    remote = {entry["path"]:{"sha":entry["sha"], "mode":entry["mode"]}
+              for entry in tree["tree"] if entry["type"] != "tree"}
+    if remote != git_inventory(root):
+        raise ValueError("Local source tree does not match the exact remote candidate commit")
+    return {"revision": revision, "privateVulnerabilityReporting": "enabled", "sourceMatchesCommit":True,
+            "workflows": evidence}
 
 
 def main():

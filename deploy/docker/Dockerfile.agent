@@ -23,6 +23,7 @@ ARG AXIOM_BUILD_VERSION=development
 LABEL org.opencontainers.image.version=$AXIOM_BUILD_VERSION \
       org.opencontainers.image.source="https://github.com/m0b1u3/Axiom" \
       org.opencontainers.image.licenses="Apache-2.0"
+COPY LICENSE NOTICE /usr/share/doc/axiom/
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
