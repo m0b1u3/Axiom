@@ -241,7 +241,10 @@ def backup(stack, destination):
     finally:
         shutil.rmtree(stage, ignore_errors=True)
         if stopped:
-            stack.call("start", "--wait", "--wait-timeout", "90", *stopped, stdout=subprocess.DEVNULL)
+            # Older supported Compose v2 accepts --wait on up, not on start.
+            # Resume the same containers; never rebuild or replace a running
+            # installation merely because backup succeeded or was refused.
+            stack.call("up", "-d", "--no-build", "--no-recreate", "--wait", "--wait-timeout", "90", *stopped, stdout=subprocess.DEVNULL)
     return destination
 
 

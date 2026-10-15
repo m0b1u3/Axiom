@@ -6,7 +6,7 @@ import tarfile
 import tempfile
 import unittest
 
-from stack import APP_SERVICES, Stack, digest, env_bytes, init_env, private_write, read_env, restore, retarget_env, verify_backup
+from stack import APP_SERVICES, Stack, backup, digest, env_bytes, init_env, private_write, read_env, restore, retarget_env, verify_backup
 
 
 class BackupGuards(unittest.TestCase):
@@ -99,6 +99,27 @@ class BackupGuards(unittest.TestCase):
             retarget_env(source, destination, "0.1.0-beta.2")
         with self.assertRaisesRegex(ValueError, "image tag"):
             retarget_env(source, self.root/"rejected.env", "latest")
+
+    def test_busy_backup_preserves_original_error_and_resumes_without_recreating(self):
+        calls = []
+        class OlderCompose:
+            values = {"POSTGRES_USER":"fixture", "POSTGRES_DB":"fixture"}
+            def output(self, *args):
+                return "web\nserver\nagent" if args[0] == "ps" else "1"
+            def call(self, *args, **kwargs):
+                if args[0] == "start" and "--wait" in args:
+                    raise AssertionError("Older Compose does not support start --wait")
+                calls.append(args)
+        destination = self.root/"busy-backup"
+        with self.assertRaisesRegex(ValueError, "idle queue"):
+            backup(OlderCompose(), destination)
+        self.assertFalse(destination.exists())
+        self.assertNotIn(("stop", "agent"), calls, "busy backup stopped the executing Agent")
+        resume = calls[-1]
+        self.assertEqual(resume[0], "up")
+        self.assertIn("--no-recreate", resume)
+        self.assertIn("--no-build", resume)
+        self.assertEqual(set(resume[-2:]), {"web", "server"})
 
 
 if __name__ == "__main__":
