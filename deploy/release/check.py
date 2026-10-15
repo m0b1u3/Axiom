@@ -18,7 +18,7 @@ REQUIRED = ["LICENSE", "NOTICE", "README.md", "CONTRIBUTING.md", "SECURITY.md", 
 
 
 def check(root=ROOT):
-    root = Path(root)
+    root = Path(root).resolve()
     release = json.loads((root/"deploy/release/release.json").read_text())
     if release.get("schemaVersion") != 1 or release.get("version") != version(root) or release.get("channel") != "beta":
         raise ValueError("Release metadata and VERSION disagree")
@@ -53,10 +53,21 @@ def check(root=ROOT):
             if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}", action):
                 raise ValueError(f"Unpinned workflow action in {name}")
     files = selected_files(root)
+    check_python_syntax(root, files)
     return {"version": release["version"], "platforms": release["platforms"],
             "localReleaseChecks": "passed", "sourceFiles": len(files), "realSDKAcceptance": "not-run",
             "sourceTreeSha256": tree_hash([entry_for(path, root) for path in files]),
             "repository": repo, "securityReportUrl": release["securityReportUrl"]}
+
+
+def check_python_syntax(root, files=None):
+    root = Path(root).resolve()
+    for path in files if files is not None else selected_files(root):
+        if path.suffix == ".py" and path.relative_to(root).parts[0] == "deploy":
+            try:
+                compile(path.read_bytes(), str(path), "exec")
+            except SyntaxError as error:
+                raise ValueError(f"Invalid deployment Python source: {path.relative_to(root)}") from error
 
 
 def git_inventory(root):

@@ -24,7 +24,9 @@ jobs:
         with:
           node-version: '24.21.0'
       - name: Build only from exported candidate source
-        run: python3 deploy/release/source.py export --output "$RUNNER_TEMP/axiom-candidate-source" --revision "$GITHUB_SHA"
+        run: |
+          python3 deploy/release/check.py
+          python3 deploy/release/source.py export --output "$RUNNER_TEMP/axiom-candidate-source" --revision "$GITHUB_SHA"
       - run: npm ci --no-audit --no-fund
         working-directory: ${{ runner.temp }}/axiom-candidate-source/code-audit-web
       - run: npx playwright-core install --with-deps chromium

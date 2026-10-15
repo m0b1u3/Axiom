@@ -228,7 +228,7 @@ networks:
         try:
             assert web.raw("GET", "/readyz")[0] == 503
         finally:
-        stack.call("up", "-d", "--no-build", "--no-recreate", "--wait", "--wait-timeout", "90", "postgres", stdout=subprocess.DEVNULL)
+            stack.call("up", "-d", "--no-build", "--no-recreate", "--wait", "--wait-timeout", "90", "postgres", stdout=subprocess.DEVNULL)
         wait_for(lambda: web.raw("GET", "/readyz")[0] == 200, 30, "database readiness did not recover")
         checks.append("database outage and recovery drive actual readiness")
 

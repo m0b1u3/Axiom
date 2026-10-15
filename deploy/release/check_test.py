@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from check import WORKFLOWS, git_inventory, remote_check
+from check import WORKFLOWS, check_python_syntax, git_inventory, remote_check
 
 
 class RemoteEvidenceGuards(unittest.TestCase):
@@ -64,6 +64,16 @@ class RemoteEvidenceGuards(unittest.TestCase):
     def test_successful_ci_for_different_local_source_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "does not match"):
             self.check(wrong_tree=True)
+
+    def test_deployment_syntax_is_checked_without_executing_the_script(self):
+        folder = self.root/"deploy/ops"
+        folder.mkdir(parents=True)
+        script = folder/"acceptance.py"
+        script.write_text("raise RuntimeError('A release check must not execute deployment code')\n")
+        check_python_syntax(self.root)
+        script.write_text("try:\n    pass\nfinally:\npass\n")
+        with self.assertRaisesRegex(ValueError, "Invalid deployment Python"):
+            check_python_syntax(self.root)
 
 
 if __name__ == "__main__":
