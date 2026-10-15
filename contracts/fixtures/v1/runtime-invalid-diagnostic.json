@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "agentBuild": "fixture-agent",
+  "scannerBuild": null,
+  "scannerDescriptionVersion": null,
+  "controlAPI": 4,
+  "state": "blocked",
+  "matrixHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "diagnostic": null
+}

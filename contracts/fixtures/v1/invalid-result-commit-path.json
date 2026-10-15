@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "resultSchemaVersion": 1,
+  "relativePath": "../result.json",
+  "sizeBytes": 142,
+  "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

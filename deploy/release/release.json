@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.0-beta.1",
+  "channel": "beta",
+  "license": "Apache-2.0",
+  "repository": "https://github.com/m0b1u3/Axiom",
+  "securityReportUrl": "https://github.com/m0b1u3/Axiom/security/advisories/new",
+  "platforms": ["linux/amd64"],
+  "deployment": "single-host-trusted-users",
+  "realSDKAcceptance": "not-run",
+  "previousPublicRelease": null
+}

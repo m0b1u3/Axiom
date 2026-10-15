@@ -1,0 +1,23 @@
+name: 功能建议
+description: 描述工作流问题、需要的行为及兼容约束。
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 需要解决的问题
+      description: 说明谁在什么工作流中遇到了什么阻碍。
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 期望行为
+      description: 包括现有方式、替代方案，以及对 Web 操作和历史数据的影响。
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: 环境与边界
+      description: 注明版本和部署范围；首版支持 Linux amd64 单机可信用户自托管。

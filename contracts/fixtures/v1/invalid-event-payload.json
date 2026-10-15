@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 1,
+  "occurredAt": "2026-10-13T00:00:00Z",
+  "type": "scan.phase_changed",
+  "level": "info",
+  "data": {
+    "estimatedUsd": 0,
+    "inputTokens": 0,
+    "outputTokens": null,
+    "currency": "USD",
+    "isEstimate": true
+  },
+  "message": "fixture"
+}

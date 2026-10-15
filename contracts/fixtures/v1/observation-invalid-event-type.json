@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 1,
+  "occurredAt": "2026-10-13T01:00:00Z",
+  "type": "scan.error",
+  "level": "error",
+  "data": {
+    "kind": "tool",
+    "status": "running",
+    "description": "failed command（只是文字，不是失败状态）",
+    "id": "activity-1",
+    "toolName": "read_file",
+    "worker": {
+      "threadId": "thread-1",
+      "index": 0,
+      "parentThreadId": null
+    },
+    "paths": [
+      "src/中文,a.ts"
+    ]
+  },
+  "message": "fixture"
+}

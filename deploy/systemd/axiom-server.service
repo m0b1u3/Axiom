@@ -1,0 +1,20 @@
+[Unit]
+Description=Axiom API and PostgreSQL task control plane
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/Axiom
+EnvironmentFile=/etc/axiom/runtime.env
+ExecStart=/opt/Axiom/bin/axiom-server
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+KillMode=control-group
+UMask=0077
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

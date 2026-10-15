@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "revision": 1,
+  "phase": "unknown",
+  "source": "engine_callback",
+  "observedAt": "2026-10-13T00:00:00Z",
+  "reportedAt": null,
+  "files": {
+    "completed": null,
+    "total": 1,
+    "unit": "files",
+    "basis": "reported"
+  },
+  "phaseCounts": null,
+  "deep": null,
+  "cost": null,
+  "extensions": {
+    "fixtureOnly": true,
+    "future": {
+      "value": null,
+      "flags": [
+        false,
+        0,
+        ""
+      ]
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "agentId": "fixture-agent",
+  "executionStatus": "canceled",
+  "process": {
+    "code": null,
+    "signal": "SIGKILL",
+    "resultCommitted": true
+  },
+  "result": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "9007199254740993",
+      "attempt": 2
+    },
+    "status": "partial",
+    "startedAt": "2026-10-13T00:00:00Z",
+    "finishedAt": "2026-10-13T00:01:00Z",
+    "engine": {
+      "name": "fixture-engine",
+      "version": "fixture-1",
+      "pluginVersion": null,
+      "patchRevision": null
+    },
+    "model": {
+      "providerId": "fixture-provider",
+      "connectionType": "openai_compatible",
+      "model": "fixture-model",
+      "baseUrl": "https://fixture.invalid/v1",
+      "wireApi": "responses",
+      "credentialEnv": "FIXTURE_API_KEY",
+      "configurationRevision": "fixture-revision-1"
+    },
+    "findings": [],
+    "coverage": {
+      "completeness": "partial",
+      "details": {
+        "surfaces": [],
+        "futureField": {
+          "retained": true
+        }
+      }
+    },
+    "artifacts": [
+      {
+        "kind": "evidence",
+        "relativePath": "artifacts/evidence.json",
+        "sizeBytes": 0,
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "extensions": {
+      "fixtureOnly": true
+    },
+    "error": {
+      "code": "incomplete",
+      "origin": "engine",
+      "message": "Fixture partial coverage",
+      "retryable": false
+    }
+  },
+  "error": {
+    "code": "canceled",
+    "origin": "agent",
+    "message": "Fixture cancellation",
+    "retryable": false
+  }
+}

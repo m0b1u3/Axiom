@@ -1,0 +1,83 @@
+{
+  "auditDir": "/opt/Axiom-backups/sdk-inventory-20260909-234426",
+  "packages": [
+    {
+      "installName": "@openai/codex-security",
+      "registryName": "@openai/codex-security",
+      "version": "0.1.25",
+      "tarball": "https://registry.npmjs.org/@openai/codex-security/-/codex-security-0.1.25.tgz",
+      "integrity": "sha512-ohJ7Awd6ZNKOVnzFLq+DWNepJlTOCJ3DX1Ax282Xsnw0mQZ0xrOGvYNVh54BikF3CTT+VVQcX2jhoGwO37spWA==",
+      "files": 398,
+      "changed": [
+        "dist/config.js"
+      ],
+      "added": [],
+      "deleted": []
+    },
+    {
+      "installName": "@openai/codex-sdk",
+      "registryName": "@openai/codex-sdk",
+      "version": "0.149.1",
+      "tarball": "https://registry.npmjs.org/@openai/codex-sdk/-/codex-sdk-0.149.1.tgz",
+      "integrity": "sha512-R00Rz5327LefZggAxl28r7vFQq1vxa91OxtjZJOsQfAM/MyH8InW5qwwRu6pzUmRGp1E29XrOzm7u1TeV5Yz2A==",
+      "files": 6,
+      "changed": [],
+      "added": [],
+      "deleted": []
+    },
+    {
+      "installName": "@openai/codex",
+      "registryName": "@openai/codex",
+      "version": "0.149.1",
+      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.149.1.tgz",
+      "integrity": "sha512-6q5pbcpFbJbqOpkubSDBwXmktQ55aD8eUzGzBF1zASob2DjwhBKDSNGtdZKalfrNJUdTDTPDMmzCXEXs5tMBYA==",
+      "files": 3,
+      "changed": [],
+      "added": [],
+      "deleted": []
+    },
+    {
+      "installName": "@openai/codex-linux-x64",
+      "registryName": "@openai/codex",
+      "version": "0.152.1-linux-x64",
+      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.152.1-linux-x64.tgz",
+      "integrity": "sha512-ar59rr3CX5j4MLMnRcHqcE0eHZPsZlmXlz37ZS2yP3BsV5pNhO+wFXTOzXFdaYmg2cALX7a3Eqv+vB2jQlXnjQ==",
+      "files": 8,
+      "changed": [],
+      "added": [],
+      "deleted": []
+    },
+    {
+      "installName": "@openai/codex/node_modules/@openai/codex-linux-x64",
+      "registryName": "@openai/codex",
+      "version": "0.149.1-linux-x64",
+      "tarball": "https://registry.npmjs.org/@openai/codex/-/codex-0.149.1-linux-x64.tgz",
+      "integrity": "sha512-Of5fGYgr7tAMsyj6vhXb4/RM/UoA3Zq8BLegUBDC09UNy1XTLGYP/2XD+UX8z3qh0NDwxYdCjFIWdDNijKZggQ==",
+      "files": 8,
+      "changed": [],
+      "added": [],
+      "deleted": []
+    },
+    {
+      "installName": "undici",
+      "registryName": "undici",
+      "version": "8.10.2",
+      "tarball": "https://registry.npmjs.org/undici/-/undici-8.10.2.tgz",
+      "integrity": "sha512-/y4/bH9YNU5hi9NIrpOuvGXFcxrj3CMrV+/AYpowAYTpHn8gX/XPFjNy766FPoYY0miQhdW977JFWKGNhBdwyQ==",
+      "files": 214,
+      "changed": [],
+      "added": [],
+      "deleted": []
+    }
+  ],
+  "cachedPlugin": {
+    "changed": [
+      "references/core-scan.md",
+      "references/threat-model.md",
+      "skills/fix-finding/SKILL.md",
+      "skills/security-scan/references/scan-artifacts-and-ledger.md"
+    ],
+    "added": [],
+    "deleted": []
+  }
+}

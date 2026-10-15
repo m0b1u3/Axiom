@@ -1,0 +1,39 @@
+name: Go module boundaries
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependencies:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.24.3'
+          cache-dependency-path: |
+            contracts/go/go.sum
+            code-audit-agent/go.sum
+            code-audit-server/go.sum
+      - name: Test dependency guard rejection cases
+        run: python3 -m unittest discover -s deploy -p 'check_go_boundaries_test.py' -v
+      - name: Inspect independent build, test and module dependency graphs
+        run: python3 deploy/check_go_boundaries.py
+      - name: Build each Go module independently
+        shell: bash
+        run: |
+          for module in contracts/go shared/sourceidentity code-audit-agent code-audit-server; do
+            (cd "$module" && GOWORK=off go build -mod=readonly ./...)
+          done

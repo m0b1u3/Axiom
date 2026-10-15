@@ -1,0 +1,70 @@
+{
+  "matrixVersion": 1,
+  "controlAPIs": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "profiles": [
+    {
+      "id": "legacy",
+      "input": 0,
+      "result": 0,
+      "observation": 0,
+      "controlAPI": 1,
+      "description": 1,
+      "job": 0,
+      "progress": 0,
+      "event": 0
+    },
+    {
+      "id": "input",
+      "input": 1,
+      "result": 0,
+      "observation": 0,
+      "controlAPI": 2,
+      "description": 2,
+      "job": 1,
+      "progress": 0,
+      "event": 0
+    },
+    {
+      "id": "result",
+      "input": 1,
+      "result": 1,
+      "observation": 0,
+      "controlAPI": 3,
+      "description": 3,
+      "job": 2,
+      "progress": 0,
+      "event": 0
+    },
+    {
+      "id": "observations",
+      "input": 1,
+      "result": 1,
+      "observation": 1,
+      "controlAPI": 4,
+      "description": 4,
+      "job": 3,
+      "progress": 2,
+      "event": 2
+    }
+  ],
+  "policies": {
+    "discovery": "presence-only",
+    "fallbackOn": [
+      404,
+      405
+    ],
+    "claimFallback": false,
+    "unknownContracts": "reject-before-model",
+    "history": "preserve-readers",
+    "upgradeOrder": [
+      "server",
+      "agent-and-scanner",
+      "web"
+    ]
+  }
+}

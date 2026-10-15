@@ -1,0 +1,18 @@
+{
+  "mode": "standard",
+  "timeBudget": {
+    "scanSeconds": 1800,
+    "finalizationGraceSeconds": 0
+  },
+  "includePaths": [
+    "src/a,b.ts",
+    "src/中文.ts"
+  ],
+  "focus": [
+    "authz"
+  ],
+  "validation": {
+    "mode": "default"
+  },
+  "maxCostUsd": 5
+}

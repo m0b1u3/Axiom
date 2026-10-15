@@ -1,0 +1,91 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: axiom-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-axiom}
+      POSTGRES_USER: ${POSTGRES_USER:-axiom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-axiom}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - axiom-postgres:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+      - ${AXIOM_DUMP_DIR:-./backups}:/var/backups/axiom:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-axiom} -d ${POSTGRES_DB:-axiom}"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  server:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.server
+    container_name: axiom-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      AXIOM_HTTP_ADDR: ":8080"
+      AXIOM_ADMIN_PASSWORD: ${AXIOM_ADMIN_PASSWORD:-admin}
+      AXIOM_JWT_SECRET: ${AXIOM_JWT_SECRET:-dev-jwt-secret-change-me}
+      AXIOM_MASTER_KEY: ${AXIOM_MASTER_KEY:-}
+      AXIOM_AGENT_TOKEN: ${AXIOM_AGENT_TOKEN:-dev-agent-token}
+      AXIOM_DATABASE_URL: ${AXIOM_DATABASE_URL:-postgres://axiom:axiom@postgres:5432/axiom?sslmode=disable}
+      AXIOM_DATA_DIR: /app/data
+      AXIOM_SNAPSHOT_DIR: /app/data/snapshots
+      AXIOM_SCAN_MOCK: ${AXIOM_SCAN_MOCK:-1}
+      AXIOM_AGENT_DB: /app/data/agent.db
+      AXIOM_MAX_ACTIVE_SCANS: ${AXIOM_MAX_ACTIVE_SCANS:-2}
+      AXIOM_MAX_MODEL_SCANS: ${AXIOM_MAX_MODEL_SCANS:-2}
+      AXIOM_MAX_PROJECT_SCANS: ${AXIOM_MAX_PROJECT_SCANS:-2}
+    volumes:
+      - axiom-data:/app/data
+    command: ["/bin/sh", "-c", "exec /opt/axiom/bin/axiom-server"]
+    restart: unless-stopped
+
+  agent:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.agent
+    container_name: axiom-agent
+    depends_on:
+      - server
+    environment:
+      AXIOM_SERVER_URL: http://server:8080
+      AXIOM_AGENT_TOKEN: ${AXIOM_AGENT_TOKEN:-dev-agent-token}
+      AXIOM_SCAN_MOCK: ${AXIOM_SCAN_MOCK:-1}
+      AXIOM_DATA_DIR: /app/data
+      AXIOM_AGENT_DB: /app/data/agent.db
+      AXIOM_SCANNER_DIR: /opt/axiom/code-audit-scanner
+      AXIOM_DATABASE_URL: ${AXIOM_DATABASE_URL:-postgres://axiom:axiom@postgres:5432/axiom?sslmode=disable}
+      AXIOM_NODE: /usr/local/bin/node
+      AXIOM_AGENT_ID: ${AXIOM_AGENT_ID:-agent-local}
+      AXIOM_AGENT_CONCURRENCY: ${AXIOM_AGENT_CONCURRENCY:-2}
+      AXIOM_MASTER_KEY: ${AXIOM_MASTER_KEY:-}
+    volumes:
+      - axiom-data:/app/data
+    command: ["/bin/sh", "-c", "exec /usr/local/bin/axiom-agent"]
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.web
+    container_name: axiom-web
+    depends_on:
+      - server
+    ports:
+      - "5173:5173"
+    environment:
+      AXIOM_API_TARGET: http://server:8080
+      NODE_ENV: development
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+    restart: unless-stopped
+
+volumes:
+  axiom-data:
+  axiom-postgres:

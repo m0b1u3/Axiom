@@ -1,0 +1,77 @@
+name: Web contracts and version compatibility
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  input:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      AXIOM_TEST_DATABASE_URL: postgres://postgres:fixture-password@127.0.0.1:5432/axiom_test_input?sslmode=disable
+      AXIOM_TEST_WEB_INPUT: '1'
+      AXIOM_TEST_SCREENSHOT_DIR: ${{ github.workspace }}/output/playwright
+      AXIOM_TEST_AUTH_SCREENSHOT_DIR: ${{ github.workspace }}/output/playwright/auth
+      AXIOM_TEST_STORAGE_SCREENSHOT_DIR: ${{ github.workspace }}/output/playwright/storage
+      AXIOM_TEST_BUDGET_SCREENSHOT_DIR: ${{ github.workspace }}/output/playwright/budget
+    services:
+      postgres:
+        image: postgres:16.15-alpine3.24@sha256:1a66d744c1b459e13b05a8fca341da84cb63383e99ce262210efee5a319d4551
+        env:
+          POSTGRES_DB: axiom_test_input
+          POSTGRES_PASSWORD: fixture-password
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U postgres" --health-interval 3s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24.21.0'
+          cache: npm
+          cache-dependency-path: |
+            contracts/package-lock.json
+            code-audit-scanner/package-lock.json
+            code-audit-web/package-lock.json
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.24.3'
+          cache-dependency-path: |
+            contracts/go/go.sum
+            code-audit-agent/go.sum
+            code-audit-server/go.sum
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: contracts
+      - run: npm run build
+        working-directory: contracts
+      - run: npm ci --no-audit --no-fund
+        working-directory: code-audit-scanner
+      - run: npm run build
+        working-directory: code-audit-scanner
+      - run: npm test
+        working-directory: code-audit-scanner
+      - run: npm ci --no-audit --no-fund
+        working-directory: code-audit-web
+      - run: npm run build
+        working-directory: code-audit-web
+      - run: npm test
+        working-directory: code-audit-web
+      - run: npx playwright-core install --with-deps chromium
+        working-directory: code-audit-web
+      - run: go test -count=1 ./...
+        working-directory: code-audit-agent
+      # Store and process fixtures share one disposable database.
+      - run: go test -p 1 -count=1 ./...
+        working-directory: code-audit-server
+      - run: npm test
+        working-directory: contracts

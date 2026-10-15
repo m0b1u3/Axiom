@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "agentId": "fixture-agent",
+  "progress": null,
+  "diagnostic": {
+    "code": "rate_limit",
+    "origin": "engine",
+    "message": "fixture 错误，预算 ≠ 配额",
+    "retryable": true,
+    "extensions": {
+      "native": {
+        "requestId": "fixture-1"
+      }
+    }
+  }
+}

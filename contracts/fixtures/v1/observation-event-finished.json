@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 10,
+  "occurredAt": "2026-10-13T01:00:00Z",
+  "type": "scan.finished",
+  "level": "info",
+  "data": {
+    "status": "timeout",
+    "error": {
+      "code": "timeout",
+      "origin": "engine",
+      "message": "deadline fixture",
+      "retryable": false
+    }
+  },
+  "message": "任意展示文字，不参与语义判断"
+}

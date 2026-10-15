@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "source": {
+    "path": "/fixture/source",
+    "snapshotId": "7",
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "output": {
+    "path": "/fixture/output/attempt-2"
+  },
+  "model": {
+    "providerId": "fixture-provider",
+    "connectionType": "openai_compatible",
+    "model": "fixture-model",
+    "baseUrl": "https://fixture.invalid/v1",
+    "wireApi": "responses",
+    "credentialEnv": "FIXTURE_API_KEY",
+    "configurationRevision": "fixture-revision-1"
+  },
+  "policy": {
+    "mode": "standard",
+    "timeBudget": {
+      "scanSeconds": 1800,
+      "finalizationGraceSeconds": 0
+    },
+    "includePaths": [
+      "src",
+      "src"
+    ],
+    "focus": [
+      "authz"
+    ],
+    "validation": {
+      "mode": "default"
+    },
+    "maxCostUsd": 5
+  }
+}

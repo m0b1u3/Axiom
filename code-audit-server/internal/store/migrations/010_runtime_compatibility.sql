@@ -1,0 +1,2 @@
+ALTER TABLE execution_agents ADD COLUMN IF NOT EXISTS runtime_json TEXT NOT NULL DEFAULT '';
+ALTER TABLE execution_agents ADD COLUMN IF NOT EXISTS runtime_seen_at TIMESTAMPTZ;

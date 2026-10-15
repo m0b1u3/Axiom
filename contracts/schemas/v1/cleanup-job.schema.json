@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/cleanup-job.schema.json",
+  "title": "CleanupJob",
+  "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/CleanupJob"
+}

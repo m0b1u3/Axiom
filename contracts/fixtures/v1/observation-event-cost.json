@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 2,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 6,
+  "occurredAt": "2026-10-13T01:00:00Z",
+  "type": "scan.cost",
+  "level": "info",
+  "data": {
+    "estimatedUsd": 0,
+    "inputTokens": 0,
+    "outputTokens": 17,
+    "cachedInputTokens": 0,
+    "cacheWriteInputTokens": 3,
+    "currency": "USD",
+    "isEstimate": true,
+    "observedAt": "2026-10-13T01:00:00Z",
+    "source": "engine_callback",
+    "reportedModel": "fixture-reported"
+  },
+  "message": "任意展示文字，不参与语义判断"
+}

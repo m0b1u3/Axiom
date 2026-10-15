@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 6,
+  "occurredAt": "2026-10-13T00:00:00Z",
+  "type": "scan.warning",
+  "level": "info",
+  "data": {
+    "code": "provider_error",
+    "origin": "engine",
+    "message": "Fixture warning"
+  },
+  "message": "合成合同事件，不代表真实扫描"
+}

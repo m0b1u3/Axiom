@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 2,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 2,
+  "occurredAt": "2026-10-13T01:00:00Z",
+  "type": "scan.progress",
+  "level": "info",
+  "data": {
+    "phase": "discovery",
+    "source": "engine_callback",
+    "observedAt": "2026-10-13T01:00:00Z",
+    "reportedAt": null,
+    "files": {
+      "completed": 0,
+      "total": 0,
+      "unit": "files",
+      "basis": "reported"
+    },
+    "phaseCounts": {
+      "completed": 0,
+      "total": 3,
+      "unit": "checks",
+      "basis": "observed"
+    },
+    "deep": {
+      "completed": 0,
+      "active": 0,
+      "maximum": 9
+    }
+  },
+  "message": "任意展示文字，不参与语义判断"
+}

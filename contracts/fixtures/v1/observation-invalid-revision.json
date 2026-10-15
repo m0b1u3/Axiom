@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "revision": 0,
+  "phase": "preparing",
+  "source": "scanner",
+  "observedAt": "2026-10-13T01:00:00Z",
+  "reportedAt": null,
+  "files": null,
+  "phaseCounts": null,
+  "deep": null,
+  "workers": [],
+  "workerStatus": null,
+  "activity": null,
+  "cost": null,
+  "reconnect": null,
+  "error": null
+}

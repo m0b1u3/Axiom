@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "taskId": "42",
+  "revision": 0,
+  "accountingVersion": 0,
+  "currency": "USD",
+  "isEstimate": true,
+  "state": "legacy",
+  "singleLimitUsd": 4.25,
+  "totalLimitMicros": null,
+  "estimatedMicros": null,
+  "reservedMicros": null,
+  "remainingMicros": null,
+  "nextLimitMicros": null,
+  "unknownAttempts": [],
+  "retryAllowed": true,
+  "reason": "",
+  "attempts": []
+}

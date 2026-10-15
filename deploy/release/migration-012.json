@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "fixtureOnly": true,
+  "files": {
+    "001_business.sql": "508975f218415db8c8778ec3b8bb131a199fb3f9db0d5ae135fc6bd026bd196e",
+    "002_execution.sql": "e42e1d41e1c7c897ffc4e2777514292218ce23ac5c3947bd9f98cbd7bad54495",
+    "003_legacy_attempt_counter.sql": "6dd0c1e46b364529877ca13a60cadca5e8f5b77261273cb6583e7da9f9ae6a3b",
+    "004_task_management.sql": "e5bd1286899f0c89c3ee996d264644e67493f4d4d211aa79a406e9fc97079ed1",
+    "005_scan_observability.sql": "b4cc6f4f7d54e30e3ce073cb827d78cd895f9305b1a1bc9446c69b072375dd2e",
+    "006_exploitability.sql": "cabd1de68d65c391684d5de242965d4746fb7e1a6d58bdad2f5c9cd381982ebe",
+    "007_input_contract.sql": "15a677bec1ee3a5058311423658c50fea1e4e03a6a1ab9145c954ca3fe669f0e",
+    "008_result_contract.sql": "3f3979b3c2d1281f3c3e7d103d32a18fccd59d2e0f7c211c9e004d03b5bd3113",
+    "009_observation_contract.sql": "0f217096c461c4dc682973f18ec9b80806983589e1d97a7e8351bdf24ec31da2",
+    "010_runtime_compatibility.sql": "4bd789441d3fbb060e6be350397933e26484d8e2c18f0c6f7202c90977d298fb",
+    "011_authentication.sql": "5464b26cf76b1dc71b8f7a45e08574dd685bc7272c70bc823a600ee149e4208f",
+    "012_task_budget.sql": "250d09bdec6b0274e66217c0e65af163bcf41734b7413bb529561b6a45fae1c4"
+  }
+}

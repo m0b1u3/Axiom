@@ -1,0 +1,29 @@
+{
+  "fixtures": [
+    {
+      "id": "sql-injection",
+      "cwe": ["CWE-89"],
+      "files": ["sql-injection/app.py"]
+    },
+    {
+      "id": "command-injection",
+      "cwe": ["CWE-78"],
+      "files": ["command-injection/app.py"]
+    },
+    {
+      "id": "path-traversal",
+      "cwe": ["CWE-22"],
+      "files": ["path-traversal/app.py"]
+    },
+    {
+      "id": "ssrf",
+      "cwe": ["CWE-918"],
+      "files": ["ssrf/app.py"]
+    },
+    {
+      "id": "hardcoded-secret",
+      "cwe": ["CWE-798"],
+      "files": ["hardcoded-secret/app.py"]
+    }
+  ]
+}

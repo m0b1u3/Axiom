@@ -1,0 +1,57 @@
+name: Production deployment baseline
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24.21.0'
+      - name: Build only from exported candidate source
+        run: python3 deploy/release/source.py export --output "$RUNNER_TEMP/axiom-candidate-source" --revision "$GITHUB_SHA"
+      - run: npm ci --no-audit --no-fund
+        working-directory: ${{ runner.temp }}/axiom-candidate-source/code-audit-web
+      - run: npx playwright-core install --with-deps chromium
+        working-directory: ${{ runner.temp }}/axiom-candidate-source/code-audit-web
+      - name: Generate private disposable configuration
+        working-directory: ${{ runner.temp }}/axiom-candidate-source
+        run: python3 deploy/ops/stack.py init "$RUNNER_TEMP/axiom-production.env" --project axiom-accept-ci --port 0 --release "$(cat VERSION)"
+      - name: Verify backup rejection guards
+        working-directory: ${{ runner.temp }}/axiom-candidate-source
+        run: python3 -m unittest discover -s deploy/ops -p '*_test.py' -v
+      - name: Build production images
+        working-directory: ${{ runner.temp }}/axiom-candidate-source
+        run: docker compose --env-file "$RUNNER_TEMP/axiom-production.env" -f deploy/docker/compose.production.yml build
+      - name: Verify production stack with isolated SDK fixture
+        working-directory: ${{ runner.temp }}/axiom-candidate-source
+        run: python3 deploy/ops/acceptance.py --env "$RUNNER_TEMP/axiom-production.env" --work "$RUNNER_TEMP/axiom-production-acceptance"
+      - name: Verify frozen migration upgrade
+        working-directory: ${{ runner.temp }}/axiom-candidate-source
+        run: python3 deploy/ops/migration_acceptance.py --env "$RUNNER_TEMP/axiom-production.env" --work "$RUNNER_TEMP/axiom-migration-acceptance"
+      - name: Retain public acceptance summaries only
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: beta-acceptance-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/axiom-candidate-source/SOURCE_MANIFEST.json
+            ${{ runner.temp }}/axiom-production-acceptance/report.json
+            ${{ runner.temp }}/axiom-migration-acceptance/report.json

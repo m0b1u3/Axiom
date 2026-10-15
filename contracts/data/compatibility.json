@@ -1,0 +1,25 @@
+{
+  "legacyErrorAliases": {
+    "auth_failed": "authentication_error",
+    "rate_limited": "rate_limit",
+    "result_corrupt": "invalid_result"
+  },
+  "exitCodes": {
+    "completed": 0,
+    "partial": 2,
+    "failed": 2,
+    "canceled": 7,
+    "timeout": 8
+  },
+  "limits": {
+    "documentBytes": 33554432,
+    "progressBytes": 1048576,
+    "eventBytes": 2097152
+  },
+  "deepFinalizationGraceSeconds": 600,
+  "defaults": {
+    "scanMode": "standard",
+    "scanSeconds": 3600,
+    "validationMode": "default"
+  }
+}

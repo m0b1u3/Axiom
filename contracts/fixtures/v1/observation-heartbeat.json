@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "agentId": "fixture-agent",
+  "progress": {
+    "schemaVersion": 2,
+    "execution": {
+      "taskId": "9007199254740993",
+      "attempt": 2
+    },
+    "revision": 1,
+    "phase": "discovery",
+    "source": "engine_callback",
+    "observedAt": "2026-10-13T01:00:00Z",
+    "reportedAt": null,
+    "files": {
+      "completed": 0,
+      "total": 0,
+      "unit": "files",
+      "basis": "reported"
+    },
+    "phaseCounts": {
+      "completed": 0,
+      "total": 3,
+      "unit": "checks",
+      "basis": "observed"
+    },
+    "deep": {
+      "completed": 0,
+      "active": 0,
+      "maximum": 9
+    },
+    "workers": [
+      {
+        "worker": {
+          "threadId": "thread-1",
+          "index": 0,
+          "parentThreadId": null
+        },
+        "status": "waiting",
+        "activity": {
+          "kind": "tool",
+          "status": "running",
+          "description": "failed command（只是文字，不是失败状态）",
+          "id": "activity-1",
+          "toolName": "read_file",
+          "worker": {
+            "threadId": "thread-1",
+            "index": 0,
+            "parentThreadId": null
+          },
+          "paths": [
+            "src/中文,a.ts"
+          ]
+        },
+        "source": "engine_callback",
+        "observedAt": "2026-10-13T01:00:00Z"
+      }
+    ],
+    "workerStatus": {
+      "kind": "preflight",
+      "delegation": "available",
+      "configuredSlots": 0,
+      "observedAt": "2026-10-13T01:00:00Z"
+    },
+    "activity": {
+      "kind": "tool",
+      "status": "running",
+      "description": "failed command（只是文字，不是失败状态）",
+      "id": "activity-1",
+      "toolName": "read_file",
+      "worker": {
+        "threadId": "thread-1",
+        "index": 0,
+        "parentThreadId": null
+      },
+      "paths": [
+        "src/中文,a.ts"
+      ]
+    },
+    "cost": {
+      "estimatedUsd": 0,
+      "inputTokens": 0,
+      "outputTokens": 17,
+      "cachedInputTokens": 0,
+      "cacheWriteInputTokens": 3,
+      "currency": "USD",
+      "isEstimate": true,
+      "observedAt": "2026-10-13T01:00:00Z",
+      "source": "engine_callback",
+      "reportedModel": "fixture-reported"
+    },
+    "reconnect": {
+      "attempt": 1,
+      "maximum": 3,
+      "reason": "network",
+      "retryAfterSeconds": 0
+    },
+    "error": {
+      "code": "rate_limit",
+      "origin": "engine",
+      "message": "fixture 错误，预算 ≠ 配额",
+      "retryable": true,
+      "extensions": {
+        "native": {
+          "requestId": "fixture-1"
+        }
+      }
+    },
+    "reconnectAt": "2026-10-13T01:00:00Z"
+  }
+}

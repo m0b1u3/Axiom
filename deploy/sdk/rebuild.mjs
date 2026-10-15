@@ -1,0 +1,33 @@
+import {mkdtempSync,mkdirSync,cpSync,existsSync,writeFileSync,readFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
+const npmVersion=spawnSync('npm',['--version'],{encoding:'utf8'});
+const source=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+const manifest=JSON.parse(readFileSync(path.join(source,'deploy/sdk/manifest.json'),'utf8'));
+if(process.platform+'-'+process.arch!==manifest.validatedPlatform)throw new Error('This release baseline is validated on Linux x64 only');
+if(npmVersion.status!==0||npmVersion.stdout.trim()!==manifest.npm)throw new Error(`Use npm ${manifest.npm} for this baseline`);
+if(process.versions.node!==manifest.node)throw new Error(`Use Node ${manifest.node} for this baseline`);
+const args=process.argv.slice(2),at=args.indexOf('--output');
+const output=at>=0?path.resolve(args[at+1]):mkdtempSync(path.join(tmpdir(),'axiom-sdk-rebuild-'));
+if(at>=0){if(existsSync(output))throw new Error('Output directory must not exist');mkdirSync(output,{recursive:true});}
+const cacheAt=args.indexOf('--cache');
+const home=path.join(output,'isolated-home'),cache=cacheAt>=0?path.resolve(args[cacheAt+1]):path.join(output,'npm-cache'),temp=path.join(output,'tmp');
+for(const dir of [home,cache,temp])mkdirSync(dir,{recursive:true,mode:0o700});
+const env={PATH:process.env.PATH,HOME:home,TMPDIR:temp,TEMP:temp,LANG:'C.UTF-8',npm_config_cache:cache};
+function run(command,argv,cwd=output){const r=spawnSync(command,argv,{cwd,env,stdio:'inherit'});if(r.error)throw r.error;if(r.status!==0)throw new Error(`${command} failed (${r.status})`);}
+const scanner=path.join(output,'code-audit-scanner');mkdirSync(scanner);
+for(const name of ['package.json','package-lock.json','tsconfig.json','src','test'])cpSync(path.join(source,'code-audit-scanner',name),path.join(scanner,name),{recursive:true});
+cpSync(path.join(source,'deploy/sdk'),path.join(output,'deploy/sdk'),{recursive:true});
+if(existsSync(path.join(source,'test-fixtures')))cpSync(path.join(source,'test-fixtures'),path.join(output,'test-fixtures'),{recursive:true});
+console.log('Rebuild directory:',output);
+run('npm',['ci','--no-audit','--no-fund'],scanner);
+run('npm',['run','verify:sdk'],scanner);
+run('npm',['run','test:sdk-patches'],scanner);
+run('npm',['run','typecheck'],scanner);
+run('npm',['test'],scanner);
+run('npm',['run','build'],scanner);
+run(process.execPath,[path.join(output,'deploy/sdk/verify-runtime.mjs')]);
+writeFileSync(path.join(output,'REBUILD_OK.json'),JSON.stringify({node:process.version,platform:process.platform,arch:process.arch,finishedAt:new Date().toISOString(),isolatedHome:true,initiallyEmptyNpmCache:cacheAt<0,dependencyCache:cache,cleanNodeModules:true},null,2)+'\n');
+console.log('REBUILD PASSED:',output);

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-cleanup-1",
+  "kind": "orphans",
+  "resourceId": null,
+  "revision": 1,
+  "state": "preview",
+  "createdAt": "2026-10-15T00:00:00Z",
+  "updatedAt": "2026-10-15T00:00:00Z",
+  "expiresAt": "2026-10-15T00:00:00Z",
+  "createdBy": "fixture-admin",
+  "error": "",
+  "truncated": false,
+  "items": [
+    {
+      "root": "scans",
+      "relativePath": "../escape",
+      "bytes": 0,
+      "state": "planned",
+      "reason": "unreferenced",
+      "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "root": "scans",
+      "relativePath": "fixture-report",
+      "bytes": null,
+      "state": "protected",
+      "reason": "historical_report",
+      "fingerprint": ""
+    }
+  ]
+}

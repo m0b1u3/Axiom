@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 2,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 8,
+  "occurredAt": "2026-10-13T01:00:00Z",
+  "type": "scan.warning",
+  "level": "info",
+  "data": {
+    "code": "unknown",
+    "origin": "scanner",
+    "message": "fixture warning"
+  },
+  "message": "任意展示文字，不参与语义判断"
+}

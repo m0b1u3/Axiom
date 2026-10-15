@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "taskId": "42",
+  "revision": 3,
+  "accountingVersion": 1,
+  "currency": "USD",
+  "isEstimate": true,
+  "state": "ready",
+  "singleLimitUsd": 4.25,
+  "totalLimitMicros": 5000000,
+  "estimatedMicros": 1125000,
+  "reservedMicros": 0,
+  "remainingMicros": 3875000,
+  "nextLimitMicros": 3875000,
+  "unknownAttempts": [],
+  "retryAllowed": true,
+  "reason": "",
+  "attempts": [
+    {
+      "execution": {
+        "taskId": "42",
+        "attempt": 1
+      },
+      "state": "complete",
+      "source": "manual_estimate",
+      "grantedMicros": 4250000,
+      "bookedMicros": 1125000,
+      "observedMicros": 1000000,
+      "finalMicros": 1125000,
+      "progressRevision": 7,
+      "reason": "",
+      "updatedAt": "2026-10-14T10:00:00Z",
+      "note": "Fixture explicit reconciliation",
+      "updatedBy": "fixture-operator"
+    }
+  ]
+}

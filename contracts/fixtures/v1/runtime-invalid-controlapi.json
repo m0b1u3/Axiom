@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "agentBuild": "fixture-agent",
+  "scannerBuild": null,
+  "scannerDescriptionVersion": null,
+  "controlAPI": 9,
+  "state": "blocked",
+  "matrixHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "diagnostic": {
+    "code": "protocol_version_unsupported",
+    "origin": "agent",
+    "message": "Fixture Scanner preflight blocked",
+    "retryable": false
+  }
+}

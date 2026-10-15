@@ -1,0 +1,44 @@
+name: Beta source delivery
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beta-source-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Check supported scope, license, reporting and pinned workflows
+        run: python3 deploy/release/check.py --report "$RUNNER_TEMP/release-checks.json"
+      - name: Test source delivery guards
+        run: python3 -m unittest discover -s deploy/release -p '*_test.py' -v
+      - name: Export candidate source with checksums
+        run: python3 deploy/release/source.py export --output "$RUNNER_TEMP/axiom-source" --archive "$RUNNER_TEMP/Axiom-source.tar.gz" --revision "$GITHUB_SHA"
+      - name: Verify exported source without local runtime files
+        working-directory: ${{ runner.temp }}/axiom-source
+        run: |
+          python3 deploy/release/source.py verify .
+          python3 deploy/release/check.py
+          python3 -m unittest discover -s deploy/ops -p '*_test.py' -v
+      - name: Retain source candidate and public metadata only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: beta-source-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/Axiom-source.tar.gz
+            ${{ runner.temp }}/Axiom-source.tar.gz.sha256
+            ${{ runner.temp }}/release-checks.json

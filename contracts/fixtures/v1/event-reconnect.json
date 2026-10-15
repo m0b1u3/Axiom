@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 5,
+  "occurredAt": "2026-10-13T00:00:00Z",
+  "type": "scan.reconnect",
+  "level": "info",
+  "data": {
+    "attempt": 1,
+    "maximum": 3,
+    "reason": "fixture-retry",
+    "retryAfterSeconds": 0
+  },
+  "message": "合成合同事件，不代表真实扫描"
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 3,
+  "occurredAt": "2026-10-13T00:00:00Z",
+  "type": "scan.worker",
+  "level": "info",
+  "data": {
+    "worker": {
+      "threadId": "fixture-thread",
+      "index": 0
+    },
+    "status": "dispatch",
+    "phase": "validation",
+    "details": {
+      "fixtureOnly": true
+    }
+  },
+  "message": "合成合同事件，不代表真实扫描"
+}

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "name": "axiom-scanner",
+  "version": "0.1.0",
+  "baselineVersions": {
+    "assignment": [
+      1
+    ],
+    "job": [
+      1
+    ],
+    "progress": [
+      1
+    ],
+    "event": [
+      1
+    ],
+    "result": [
+      1
+    ],
+    "completion": [
+      1
+    ]
+  },
+  "runtime": {
+    "input": "legacy_cli",
+    "events": "legacy_jsonl",
+    "result": "legacy_json",
+    "versions": {
+      "assignment": [],
+      "job": [],
+      "progress": [],
+      "event": [],
+      "result": [],
+      "completion": []
+    }
+  },
+  "capabilities": {
+    "describe": true,
+    "jobFile": false,
+    "structuredEvents": false,
+    "versionedResults": false
+  },
+  "configuredSdk": {
+    "package": "@openai/codex-security",
+    "version": "0.1.25"
+  }
+}

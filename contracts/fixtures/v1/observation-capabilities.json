@@ -1,0 +1,14 @@
+{
+  "jobVersions": [
+    3
+  ],
+  "progressVersions": [
+    2
+  ],
+  "eventVersions": [
+    2
+  ],
+  "heartbeatVersions": [
+    1
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "code-audit-scanner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Axiom scanner contract and Codex Security adapter. Codex Security must not leak into server/agent.",
+  "engines": {
+    "node": "^22.13.0 || ^24.0.0"
+  },
+  "scripts": {
+    "prebuild": "npm --prefix ../contracts run build",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test test/*.test.ts",
+    "scan": "node --import tsx src/main.ts",
+    "m0:mock": "node --import tsx src/main.ts --mock --source ../test-fixtures --output ./m0-out/mock",
+    "m0:probe-deepseek": "node --import tsx src/m0/probe-deepseek.ts",
+    "m0:deepseek": "node --import tsx src/m0/run-deepseek-scan.ts",
+    "m0:salvage": "node --import tsx src/m0/salvage-raw.ts",
+    "postinstall": "node ../deploy/sdk/apply.mjs",
+    "verify:sdk": "node ../deploy/sdk/apply.mjs --check",
+    "test:sdk-patches": "node --test ../deploy/sdk/apply.test.mjs"
+  },
+  "dependencies": {
+    "@axiom/contracts": "file:../contracts/ts",
+    "@openai/codex-security": "0.1.25",
+    "undici": "8.10.2"
+  },
+  "optionalDependencies": {
+    "@openai/codex-linux-x64": "npm:@openai/codex@0.152.1-linux-x64",
+    "@openai/codex-win32-x64": "npm:@openai/codex@0.152.1-win32-x64"
+  },
+  "devDependencies": {
+    "@types/node": "22.13.14",
+    "tsx": "4.20.5",
+    "typescript": "5.7.3"
+  },
+  "packageManager": "npm@10.9.8",
+  "license": "Apache-2.0"
+}

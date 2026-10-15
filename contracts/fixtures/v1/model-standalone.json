@@ -1,0 +1,9 @@
+{
+  "providerId": "fixture-provider",
+  "connectionType": "openai_compatible",
+  "model": "fixture-model",
+  "baseUrl": "https://fixture.invalid/v1",
+  "wireApi": "responses",
+  "credentialEnv": "FIXTURE_API_KEY",
+  "configurationRevision": "fixture-revision-1"
+}

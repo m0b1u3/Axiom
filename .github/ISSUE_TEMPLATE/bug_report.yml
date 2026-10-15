@@ -1,0 +1,46 @@
+name: 缺陷报告
+description: 报告可复现的功能、安装或升级问题。
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "安全问题请通过仓库 Security → Advisories → Report a vulnerability 私密提交。不要附加密钥、令牌、环境配置、数据库、备份或客户源码。"
+  - type: input
+    id: version
+    attributes:
+      label: 版本与构建标识
+      description: 提供 VERSION、镜像标签或 Web 显示的 Agent/Scanner 构建标识。
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 部署环境
+      description: Linux 发行版、amd64/其他架构、Docker 与 Compose 版本、安装或升级来源。不要粘贴配置文件。
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 最小复现步骤
+      description: 使用可公开的合成输入；如涉及任务，注明阶段、状态及是否重试。
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 预期行为与实际行为
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 脱敏证据
+      description: 提供时间、错误码及最小日志片段；保留原始事实，标记推测。
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已移除密钥、令牌、私人配置和业务数据；这不是公开披露安全漏洞。
+          required: true

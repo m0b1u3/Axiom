@@ -1,0 +1,59 @@
+/* =========================================================
+   Axiom Console — Token 映射层
+   权威来源:design/DESIGN_TOKENS.css（design-tokens.css）
+   本文件只做旧 --app-* → 新 token 的兼容映射，
+   页面代码逐步迁移到新 token 后本文件删除。
+   ========================================================= */
+:root {
+  /* 画布 → SURFACES */
+  --app-bg: var(--surface-app);
+  --app-sidebar: var(--surface-primary);
+  --app-surface: var(--surface-primary);
+  --app-surface-subtle: var(--surface-secondary);
+  --app-surface-2: var(--surface-tertiary);
+  --app-surface-hover: var(--surface-hover);
+
+  /* 线 → BORDER */
+  --app-border: var(--border-default);
+  --app-border-strong: var(--border-strong);
+  --app-border-soft: var(--border-subtle);
+
+  /* 文字 → TEXT */
+  --app-text-1: var(--text-primary);
+  --app-text-2: var(--text-secondary);
+  --app-text-3: var(--text-tertiary);
+  --app-text-4: var(--text-disabled);
+
+  /* 品牌 → ACCENT（冷精确蓝；绿只属于成功语义） */
+  --app-primary: var(--accent-primary);
+  --app-primary-hover: var(--accent-hover);
+  --app-primary-bg: var(--accent-subtle);
+
+  /* 语义 → SEMANTIC */
+  --app-danger: var(--state-danger);
+  --app-danger-bg: var(--state-danger-bg);
+  --app-warning: var(--state-warning);
+  --app-warning-bg: var(--state-warning-bg);
+  --app-success: var(--state-success);
+  --app-success-bg: var(--state-success-bg);
+  --app-info: var(--state-info);
+  --app-info-bg: var(--state-info-bg);
+  --app-neutral: var(--state-neutral);
+
+  /* 风险五级 → SEVERITY */
+  --sev-critical: var(--severity-critical);
+  --sev-high: var(--severity-high);
+  --sev-medium: var(--severity-medium);
+  --sev-low: var(--severity-low);
+
+  /* 形状 → RADIUS（主 Shell/Workspace/Sidebar/Inspector = 0） */
+  --app-radius-sm: var(--radius-xs);
+  --app-radius: var(--radius-sm);
+  --app-radius-lg: var(--radius-md);
+
+  /* 形 → CONTROL HEIGHT */
+  --app-shadow: none;
+
+  /* 字体与动效 → TYPOGRAPHY / MOTION */
+  --bez: var(--ease-ui);
+}

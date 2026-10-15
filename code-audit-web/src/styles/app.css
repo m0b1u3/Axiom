@@ -1,0 +1,221 @@
+/* 全站共享类（Security Console —— design/DESIGN_TOKENS.css + design/COMPONENTS.md） */
+#app {
+  min-height: 100dvh;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ---- Pane(白面板)----
+   灰底画布上的内容面:surface-primary + hairline + 微阴影。
+   面板内部不再嵌 Card(COMPONENTS #30:pane → section → data) */
+.pane {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-raised);
+}
+.pane-pad {
+  padding: var(--space-4) var(--space-5);
+}
+
+/* ---- Security Data Grid 基础结构 ---- */
+.sec-grid {
+  background: var(--surface-primary);
+  border: 1px solid var(--border-default);
+  overflow: hidden;
+}
+.sec-grid-head {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  background: var(--surface-secondary);
+  border-bottom: 1px solid var(--border-default);
+  padding: 0 var(--space-3);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.sec-grid-row {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-ui);
+}
+.sec-grid-row:last-child {
+  border-bottom: none;
+}
+.sec-grid-row:hover {
+  background: var(--surface-hover);
+}
+
+/* 严重度精细化胶囊 */
+.sev-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 1px 7px;
+  height: 20px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border-radius: var(--radius-xs);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  line-height: 1;
+}
+.sev-pill.critical {
+  color: var(--severity-critical);
+  background: var(--state-danger-bg);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+.sev-pill.high {
+  color: var(--severity-high);
+  background: rgba(249, 115, 22, 0.12);
+  border-color: rgba(249, 115, 22, 0.25);
+}
+.sev-pill.medium {
+  color: var(--severity-medium);
+  background: var(--state-warning-bg);
+  border-color: rgba(245, 158, 11, 0.25);
+}
+.sev-pill.low {
+  color: var(--severity-low);
+  background: var(--state-neutral-bg);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+.sev-pill.info {
+  color: var(--severity-info);
+  background: var(--state-info-bg);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+/* ---- PropertyList(COMPONENTS #31)----
+   Label 固定宽,Value 可选中 */
+.plist {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  row-gap: var(--space-1-5);
+  column-gap: var(--space-3);
+  font-size: var(--font-size-sm);
+}
+.plist .k {
+  color: var(--text-tertiary);
+}
+.plist .v {
+  color: var(--text-primary);
+  user-select: text;
+}
+
+/* ---- Section 分割（COMPONENTS #30）----
+   Inspector 内不用 Card，用 whitespace + divider */
+.section-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-tertiary);
+  letter-spacing: 0.02em;
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+/* ---- 文字版状态（统一 StatusIndicator，COMPONENTS #32）---- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.badge .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.badge.primary {
+  color: var(--execution-running);
+}
+.badge.success {
+  color: var(--execution-complete);
+}
+.badge.warning {
+  color: var(--execution-waiting);
+}
+.badge.danger {
+  color: var(--execution-failed);
+}
+.badge.neutral {
+  color: var(--execution-queued);
+}
+
+/* 链接式按钮 */
+.tlink {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-ui);
+  background: none;
+  border: none;
+  padding: 0;
+}
+.tlink:hover {
+  color: var(--text-primary);
+}
+
+/* 行 hover：只变 background/border/text（AGENTS #27） */
+.row-hover {
+  transition: background-color var(--duration-fast) var(--ease-ui);
+}
+.row-hover:hover {
+  background: var(--surface-hover);
+}
+
+/* 网格中的数量单元：数量不是严重度，不用 sev-pill（AGENTS #5/#16） */
+.count-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+}
+.count-num.zero {
+  color: var(--text-disabled);
+  font-weight: var(--font-weight-normal);
+}
+
+/* Empty state：无插画（AGENTS #26 / COMPONENTS #35） */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-1-5);
+  padding: var(--space-8) var(--space-4);
+  color: var(--text-tertiary);
+  width: 100%;
+  box-sizing: border-box;
+}
+.empty-state .empty-title {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+}
+.empty-state .empty-hint {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+}
+
+/* 滚动条样式统一在 reset.css 定义（此处不再覆盖，避免双定义冲突） */
+
+.request-error{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);padding:var(--space-3) var(--space-4);border:1px solid var(--border-default);border-radius:var(--radius-md);margin-bottom:var(--space-5);font-size:var(--font-size-sm);color:var(--state-danger);background:var(--surface-primary)}
+.muted{color:var(--text-tertiary)}

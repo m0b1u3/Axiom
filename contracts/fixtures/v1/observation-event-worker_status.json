@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 4,
+  "occurredAt": "2026-10-13T01:00:00Z",
+  "type": "scan.worker_status",
+  "level": "info",
+  "data": {
+    "kind": "preflight",
+    "delegation": "available",
+    "configuredSlots": 0,
+    "observedAt": "2026-10-13T01:00:00Z"
+  },
+  "message": "任意展示文字，不参与语义判断"
+}

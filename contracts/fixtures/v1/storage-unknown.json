@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "state": "unknown",
+  "policy": {
+    "revision": 1,
+    "minFreeBytes": 1073741824,
+    "orphanGraceHours": 24
+  },
+  "roots": [
+    {
+      "kind": "scans",
+      "usedBytes": null,
+      "availableBytes": null,
+      "volumeBytes": null,
+      "state": "unknown",
+      "message": "Fixture probe unavailable",
+      "observedAt": "2026-10-15T00:00:00Z"
+    }
+  ],
+  "cleanupSupported": true,
+  "automaticHistoryDeletion": false,
+  "observedAt": "2026-10-15T00:00:00Z"
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "sequence": 2,
+  "occurredAt": "2026-10-13T00:00:00Z",
+  "type": "scan.activity",
+  "level": "info",
+  "data": {
+    "kind": "tool",
+    "status": "failed",
+    "description": "Contract fixture tool invocation",
+    "toolName": "fixture_tool",
+    "worker": {
+      "threadId": "fixture-thread",
+      "index": 0,
+      "parentThreadId": null
+    }
+  },
+  "message": "合成合同事件，不代表真实扫描"
+}

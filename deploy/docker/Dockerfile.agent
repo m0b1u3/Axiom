@@ -1,0 +1,61 @@
+FROM --platform=$BUILDPLATFORM golang:1.24@sha256:d2d2bc1c84f7e60d7d2438a3836ae7d0c847f4888464e7ec9ba3a1339a1ee804 AS build
+ARG TARGETOS
+ARG TARGETARCH
+ARG AXIOM_BUILD_VERSION=development
+
+WORKDIR /workspace
+COPY code-audit-agent/go.mod code-audit-agent/go.sum ./code-audit-agent/
+COPY contracts/go/go.mod contracts/go/go.sum ./contracts/go/
+COPY shared/sourceidentity/go.mod ./shared/sourceidentity/
+RUN --mount=type=cache,id=axiom-public-go-modules,target=/go/pkg/mod cd code-audit-agent && go mod download
+COPY code-audit-agent /workspace/code-audit-agent
+COPY contracts/go /workspace/contracts/go
+COPY shared/sourceidentity /workspace/shared/sourceidentity
+RUN --mount=type=cache,id=axiom-public-go-modules,target=/go/pkg/mod \
+    case "$AXIOM_BUILD_VERSION" in ""|*[!a-zA-Z0-9._+-]*) exit 1 ;; esac \
+    && cd code-audit-agent \
+    && CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} go build -trimpath \
+       -ldflags "-X axiom/code-audit-agent/pkg/execution.AgentBuild=${AXIOM_BUILD_VERSION}" \
+       -o /out/axiom-agent ./cmd/agent
+
+FROM node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392
+ARG AXIOM_BUILD_VERSION=development
+LABEL org.opencontainers.image.version=$AXIOM_BUILD_VERSION \
+      org.opencontainers.image.source="https://github.com/m0b1u3/Axiom" \
+      org.opencontainers.image.licenses="Apache-2.0"
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -u 1001 axiom
+WORKDIR /opt/axiom
+# Dependencies depend on lockfiles and the pinned SDK patches, not Go or Scanner
+# source. Keep the public npm cache across rebuilds; npm still checks integrity.
+COPY contracts/package.json contracts/package-lock.json /opt/axiom/contracts/
+COPY contracts/ts/package.json /opt/axiom/contracts/ts/package.json
+WORKDIR /opt/axiom/contracts
+RUN --mount=type=cache,id=axiom-public-npm,target=/root/.npm npm ci --ignore-scripts --no-audit --no-fund
+COPY contracts/ts /opt/axiom/contracts/ts
+RUN npm run build
+COPY code-audit-scanner/package.json code-audit-scanner/package-lock.json /opt/axiom/code-audit-scanner/
+COPY deploy/sdk /opt/axiom/deploy/sdk
+WORKDIR /opt/axiom/code-audit-scanner
+ARG AXIOM_NPM_OFFLINE=0
+RUN --mount=type=cache,id=axiom-public-npm,target=/root/.npm \
+    case "$AXIOM_NPM_OFFLINE" in \
+      0) npm ci --prefer-offline --no-audit --no-fund ;; \
+      1) npm ci --offline --no-audit --no-fund ;; \
+      *) exit 1 ;; \
+    esac
+COPY code-audit-scanner /opt/axiom/code-audit-scanner
+RUN npm run build
+RUN npm run verify:sdk
+COPY --from=build /out/axiom-agent /usr/local/bin/axiom-agent
+RUN chmod +x /usr/local/bin/axiom-agent
+WORKDIR /opt/axiom
+
+RUN mkdir -p /app/data && chown -R axiom:axiom /opt/axiom /usr/local/bin/axiom-agent /app/data && chmod 700 /app/data
+
+USER axiom
+ENV AXIOM_NODE=/usr/local/bin/node
+CMD ["/usr/local/bin/axiom-agent"]

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "state": "ready",
+  "policy": {
+    "revision": 1,
+    "minFreeBytes": 1073741824,
+    "orphanGraceHours": 24
+  },
+  "roots": [
+    {
+      "kind": "scans",
+      "usedBytes": 0,
+      "availableBytes": -1,
+      "volumeBytes": 4294967296,
+      "state": "ready",
+      "message": "",
+      "observedAt": "2026-10-15T00:00:00Z"
+    }
+  ],
+  "cleanupSupported": true,
+  "automaticHistoryDeletion": false,
+  "observedAt": "2026-10-15T00:00:00Z"
+}

@@ -1,0 +1,13 @@
+Axiom
+Copyright 2026 Axiom contributors
+
+Axiom includes modified portions of the OpenAI Codex Security SDK and its
+bundled plugin, originally distributed under the Apache License, Version 2.0.
+The upstream license is preserved in deploy/sdk/UPSTREAM_LICENSE. Changes and
+their before/after hashes are recorded in deploy/sdk/manifest.json and
+deploy/sdk/patches/. The SDK is an independently maintained upstream project.
+
+Other third-party dependencies, fonts, and provider marks retain their own
+licenses and notices. Package lockfiles and Go module files identify the
+dependencies used by this source distribution. This notice does not relicense
+third-party material or grant rights to third-party trademarks.

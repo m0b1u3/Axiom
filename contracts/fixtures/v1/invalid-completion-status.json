@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "agentId": "fixture-agent",
+  "executionStatus": "partial",
+  "process": {
+    "code": 0,
+    "signal": null,
+    "resultCommitted": true
+  },
+  "result": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "9007199254740993",
+      "attempt": 2
+    },
+    "status": "completed",
+    "startedAt": "2026-10-13T00:00:00Z",
+    "finishedAt": "2026-10-13T00:01:00Z",
+    "engine": {
+      "name": "fixture-engine",
+      "version": "fixture-1",
+      "pluginVersion": null,
+      "patchRevision": null
+    },
+    "model": {
+      "providerId": "fixture-provider",
+      "connectionType": "openai_compatible",
+      "model": "fixture-model",
+      "baseUrl": "https://fixture.invalid/v1",
+      "wireApi": "responses",
+      "credentialEnv": "FIXTURE_API_KEY",
+      "configurationRevision": "fixture-revision-1"
+    },
+    "findings": [
+      {
+        "fingerprint": "fixture-only-fingerprint",
+        "title": "Contract fixture, not a real vulnerability",
+        "severity": "info",
+        "description": "Synthetic fixture for field retention.",
+        "severityScore": 0,
+        "scoringSystem": "fixture",
+        "confidence": {
+          "level": "unknown",
+          "rationale": null,
+          "value": null
+        },
+        "category": "fixture",
+        "cwe": [],
+        "filePath": "src/a,b.ts",
+        "startLine": 1,
+        "endLine": 1,
+        "evidence": "fixture evidence",
+        "remediation": "fixture recommendation",
+        "rootCause": "fixture root cause",
+        "attackPath": "fixture path",
+        "entrypoint": "fixture entry",
+        "source": "fixture source",
+        "dataflow": "fixture flow",
+        "sink": "fixture sink",
+        "reachability": "unknown",
+        "impact": "fixture impact",
+        "likelihood": "unknown",
+        "attackSteps": [],
+        "preconditions": [],
+        "codeEvidence": [
+          {
+            "id": "fixture-evidence",
+            "label": "Fixture",
+            "path": "src/a,b.ts",
+            "startLine": 1,
+            "endLine": 1,
+            "language": "typescript",
+            "role": "fixture",
+            "code": "// fixture, not production code",
+            "explanation": "Contract field retention only"
+          }
+        ],
+        "validation": {
+          "fixtureOnly": true,
+          "observed": false
+        },
+        "remediationTests": [],
+        "preventiveControls": [],
+        "provenance": null,
+        "extensions": {
+          "future": {
+            "nested": [
+              0,
+              false,
+              null,
+              ""
+            ]
+          }
+        },
+        "raw": {
+          "fixtureOnly": true,
+          "opaque": {
+            "unchanged": [
+              true,
+              null,
+              0
+            ]
+          }
+        },
+        "engineFindingId": "fixture-finding",
+        "engineOccurrenceId": "fixture-occurrence",
+        "ruleId": "fixture-rule"
+      }
+    ],
+    "coverage": {
+      "completeness": "complete",
+      "details": {
+        "surfaces": [],
+        "futureField": {
+          "retained": true
+        }
+      }
+    },
+    "artifacts": [
+      {
+        "kind": "evidence",
+        "relativePath": "artifacts/evidence.json",
+        "sizeBytes": 0,
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "cost": {
+      "estimatedUsd": 0,
+      "inputTokens": 0,
+      "outputTokens": null,
+      "currency": "USD",
+      "isEstimate": true
+    },
+    "extensions": {
+      "fixtureOnly": true
+    }
+  }
+}

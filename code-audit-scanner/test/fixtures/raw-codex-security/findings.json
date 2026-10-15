@@ -1,0 +1,24 @@
+{
+  "documentType": "codex-security.findings",
+  "schemaVersion": "1.0",
+  "scanId": "scan_salvage_001",
+  "findings": [
+    {
+      "findingId": "csf_cmd",
+      "occurrenceId": "occ_cmd",
+      "ruleId": "command-injection",
+      "fingerprints": {
+        "algorithm": "codex-security/v1",
+        "primary": "codex-security/v1:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "title": "OS command injection in /ping endpoint via untrusted host parameter",
+      "summary": "host query parameter is concatenated into os.system.",
+      "severity": { "level": "high" },
+      "confidence": { "level": "high", "rationale": "direct sink" },
+      "taxonomy": { "category": "command-injection", "cwe": ["CWE-78"] },
+      "locations": [{ "path": "command-injection/app.py", "startLine": 8, "role": "sink" }],
+      "remediation": "Use subprocess with a list of arguments.",
+      "provenance": { "source": "test" }
+    }
+  ]
+}

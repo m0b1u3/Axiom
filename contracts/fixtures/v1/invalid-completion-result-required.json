@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "agentId": "fixture-agent",
+  "executionStatus": "completed",
+  "process": {
+    "code": 0,
+    "signal": null,
+    "resultCommitted": true
+  }
+}

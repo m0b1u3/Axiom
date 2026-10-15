@@ -1,0 +1,47 @@
+/* Tailwind v4 — 不加载官方 preflight（reset.css 已承担排版复位），
+   主题色全部桥接到 design-tokens.css 的 AXIOM 令牌 */
+@import "tailwindcss/theme.css" layer(theme);
+
+/* 最小控件复位（preflight 的 button 部分）：消灭 UA ButtonFace 灰底 + 边框，
+   否则任何没显式写 bg/border 的按钮元素（如 Dialog 的 X）都会被染成灰盒子。
+   位于 base 层：utilities 层在它之后，组件类照常覆盖。 */
+@layer base {
+  button {
+    background-color: transparent;
+    background-image: none;
+    border: 0 solid var(--border-default);
+    padding: 0;
+    cursor: pointer;
+    color: inherit;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  --color-background: var(--surface-primary);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--surface-primary);
+  --color-card-foreground: var(--text-primary);
+  --color-popover: var(--surface-raised);
+  --color-popover-foreground: var(--text-primary);
+  --color-primary: var(--accent-primary);
+  --color-primary-foreground: var(--text-inverse);
+  --color-secondary: var(--surface-secondary);
+  --color-secondary-foreground: var(--text-primary);
+  --color-muted: var(--surface-secondary);
+  --color-muted-foreground: var(--text-tertiary);
+  --color-accent: var(--surface-hover);
+  --color-accent-foreground: var(--text-primary);
+  --color-destructive: var(--state-danger);
+  --color-destructive-foreground: var(--text-inverse);
+  --color-border: var(--border-default);
+  --color-input: var(--border-default);
+  --color-ring: var(--border-focus);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}

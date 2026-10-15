@@ -1,0 +1,1035 @@
+{
+  "fixtureOnly": true,
+  "cases": [
+    {
+      "id": "execution-ref",
+      "kind": "ExecutionRef",
+      "file": "execution-ref.json",
+      "valid": true
+    },
+    {
+      "id": "job-standard",
+      "kind": "ScannerJob",
+      "file": "job-standard.json",
+      "valid": true
+    },
+    {
+      "id": "job-expected-identity",
+      "kind": "ScannerJob",
+      "file": "job-expected-identity.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "job-windows",
+      "kind": "ScannerJob",
+      "file": "job-windows.json",
+      "valid": true
+    },
+    {
+      "id": "job-deep",
+      "kind": "ScannerJob",
+      "file": "job-deep.json",
+      "valid": true
+    },
+    {
+      "id": "job-background",
+      "kind": "ScannerJob",
+      "file": "job-background.json",
+      "valid": true
+    },
+    {
+      "id": "assignment",
+      "kind": "ExecutionAssignment",
+      "file": "assignment.json",
+      "valid": true
+    },
+    {
+      "id": "progress-unknown",
+      "kind": "ProgressSnapshot",
+      "file": "progress-unknown.json",
+      "valid": true
+    },
+    {
+      "id": "progress-zero",
+      "kind": "ProgressSnapshot",
+      "file": "progress-zero.json",
+      "valid": true
+    },
+    {
+      "id": "progress-native-phase",
+      "kind": "ProgressSnapshot",
+      "file": "progress-native-phase.json",
+      "valid": true
+    },
+    {
+      "id": "event-phase_changed",
+      "kind": "ScanEvent",
+      "file": "event-phase_changed.json",
+      "valid": true
+    },
+    {
+      "id": "event-activity",
+      "kind": "ScanEvent",
+      "file": "event-activity.json",
+      "valid": true
+    },
+    {
+      "id": "event-worker",
+      "kind": "ScanEvent",
+      "file": "event-worker.json",
+      "valid": true
+    },
+    {
+      "id": "event-cost",
+      "kind": "ScanEvent",
+      "file": "event-cost.json",
+      "valid": true
+    },
+    {
+      "id": "event-reconnect",
+      "kind": "ScanEvent",
+      "file": "event-reconnect.json",
+      "valid": true
+    },
+    {
+      "id": "event-warning",
+      "kind": "ScanEvent",
+      "file": "event-warning.json",
+      "valid": true
+    },
+    {
+      "id": "event-finished",
+      "kind": "ScanEvent",
+      "file": "event-finished.json",
+      "valid": true
+    },
+    {
+      "id": "result-rich",
+      "kind": "ScanResult",
+      "file": "result-rich.json",
+      "valid": true
+    },
+    {
+      "id": "result-empty-cost-absent",
+      "kind": "ScanResult",
+      "file": "result-empty-cost-absent.json",
+      "valid": true
+    },
+    {
+      "id": "result-cost-null",
+      "kind": "ScanResult",
+      "file": "result-cost-null.json",
+      "valid": true
+    },
+    {
+      "id": "result-partial-empty",
+      "kind": "ScanResult",
+      "file": "result-partial-empty.json",
+      "valid": true
+    },
+    {
+      "id": "result-failed",
+      "kind": "ScanResult",
+      "file": "result-failed.json",
+      "valid": true
+    },
+    {
+      "id": "result-canceled",
+      "kind": "ScanResult",
+      "file": "result-canceled.json",
+      "valid": true
+    },
+    {
+      "id": "result-timeout",
+      "kind": "ScanResult",
+      "file": "result-timeout.json",
+      "valid": true
+    },
+    {
+      "id": "completion-success",
+      "kind": "ExecutionCompletion",
+      "file": "completion-success.json",
+      "valid": true
+    },
+    {
+      "id": "completion-canceled-partial",
+      "kind": "ExecutionCompletion",
+      "file": "completion-canceled-partial.json",
+      "valid": true
+    },
+    {
+      "id": "scanner-description",
+      "kind": "ScannerDescription",
+      "file": "scanner-description.json",
+      "valid": true
+    },
+    {
+      "id": "invalid-version",
+      "kind": "ScannerJob",
+      "file": "invalid-version.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-version-missing",
+      "kind": "ScannerJob",
+      "file": "invalid-version-missing.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-secret-in-job",
+      "kind": "ScannerJob",
+      "file": "invalid-secret-in-job.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-numeric-task-id",
+      "kind": "ScannerJob",
+      "file": "invalid-numeric-task-id.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-task-id-zero",
+      "kind": "ScannerJob",
+      "file": "invalid-task-id-zero.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-task-id-fraction",
+      "kind": "ScannerJob",
+      "file": "invalid-task-id-fraction.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-attempt",
+      "kind": "ScannerJob",
+      "file": "invalid-attempt.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-mode",
+      "kind": "ScannerJob",
+      "file": "invalid-mode.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-workers-fraction",
+      "kind": "ScannerJob",
+      "file": "invalid-workers-fraction.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-cost-negative",
+      "kind": "ScannerJob",
+      "file": "invalid-cost-negative.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-cost-zero",
+      "kind": "ScannerJob",
+      "file": "invalid-cost-zero.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-cost-null",
+      "kind": "ScannerJob",
+      "file": "invalid-cost-null.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-deep-standard",
+      "kind": "ScannerJob",
+      "file": "invalid-deep-standard.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-validation-deep",
+      "kind": "ScannerJob",
+      "file": "invalid-validation-deep.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-background-default",
+      "kind": "ScannerJob",
+      "file": "invalid-background-default.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-absolute-include",
+      "kind": "ScannerJob",
+      "file": "invalid-absolute-include.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-traversal-include",
+      "kind": "ScannerJob",
+      "file": "invalid-traversal-include.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-duplicate-include",
+      "kind": "ScannerJob",
+      "file": "invalid-duplicate-include.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-backslash-include",
+      "kind": "ScannerJob",
+      "file": "invalid-backslash-include.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-unknown-property",
+      "kind": "ScannerJob",
+      "file": "invalid-unknown-property.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-custom-provider-url",
+      "kind": "ScannerJob",
+      "file": "invalid-custom-provider-url.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-date",
+      "kind": "ProgressSnapshot",
+      "file": "invalid-date.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-missing-raw-phase",
+      "kind": "ProgressSnapshot",
+      "file": "invalid-missing-raw-phase.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-progress-number-string",
+      "kind": "ProgressSnapshot",
+      "file": "invalid-progress-number-string.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-progress-unit",
+      "kind": "ProgressSnapshot",
+      "file": "invalid-progress-unit.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-unsafe-counter",
+      "kind": "ProgressSnapshot",
+      "file": "invalid-unsafe-counter.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-event-payload",
+      "kind": "ScanEvent",
+      "file": "invalid-event-payload.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-event-type",
+      "kind": "ScanEvent",
+      "file": "invalid-event-type.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-event-data-extra",
+      "kind": "ScanEvent",
+      "file": "invalid-event-data-extra.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-severity",
+      "kind": "ScanResult",
+      "file": "invalid-severity.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-findings-null",
+      "kind": "ScanResult",
+      "file": "invalid-findings-null.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-result-extra",
+      "kind": "ScanResult",
+      "file": "invalid-result-extra.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-completed-partial-coverage",
+      "kind": "ScanResult",
+      "file": "invalid-completed-partial-coverage.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-completion-result-required",
+      "kind": "ExecutionCompletion",
+      "file": "invalid-completion-result-required.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-completion-nested-identity",
+      "kind": "ExecutionCompletion",
+      "file": "invalid-completion-nested-identity.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-completion-status",
+      "kind": "ExecutionCompletion",
+      "file": "invalid-completion-status.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-expected-identity",
+      "kind": "ScannerJob",
+      "file": "invalid-expected-identity.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "1",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "invalid-expected-attempt",
+      "kind": "ScanResult",
+      "file": "invalid-expected-attempt.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 3
+      }
+    },
+    {
+      "id": "invalid-advertised-job-support",
+      "kind": "ScannerDescription",
+      "file": "invalid-advertised-job-support.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-json",
+      "kind": "ScannerJob",
+      "file": "invalid-json.json",
+      "valid": false
+    },
+    {
+      "id": "integer-json-syntax",
+      "kind": "ExecutionRef",
+      "file": "integer-json-syntax.json",
+      "valid": true
+    },
+    {
+      "id": "invalid-credential-binding",
+      "kind": "ExecutionAssignment",
+      "file": "invalid-credential-binding.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-unpaired-surrogate",
+      "kind": "ScanEvent",
+      "file": "invalid-unpaired-surrogate.json",
+      "valid": false
+    },
+    {
+      "id": "event-unicode",
+      "kind": "ScanEvent",
+      "file": "event-unicode.json",
+      "valid": true
+    },
+    {
+      "id": "event-escaped-slashes",
+      "kind": "ScanEvent",
+      "file": "event-escaped-slashes.json",
+      "valid": true
+    },
+    {
+      "id": "invalid-number-overflow",
+      "kind": "ExecutionRef",
+      "file": "invalid-number-overflow.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-bom",
+      "kind": "ExecutionRef",
+      "file": "invalid-bom.json",
+      "valid": false
+    },
+    {
+      "id": "policy-standalone",
+      "kind": "ScanPolicy",
+      "file": "policy-standalone.json",
+      "valid": true
+    },
+    {
+      "id": "model-standalone",
+      "kind": "ResolvedModel",
+      "file": "model-standalone.json",
+      "valid": true
+    },
+    {
+      "id": "input-capabilities",
+      "kind": "InputCapabilities",
+      "file": "input-capabilities.json",
+      "valid": true
+    },
+    {
+      "id": "input-capabilities-legacy",
+      "kind": "InputCapabilities",
+      "file": "input-capabilities-legacy.json",
+      "valid": true
+    },
+    {
+      "id": "input-capabilities-invalid",
+      "kind": "InputCapabilities",
+      "file": "input-capabilities-invalid.json",
+      "valid": false
+    },
+    {
+      "id": "scanner-description-v2",
+      "kind": "ScannerDescriptionV2",
+      "file": "scanner-description-v2.json",
+      "valid": true
+    },
+    {
+      "id": "scanner-description-v2-unsupported",
+      "kind": "ScannerDescriptionV2",
+      "file": "scanner-description-v2-unsupported.json",
+      "valid": false
+    },
+    {
+      "id": "job-v2-result",
+      "kind": "ScannerJobV2",
+      "file": "job-v2-result.json",
+      "valid": true
+    },
+    {
+      "id": "invalid-job-v2-result-version",
+      "kind": "ScannerJobV2",
+      "file": "invalid-job-v2-result-version.json",
+      "valid": false
+    },
+    {
+      "id": "result-capabilities",
+      "kind": "ResultCapabilities",
+      "file": "result-capabilities.json",
+      "valid": true
+    },
+    {
+      "id": "invalid-result-capabilities",
+      "kind": "ResultCapabilities",
+      "file": "invalid-result-capabilities.json",
+      "valid": false
+    },
+    {
+      "id": "result-commit",
+      "kind": "ResultCommit",
+      "file": "result-commit.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "invalid-result-commit-path",
+      "kind": "ResultCommit",
+      "file": "invalid-result-commit-path.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-result-commit-bytes",
+      "kind": "ResultCommit",
+      "file": "invalid-result-commit-bytes.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-result-commit-version",
+      "kind": "ResultCommit",
+      "file": "invalid-result-commit-version.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-result-commit-hash",
+      "kind": "ResultCommit",
+      "file": "invalid-result-commit-hash.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-result-commit-identity",
+      "kind": "ResultCommit",
+      "file": "invalid-result-commit-identity.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 3
+      }
+    },
+    {
+      "id": "completion-rich-sdk-late-exit",
+      "kind": "ExecutionCompletion",
+      "file": "completion-rich-sdk-late-exit.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "completion-canceled-retained-full",
+      "kind": "ExecutionCompletion",
+      "file": "completion-canceled-retained-full.json",
+      "valid": true
+    },
+    {
+      "id": "completion-timeout-retained-full",
+      "kind": "ExecutionCompletion",
+      "file": "completion-timeout-retained-full.json",
+      "valid": true
+    },
+    {
+      "id": "invalid-result-severity",
+      "kind": "ExecutionCompletion",
+      "file": "invalid-result-severity.json",
+      "valid": false
+    },
+    {
+      "id": "invalid-completion-uncommitted-result",
+      "kind": "ExecutionCompletion",
+      "file": "invalid-completion-uncommitted-result.json",
+      "valid": false
+    },
+    {
+      "id": "scanner-description-v3",
+      "kind": "ScannerDescriptionV3",
+      "file": "scanner-description-v3.json",
+      "valid": true
+    },
+    {
+      "id": "invalid-scanner-description-v3-results",
+      "kind": "ScannerDescriptionV3",
+      "file": "invalid-scanner-description-v3-results.json",
+      "valid": false
+    },
+    {
+      "id": "observation-null",
+      "kind": "ProgressSnapshotV2",
+      "file": "observation-null.json",
+      "valid": true
+    },
+    {
+      "id": "observation-zero",
+      "kind": "ProgressSnapshotV2",
+      "file": "observation-zero.json",
+      "valid": true
+    },
+    {
+      "id": "observation-unknown",
+      "kind": "ProgressSnapshotV2",
+      "file": "observation-unknown.json",
+      "valid": true
+    },
+    {
+      "id": "observation-rich",
+      "kind": "ProgressSnapshotV2",
+      "file": "observation-rich.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-phase_changed",
+      "kind": "ScanEventV2",
+      "file": "observation-event-phase_changed.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-progress",
+      "kind": "ScanEventV2",
+      "file": "observation-event-progress.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-worker",
+      "kind": "ScanEventV2",
+      "file": "observation-event-worker.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-worker_status",
+      "kind": "ScanEventV2",
+      "file": "observation-event-worker_status.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-activity",
+      "kind": "ScanEventV2",
+      "file": "observation-event-activity.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-cost",
+      "kind": "ScanEventV2",
+      "file": "observation-event-cost.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-reconnect",
+      "kind": "ScanEventV2",
+      "file": "observation-event-reconnect.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-warning",
+      "kind": "ScanEventV2",
+      "file": "observation-event-warning.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-error",
+      "kind": "ScanEventV2",
+      "file": "observation-event-error.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-event-finished",
+      "kind": "ScanEventV2",
+      "file": "observation-event-finished.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-capabilities",
+      "kind": "ObservationCapabilities",
+      "file": "observation-capabilities.json",
+      "valid": true
+    },
+    {
+      "id": "observation-heartbeat",
+      "kind": "ExecutionHeartbeat",
+      "file": "observation-heartbeat.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "observation-heartbeat-null",
+      "kind": "ExecutionHeartbeat",
+      "file": "observation-heartbeat-null.json",
+      "valid": true
+    },
+    {
+      "id": "observation-job",
+      "kind": "ScannerJobV3",
+      "file": "observation-job.json",
+      "valid": true
+    },
+    {
+      "id": "observation-invalid-unit",
+      "kind": "ProgressSnapshotV2",
+      "file": "observation-invalid-unit.json",
+      "valid": false
+    },
+    {
+      "id": "observation-invalid-unknown-no-name",
+      "kind": "ProgressSnapshotV2",
+      "file": "observation-invalid-unknown-no-name.json",
+      "valid": false
+    },
+    {
+      "id": "observation-invalid-revision",
+      "kind": "ProgressSnapshotV2",
+      "file": "observation-invalid-revision.json",
+      "valid": false
+    },
+    {
+      "id": "observation-invalid-worker",
+      "kind": "ProgressSnapshotV2",
+      "file": "observation-invalid-worker.json",
+      "valid": false
+    },
+    {
+      "id": "observation-invalid-heartbeat-identity",
+      "kind": "ExecutionHeartbeat",
+      "file": "observation-invalid-heartbeat-identity.json",
+      "valid": false
+    },
+    {
+      "id": "observation-invalid-heartbeat-string",
+      "kind": "ExecutionHeartbeat",
+      "file": "observation-invalid-heartbeat-string.json",
+      "valid": false
+    },
+    {
+      "id": "observation-invalid-job-version",
+      "kind": "ScannerJobV3",
+      "file": "observation-invalid-job-version.json",
+      "valid": false
+    },
+    {
+      "id": "observation-invalid-event-type",
+      "kind": "ScanEventV2",
+      "file": "observation-invalid-event-type.json",
+      "valid": false
+    },
+    {
+      "id": "observation-invalid-identity",
+      "kind": "ProgressSnapshotV2",
+      "file": "observation-invalid-identity.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 1
+      }
+    },
+    {
+      "id": "runtime-ready",
+      "file": "runtime-ready.json",
+      "kind": "AgentRuntime",
+      "valid": true
+    },
+    {
+      "id": "runtime-blocked",
+      "file": "runtime-blocked.json",
+      "kind": "AgentRuntime",
+      "valid": true
+    },
+    {
+      "id": "runtime-invalid-diagnostic",
+      "file": "runtime-invalid-diagnostic.json",
+      "kind": "AgentRuntime",
+      "valid": false
+    },
+    {
+      "id": "runtime-invalid-controlapi",
+      "file": "runtime-invalid-controlapi.json",
+      "kind": "AgentRuntime",
+      "valid": false
+    },
+    {
+      "id": "runtime-invalid-state",
+      "file": "runtime-invalid-state.json",
+      "kind": "AgentRuntime",
+      "valid": false
+    },
+    {
+      "id": "runtime-invalid-extra",
+      "file": "runtime-invalid-extra.json",
+      "kind": "AgentRuntime",
+      "valid": false
+    },
+    {
+      "id": "scanner-description-v4",
+      "file": "scanner-description-v4.json",
+      "kind": "ScannerDescriptionV4",
+      "valid": true
+    },
+    {
+      "id": "budget-ready",
+      "file": "budget-ready.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": true
+    },
+    {
+      "id": "budget-legacy",
+      "file": "budget-legacy.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": true
+    },
+    {
+      "id": "budget-unknown-zero-observation",
+      "file": "budget-unknown-zero-observation.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": true
+    },
+    {
+      "id": "budget-manual",
+      "file": "budget-manual.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": true
+    },
+    {
+      "id": "invalid-budget-schemaVersion",
+      "file": "invalid-budget-schemaVersion.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": false
+    },
+    {
+      "id": "invalid-budget-totalLimitMicros",
+      "file": "invalid-budget-totalLimitMicros.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": false
+    },
+    {
+      "id": "invalid-budget-estimatedMicros",
+      "file": "invalid-budget-estimatedMicros.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": false
+    },
+    {
+      "id": "invalid-budget-remainingMicros",
+      "file": "invalid-budget-remainingMicros.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": false
+    },
+    {
+      "id": "invalid-budget-currency",
+      "file": "invalid-budget-currency.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": false
+    },
+    {
+      "id": "invalid-budget-isEstimate",
+      "file": "invalid-budget-isEstimate.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": false
+    },
+    {
+      "id": "invalid-budget-unexpectedField",
+      "file": "invalid-budget-unexpectedField.json",
+      "kind": "TaskBudgetSnapshot",
+      "valid": false
+    },
+    {
+      "id": "storage-ready",
+      "kind": "StorageSnapshot",
+      "file": "storage-ready.json",
+      "valid": true
+    },
+    {
+      "id": "storage-unknown",
+      "kind": "StorageSnapshot",
+      "file": "storage-unknown.json",
+      "valid": true
+    },
+    {
+      "id": "storage-full-known-zero",
+      "kind": "StorageSnapshot",
+      "file": "storage-full-known-zero.json",
+      "valid": true
+    },
+    {
+      "id": "cleanup-preview",
+      "kind": "CleanupJob",
+      "file": "cleanup-preview.json",
+      "valid": true
+    },
+    {
+      "id": "cleanup-running",
+      "kind": "CleanupJob",
+      "file": "cleanup-running.json",
+      "valid": true
+    },
+    {
+      "id": "cleanup-failed",
+      "kind": "CleanupJob",
+      "file": "cleanup-failed.json",
+      "valid": true
+    },
+    {
+      "id": "cleanup-completed",
+      "kind": "CleanupJob",
+      "file": "cleanup-completed.json",
+      "valid": true
+    },
+    {
+      "id": "cleanup-canceled",
+      "kind": "CleanupJob",
+      "file": "cleanup-canceled.json",
+      "valid": true
+    },
+    {
+      "id": "storage-no-automatic-history",
+      "kind": "StorageSnapshot",
+      "file": "storage-no-automatic-history.json",
+      "valid": false
+    },
+    {
+      "id": "storage-unknown-version",
+      "kind": "StorageSnapshot",
+      "file": "storage-unknown-version.json",
+      "valid": false
+    },
+    {
+      "id": "storage-unknown-field",
+      "kind": "StorageSnapshot",
+      "file": "storage-unknown-field.json",
+      "valid": false
+    },
+    {
+      "id": "storage-bytes-negative",
+      "kind": "StorageSnapshot",
+      "file": "storage-bytes-negative.json",
+      "valid": false
+    },
+    {
+      "id": "storage-bytes-unsafe",
+      "kind": "StorageSnapshot",
+      "file": "storage-bytes-unsafe.json",
+      "valid": false
+    },
+    {
+      "id": "storage-bytes-fraction",
+      "kind": "StorageSnapshot",
+      "file": "storage-bytes-fraction.json",
+      "valid": false
+    },
+    {
+      "id": "cleanup-boundary",
+      "kind": "CleanupJob",
+      "file": "cleanup-boundary.json",
+      "valid": false
+    },
+    {
+      "id": "cleanup-unknown-item-state",
+      "kind": "CleanupJob",
+      "file": "cleanup-unknown-item-state.json",
+      "valid": false
+    }
+  ]
+}
