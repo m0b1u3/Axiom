@@ -35,7 +35,7 @@ func gitPipelineArchive(t *testing.T, scratch string) (archive, base, head strin
 	}
 	git := func(args ...string) string {
 		t.Helper()
-		c := exec.Command("git", append([]string{"-C", source}, args...)...)
+		c := exec.Command("git", append([]string{"-c", "maintenance.auto=false", "-c", "gc.auto=0", "-C", source}, args...)...)
 		c.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "GIT_CONFIG_GLOBAL="+os.DevNull, "GIT_AUTHOR_NAME=Fixture", "GIT_AUTHOR_EMAIL=fixture@example.invalid", "GIT_COMMITTER_NAME=Fixture", "GIT_COMMITTER_EMAIL=fixture@example.invalid")
 		out, e := c.CombinedOutput()
 		if e != nil {
