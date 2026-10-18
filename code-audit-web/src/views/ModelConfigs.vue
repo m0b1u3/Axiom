@@ -41,6 +41,8 @@ const enabledFilter = ref("all");
 const enabledOptions = [{label:"全部状态",value:"all"},{label:"工作模型",value:"enabled"},{label:"未启用",value:"disabled"}];
 const showKey = ref(false);
 const loadError = ref("");
+const presetsError = ref("");
+const formError = ref("");
 const filtered = computed(() => items.value.filter(x => (enabledFilter.value === "all" || x.enabled === (enabledFilter.value === "enabled")) && (x.name+" "+x.provider+" "+x.model).toLowerCase().includes(keyword.value.trim().toLowerCase())));
 const dialogOpen = ref(false);
 const editing = ref(false);
@@ -49,6 +51,7 @@ const saving = ref(false);
 const enablingId = ref(0);
 
 const form = reactive({
+ sdkIdentityOnly:false,
   name: "",
   remark: "",
   provider: "",
@@ -79,6 +82,10 @@ const fetchedModelItems = computed(() => fetchedModels.value.map((m) => ({ key: 
 /* 「测试连接」：编辑走已存配置探测；新建用表单值拉一次模型列表作连通性探针 */
 async function probeConnection(): Promise<void> {
   if (probing.value) return;
+  if (form.sdkIdentityOnly) {
+    probeResult.value = { ok: false, msg: "此模型使用 SDK 执行身份。请在设置中查询绑定节点的 SDK 账户状态。" };
+    return;
+  }
   probing.value = true;
   probeResult.value = null;
   try {
@@ -158,8 +165,9 @@ async function fetchModelList(): Promise<void> {
   }
 }
 
+let loadAgain = false;
 async function load(): Promise<void> {
-  if (loading.value) return;
+  if (loading.value) { loadAgain = true; return; }
   loading.value = true;
   try {
     items.value = await api.listModelConfigs();
@@ -168,33 +176,38 @@ async function load(): Promise<void> {
     loadError.value = (error as Error).message;
   } finally {
     loading.value = false;
+    if (loadAgain) { loadAgain = false; void load(); }
   }
 }
 
 async function loadPresets(): Promise<void> {
+  presetsError.value = "";
   try {
     presets.value = await api.listModelProviders();
   } catch (error) {
-    message.error((error as Error).message);
+    presetsError.value = `模型供应商读取失败：${(error as Error).message}`;
   }
 }
 
 function openCreate(): void {
+  formError.value = "";
   showKey.value = false;
   editing.value = false;
   editingId.value = 0;
   editingKeyHint.value = "";
-  Object.assign(form, { name: "", remark: "", provider: "", websiteUrl: "", apiKey: "", baseUrl: "", model: "", wireApi: "" });
+  Object.assign(form, { sdkIdentityOnly:false,name: "", remark: "", provider: "", websiteUrl: "", apiKey: "", baseUrl: "", model: "", wireApi: "" });
   fetchedModels.value = [];
   probeResult.value = null;
   dialogOpen.value = true;
 }
 
 function openEdit(row: ModelConfig): void {
+  formError.value = "";
   showKey.value = false;
   editing.value = true;
   editingId.value = row.id;
   editingKeyHint.value = row.apiKeyHint ?? "";
+ form.sdkIdentityOnly=!!row.sdkIdentityOnly;
   Object.assign(form, {
     name: row.name,
     remark: row.remark ?? "",
@@ -211,22 +224,24 @@ function openEdit(row: ModelConfig): void {
 }
 
 async function save(): Promise<void> {
-  if (saving.value) return;
+  if (!canAdmin.value || saving.value) return;
+  formError.value = "";
   if (!form.provider) {
-    message.warning("请选择供应商");
+    formError.value = "请选择供应商。";
     return;
   }
-  if (!form.name.trim() || !form.model.trim() || (!editing.value && !form.apiKey)) {
-    message.warning("名称、型号必填；新建需要 API Key");
+  if (!form.name.trim() || !form.model.trim() || (!editing.value && !form.apiKey && !form.sdkIdentityOnly)) {
+    formError.value = "名称、型号必填；新建需提供 API Key 或选择 SDK 执行身份。";
     return;
   }
   if (form.provider !== "openai" && !form.baseUrl.trim()) {
-    message.warning("请填写 Base URL");
+    formError.value = "请填写 Base URL。";
     return;
   }
   saving.value = true;
   try {
     const payload: ModelConfigPayload = {
+ ...(!editing.value&&form.sdkIdentityOnly?{sdkIdentityOnly:true}:{}),
       name: form.name.trim(),
       provider: form.provider,
       baseUrl: form.baseUrl.trim(),
@@ -244,7 +259,7 @@ async function save(): Promise<void> {
     dialogOpen.value = false;
     await load();
   } catch (error) {
-    message.error((error as Error).message);
+    formError.value = `模型配置保存失败：${(error as Error).message}`;
   } finally {
     saving.value = false;
   }
@@ -252,7 +267,7 @@ async function save(): Promise<void> {
 
 /* 启用开关：开 = 设为工作模型（独占）；关 = 停用默认模型 */
 async function toggleEnable(row: ModelConfig, enabled: boolean): Promise<void> {
-  if (row.enabled === enabled) return;
+  if (!canAdmin.value || enablingId.value || row.enabled === enabled) return;
   enablingId.value = row.id;
   try {
     await api.enableModelConfig(row.id, enabled);
@@ -310,7 +325,8 @@ const columns: ColumnDef<ModelConfig>[] = [
             h(Switch, {
               checked: r.enabled,
               size: "sm",
-              disabled: enablingId.value === r.id,
+              "aria-label": `设为工作模型 ${r.name}`,
+              disabled: enablingId.value !== 0,
               onChange: (v: boolean) => void toggleEnable(r, v),
             }),
           ],
@@ -346,9 +362,11 @@ onMounted(() => {
 
     <div class="model-summary"><span>{{items.length}} 个模型配置</span><span>{{items.filter(x=>x.enabled).length}} 个工作模型</span><small>启用一个工作模型，作为新建扫描的默认配置</small></div>
     <div v-if="loadError" class="request-error" role="alert"><span>{{loadError}}</span><Button variant="outline" size="sm" @click="load">重试</Button></div>
+    <div v-if="presetsError" class="request-error" role="alert"><span>{{presetsError}}</span><Button variant="outline" size="sm" @click="loadPresets">重新读取供应商</Button></div>
     <div class="model-toolbar"><Search :size="14"/><Input v-model="keyword" placeholder="搜索模型名称、供应商或型号…" aria-label="搜索模型配置"/><Select v-model="enabledFilter" :options="enabledOptions" aria-label="筛选模型状态" class="model-status-filter"/></div>
     <DataTable
       :loading="loading"
+      :unavailable="!!loadError"
       :data="filtered"
       :columns="columns"
       :empty-title="items.length ? '没有匹配的模型' : '还没有模型配置'"
@@ -362,6 +380,7 @@ onMounted(() => {
       width="760px"
     >
       <div class="dlg">
+        <p v-if="formError" class="request-error full" role="alert">{{formError}}</p>
         <div v-if="!editing" class="provider-label">模型供应商</div>
         <div v-if="!editing" class="providers">
           <button
@@ -390,7 +409,8 @@ onMounted(() => {
           <span class="hint">用于在应用中标识该模型配置。</span>
         </label>
 
-        <label class="field">
+        <label v-if="!editing&&form.provider==='openai'" class="field full"><span><input type="checkbox" v-model="form.sdkIdentityOnly" @change="form.apiKey=''"/> 扫描时使用 SDK 执行身份提供凭据</span><span class="hint">模型只保存型号和原生端点；创建扫描时必须另选已认证身份。</span></label>
+        <label v-if="!form.sdkIdentityOnly||editing" class="field">
           <span class="lab">API Key <button type="button" class="key-toggle" :aria-label="showKey?'隐藏 API Key':'显示 API Key'" @click="showKey=!showKey"><EyeOff v-if="showKey" :size="14"/><Eye v-else :size="14"/></button></span>
           <div class="inbox">
             <Input
@@ -412,11 +432,12 @@ onMounted(() => {
               placeholder="https://api.example.com/v1"
               :disabled="form.provider === 'openai'"
             />
-            <button type="button" class="inbox-btn" :disabled="probing" @click="probeConnection">
+            <button v-if="!form.sdkIdentityOnly" type="button" class="inbox-btn" :disabled="probing" @click="probeConnection">
               {{ probing ? "测试中…" : editing ? "测试已存配置" : "测试连接" }}
             </button>
           </div>
-          <span v-if="probeResult" class="hint" :class="{ ok: probeResult.ok, err: !probeResult.ok }">{{ probeResult.msg }}</span>
+          <span v-if="probeResult" class="hint" :role="probeResult.ok ? 'status' : 'alert'" :class="{ ok: probeResult.ok, err: !probeResult.ok }">{{ probeResult.msg }}</span>
+          <span v-else-if="form.sdkIdentityOnly" class="hint">凭据在绑定 Agent 上管理；请到设置中的 SDK 执行身份查询账户状态。</span>
           <span v-else class="hint">填写模型服务的接口地址。</span>
         </label>
 

@@ -40,7 +40,9 @@ func (s *Server) claimObservationExecution(w http.ResponseWriter, r *http.Reques
 		executionError(w, 400, "invalid_input", "invalid execution observation capabilities")
 		return
 	}
-	t, e := s.Store.ClaimExecutionWithObservations(r.Context(), v.AgentID, s.storageClaimLimits(r.Context()), v.InputCapabilities, v.ResultCapabilities, v.ObservationCapabilities)
+	limits := s.storageClaimLimits(r.Context())
+	limits.SDKIdentityCapable = v.SDKIdentityVersion == 1
+	t, e := s.Store.ClaimExecutionWithObservations(r.Context(), v.AgentID, limits, v.InputCapabilities, v.ResultCapabilities, v.ObservationCapabilities)
 	if e != nil {
 		executionError(w, 503, "provider_unavailable", "queue temporarily unavailable")
 		return
@@ -56,7 +58,23 @@ func (s *Server) claimObservationExecution(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	w.Header().Set("Cache-Control", "no-store")
-	httputil.OK(w, control.ObservationLease{ContractLease: control.ContractLease{InputLease: lease, ResultContractVersion: t.ResultContractVersion}, ObservationContractVersion: t.ObservationContractVersion})
+	out := control.ObservationLease{InputContractVersion: t.InputContractVersion, ContractLease: control.ContractLease{InputLease: lease, ResultContractVersion: t.ResultContractVersion}, ObservationContractVersion: t.ObservationContractVersion}
+	if t.ScanInput != nil {
+		out.ScanInput = &contracts.ScanInputAssignment{SchemaVersion: contracts.ScanInputVersion, Execution: lease.Assignment.Execution, Input: *t.ScanInput, ParentState: contracts.Optional[contracts.SDKParentState]{Present: t.ParentState != nil}}
+		if t.ParentState != nil {
+			out.ScanInput.ParentState = contracts.Some(*t.ParentState)
+		}
+	}
+	if t.GitTarget != nil {
+		out.GitDiff = &contracts.GitDiffAssignment{SchemaVersion: 1, Execution: lease.Assignment.Execution, SourceSnapshotID: lease.Assignment.Source.SnapshotID, SourceContentHash: lease.Assignment.Source.ContentHash, Target: *t.GitTarget, EvidenceRevision: "head"}
+	}
+	if t.SDKIdentity != nil {
+		out.SDKIdentity = &contracts.SDKTaskIdentity{SchemaVersion: 1, Execution: lease.Assignment.Execution, Identity: *t.SDKIdentity}
+	}
+	out.ComponentScan = t.ComponentScan
+	out.ComponentPlanning = t.ComponentPlanning
+	out.SDKOperation = t.SDKOperation
+	httputil.OK(w, out)
 }
 func (s *Server) heartbeatObservationExecution(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()

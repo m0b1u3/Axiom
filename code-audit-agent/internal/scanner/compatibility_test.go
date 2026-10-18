@@ -7,7 +7,7 @@ import (
 )
 
 func TestDescriptionProjectionUsesDeclaredVersions(t *testing.T) {
-	for version := 1; version <= 4; version++ {
+	for version := 1; version <= 8; version++ {
 		file := "../../../contracts/fixtures/v1/scanner-description.json"
 		if version > 1 {
 			file = "../../../contracts/fixtures/v1/scanner-description-v" + string(rune('0'+version)) + ".json"
@@ -22,6 +22,9 @@ func TestDescriptionProjectionUsesDeclaredVersions(t *testing.T) {
 		c, e := parseDescription(raw)
 		if e != nil {
 			t.Fatal(e)
+		}
+		if supportsScanInput(c) != (version >= 5) {
+			t.Fatal("advanced input capability invented or lost", version, c)
 		}
 		if c.DescriptionVersion != version {
 			t.Fatal(c)
@@ -43,7 +46,7 @@ func TestDescriptionProjectionUsesDeclaredVersions(t *testing.T) {
 	if e == nil && c.Observation.SupportsObservation(1) {
 		t.Fatal("description v4 invented observation support")
 	}
-	d["schemaVersion"] = 5
+	d["schemaVersion"] = 10
 	changed, _ = json.Marshal(d)
 	if _, e = parseDescription(changed); e == nil {
 		t.Fatal("future description accepted")

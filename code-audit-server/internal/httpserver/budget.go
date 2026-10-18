@@ -37,6 +37,10 @@ func (s *Server) updateTaskBudget(w http.ResponseWriter, r *http.Request, u *sto
 		httputil.Error(w, 400, 40000, "任务 ID 无效")
 		return
 	}
+	if task, e := s.Store.Get(r.Context(), id); e == nil && (task.SDKOperation != nil || task.ComponentPlanning != nil) {
+		httputil.Error(w, 409, 40900, "此 SDK 操作不支持任务费用上限；费用可单独核对")
+		return
+	}
 	var body struct {
 		MaxTotalCostUSD float64 `json:"maxTotalCostUsd"`
 		Revision        int64   `json:"revision"`

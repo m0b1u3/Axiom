@@ -103,13 +103,22 @@ func HashArchiveIn(input io.Reader, limits Limits, directory string) (tmpPath, s
 // 任何条目违规（逃逸 / 符号链接 / 超限）→ 直接失败并删除半成品。
 // 完成后目录即不可变快照，禁止再次写入。
 func ExtractArchive(tmpPath, originalFilename, destDir string, limits Limits) (*Result, error) {
+	return ExtractArchiveContext(context.Background(), tmpPath, originalFilename, destDir, limits)
+}
+
+// ExtractArchiveContext adds cancellation without changing historical archive
+// identity or the existing upload entry point.
+func ExtractArchiveContext(ctx context.Context, tmpPath, originalFilename, destDir string, limits Limits) (*Result, error) {
+	if e := ctx.Err(); e != nil {
+		return nil, e
+	}
 	if !IsSupportedArchive(originalFilename) {
 		return nil, fmt.Errorf("unsupported archive type: %s (only .zip / .tar.gz / .tgz)", originalFilename)
 	}
 	if err := os.MkdirAll(destDir, 0o700); err != nil {
 		return nil, err
 	}
-	state := &extractState{limits: limits}
+	state := &extractState{limits: limits, ctx: ctx}
 
 	var err error
 	switch {
@@ -122,7 +131,7 @@ func ExtractArchive(tmpPath, originalFilename, destDir string, limits Limits) (*
 		_ = os.RemoveAll(destDir)
 		return nil, err
 	}
-	contentHash, count, size, err := treeHash(destDir)
+	contentHash, count, size, err := sourceidentity.TreeHash(ctx, destDir)
 	if err != nil {
 		_ = os.RemoveAll(destDir)
 		return nil, err
@@ -136,10 +145,25 @@ func ExtractArchive(tmpPath, originalFilename, destDir string, limits Limits) (*
 }
 
 type extractState struct {
+	ctx            context.Context
 	limits         Limits
 	files          int
 	totalSize      int64
 	compressedSize int64
+}
+
+type contextReader struct {
+	ctx    context.Context
+	reader io.Reader
+}
+
+func (r contextReader) Read(p []byte) (int, error) {
+	if r.ctx != nil {
+		if e := r.ctx.Err(); e != nil {
+			return 0, e
+		}
+	}
+	return r.reader.Read(p)
 }
 
 // sanitize 返回规范化后的相对路径（正斜杠），空串表示目录可跳过。
@@ -185,6 +209,11 @@ func sanitize(name string) (string, error) {
 func isLetter(b byte) bool { return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z') }
 
 func (s *extractState) entry(fileSize, compressedSize int64) error {
+	if s.ctx != nil {
+		if e := s.ctx.Err(); e != nil {
+			return e
+		}
+	}
 	s.files++
 	if s.files > s.limits.MaxFiles {
 		return fmt.Errorf("more than %d files in archive", s.limits.MaxFiles)
@@ -333,7 +362,7 @@ func extractZip(tmpPath, destDir string, state *extractState) error {
 		if err != nil {
 			return fmt.Errorf("open entry %s: %w", fh.Name, err)
 		}
-		err = writeEntry(destDir, rel, rc, int64(fh.UncompressedSize64), &budget, seenFiles, seenDirs)
+		err = writeEntry(destDir, rel, contextReader{state.ctx, rc}, int64(fh.UncompressedSize64), &budget, seenFiles, seenDirs)
 		_ = rc.Close()
 		if err != nil {
 			return err
@@ -396,7 +425,7 @@ func extractTarGz(tmpPath, destDir string, state *extractState) error {
 		if err := state.entry(hdr.Size, 0); err != nil {
 			return err
 		}
-		if err := writeEntry(destDir, rel, tr, hdr.Size, &budget, seenFiles, seenDirs); err != nil {
+		if err := writeEntry(destDir, rel, contextReader{state.ctx, tr}, hdr.Size, &budget, seenFiles, seenDirs); err != nil {
 			return err
 		}
 	}

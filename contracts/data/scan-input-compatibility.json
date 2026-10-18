@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "jobVersion": 4,
+  "descriptionVersion": 5,
+  "controlAPI": 4,
+  "baseContracts": {
+    "input": 1,
+    "result": 1,
+    "observation": 1
+  },
+  "knowledgeMaxDocuments": 8,
+  "knowledgeDocumentMaxBytes": 65536,
+  "capability": "observationCapabilities.jobVersions includes 4",
+  "history": "preserve base contracts and frozen document contents",
+  "inputVersion": 2
+}

@@ -97,6 +97,13 @@ func (s *Store) HeartbeatContractExecution(ctx context.Context, h contracts.Exec
 		return out, e
 	}
 	if out.Accepted {
+		state, e := componentProgress(h.Progress)
+		if e != nil {
+			return out, ErrInvalidProgress
+		}
+		if e = s.recordComponentSnapshot(ctx, tx, id, h.Execution.Attempt, state); e != nil {
+			return out, e
+		}
 		if e = s.recordProgressCost(ctx, tx, id, h.Execution.Attempt, h.Progress); e != nil {
 			return out, e
 		}

@@ -14,7 +14,7 @@ import Button from "../components/ui/Button.vue";
 import Input from "../components/ui/Input.vue";
 import Tooltip from "../components/ui/Tooltip.vue";
 import { message } from "../lib/toast";
-import { confirm } from "../components/ui/confirm";
+import ResourceCleanupDialog from "../components/ResourceCleanupDialog.vue";
 import { relativeTime, absoluteTime } from "../utils/time";
 
 import QueueCapacity from '../components/QueueCapacity.vue';
@@ -77,17 +77,9 @@ async function load(manual = false): Promise<void> {
   }
 }
 
-async function removeScan(s: ScanTask): Promise<void> {
-  const ok = await confirm({ title: "删除扫描", body: `确定删除 ${s.scanNo}？` });
-  if (!ok) return;
-  try {
-    await api.deleteScan(s.id);
-    message.success("已删除");
-    await load();
-  } catch (error) {
-    message.error((error as Error).message);
-  }
-}
+const cleanupOpen = ref(false), cleanupTask = ref(0);
+function removeScan(s: ScanTask): void { cleanupTask.value = s.id; cleanupOpen.value = true; }
+async function scanDeleted(): Promise<void> { message.success("已删除扫描与产物"); await load(); }
 
 function sourceLabel(task: ScanTask): string {
   const segs = task.sourcePath.split(/[\\/]/).filter(Boolean);
@@ -105,7 +97,7 @@ const columns: ColumnDef<ScanTask>[] = [
     header: "扫描任务编号",
     size: 190,
     cell: (c) =>
-      h("span", { class: "mono", style: { fontWeight: 600, color: "var(--accent-primary)" } }, c.getValue<string>()),
+      h("span", { class: "mono", style: { fontWeight: 600, color: "var(--accent-primary)" } }, (c.row.original.sdkOperationKind==='preflight'?'SDK 预检 · ':c.row.original.sdkOperationKind==='validate'?'SDK 复核 · ':c.row.original.sdkOperationKind==='component_normalize'?'组件校验 · ':c.row.original.sdkOperationKind==='component_suggest'?'组件建议 · ':'')+c.getValue<string>()),
   },
   {
     id: "project",
@@ -192,6 +184,7 @@ const columns: ColumnDef<ScanTask>[] = [
           "button",
           {
             class: "op-btn",
+            "aria-label": `删除扫描 ${s.scanNo}`,
             onClick: (e: Event) => {
               e.stopPropagation();
               void removeScan(s);
@@ -241,7 +234,7 @@ onUnmounted(() => {
         </Button>
       </div>
       <div class="toolbar-right">
-        <Input v-model="keyword" class="search" placeholder="搜索扫描 / 源码 / 模型…" />
+        <Input v-model="keyword" class="search" aria-label="搜索扫描任务" placeholder="搜索扫描 / 源码 / 模型…" />
         <Button variant="secondary" size="icon" title="刷新扫描任务" aria-label="刷新扫描任务" :loading="refreshing" @click="load(true)">
           <RefreshCw :size="13" />
         </Button>
@@ -251,10 +244,11 @@ onUnmounted(() => {
     <DataTable
       :row-key="(scan: ScanTask) => String(scan.id)"
       :loading="loading"
+      :unavailable="!!loadError"
       :data="filtered"
       :columns="columns"
       :row-click="(s) => router.push({ name: 'scan-detail', params: { id: s.id } })"
-      :empty-title="scans.length ? '没有匹配的扫描任务' : '还没有扫描任务'"
+      :empty-title="keyword.trim() || statusFilter ? '没有匹配的扫描任务' : '还没有扫描任务'"
       empty-hint="从项目或本地快照发起新扫描"
     />
     <nav class="toolbar" aria-label="扫描任务分页">
@@ -264,6 +258,7 @@ onUnmounted(() => {
         <Button variant="outline" size="sm" :disabled="page * 50 >= total || fetching" @click="page++">下一页</Button>
       </div>
     </nav>
+    <ResourceCleanupDialog v-model:open="cleanupOpen" kind="scan" :resource-id="cleanupTask" @completed="scanDeleted" />
   </div>
 </template>
 

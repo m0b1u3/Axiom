@@ -11,6 +11,10 @@ import (
 // Only the Server's persistence boundary makes a searchable projection. Agent
 // sends the entire generated DTO without copying SDK finding fields.
 func (s *Store) CompleteContractExecution(ctx context.Context, full contracts.ExecutionCompletion) error {
+	return s.completeContractExecution(ctx, full, nil)
+}
+
+func (s *Store) completeContractExecution(ctx context.Context, full contracts.ExecutionCompletion, recovery *resultRecovery) error {
 	raw, err := contracts.EncodeJSON(full)
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalidResult, err)
@@ -26,7 +30,22 @@ func (s *Store) CompleteContractExecution(ctx context.Context, full contracts.Ex
 	if err != nil {
 		return ErrInvalidResult
 	}
-	c := Completion{LeaseRef: LeaseRef{TaskID: id, Attempt: int(full.Execution.Attempt), AgentID: string(full.AgentID)}, Status: string(full.ExecutionStatus), contract: &full, Findings: []Finding{}}
+	if err := s.validateIdentityResult(ctx, id, full); err != nil {
+		return err
+	}
+	if err := s.validateComponentScanCompletion(ctx, id, full); err != nil {
+		return err
+	}
+	if err := s.validateComponentCompletion(ctx, id, full); err != nil {
+		return err
+	}
+	if err := s.validateOperationCompletion(ctx, id, full); err != nil {
+		return err
+	}
+	if err := s.validateGitCompletion(ctx, id, full); err != nil {
+		return err
+	}
+	c := Completion{LeaseRef: LeaseRef{TaskID: id, Attempt: int(full.Execution.Attempt), AgentID: string(full.AgentID)}, Status: string(full.ExecutionStatus), contract: &full, Findings: []Finding{}, recovery: recovery}
 	if full.Error.Present {
 		c.ErrorCode = string(full.Error.Value.Code)
 		c.ErrorMessage = full.Error.Value.Message

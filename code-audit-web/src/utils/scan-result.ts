@@ -10,6 +10,7 @@ export function reportedModel(sdk:JsonValue|undefined):string{
 }
 export function processMismatch(completion:ExecutionCompletion|null|undefined):boolean{
   if(!completion?.result)return false;
+  if(completion.process.code==null&&completion.process.signal==null)return false;
   const codes={completed:0,partial:2,failed:2,canceled:7,timeout:8};
   return completion.process.signal!=null || completion.process.code!==codes[completion.result.status];
 }

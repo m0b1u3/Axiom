@@ -46,7 +46,7 @@ func inputPipelineStore(t *testing.T) *store.Store {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { s.Close() })
-	if _, err = db.ExecContext(t.Context(), "TRUNCATE storage_cleanup_jobs,storage_settings,auth_sessions,login_limits,operation_audits,execution_settings,execution_setting_changes,execution_agents,scan_attempts,findings,scan_tasks,source_snapshots,model_configs,projects,users RESTART IDENTITY CASCADE"); err != nil {
+	if _, err = db.ExecContext(t.Context(), "TRUNCATE sdk_identities,knowledge_versions,knowledge_documents,storage_cleanup_jobs,storage_settings,auth_sessions,login_limits,operation_audits,execution_settings,execution_setting_changes,execution_agents,scan_attempts,findings,scan_tasks,source_snapshots,model_configs,projects,users RESTART IDENTITY CASCADE"); err != nil {
 		t.Fatal(err)
 	}
 	return s
@@ -196,6 +196,9 @@ func TestInputPipelineToSDK(t *testing.T) {
 		})
 	}
 
+	t.Run("advanced-input-knowledge", func(t *testing.T) {
+		runKnowledgeInputAcceptance(t, s, agent, root, ts.URL, token, agentToken, scratch, snap.ID, encrypted)
+	})
 	runLegacyInputAcceptance(t, s, agent, root, ts.URL, agentToken, scratch, snap.ID, source, encrypted, fixtureKey)
 	resultIDs := map[string]int64{}
 	for _, scenario := range []string{"rich", "empty", "partial-empty", "failed", "canceled", "late-exit", "wrong-task", "wrong-attempt", "tampered", "no-commit", "bad-json", "oversized", "observations", "progress-io"} {
@@ -205,7 +208,11 @@ func TestInputPipelineToSDK(t *testing.T) {
 			if e != nil {
 				t.Fatal(e)
 			}
-			status, body := doJSON(t, ts.URL+"/api/v1/scans", token, map[string]any{"sourceSnapshotId": snap.ID, "modelConfigId": cfg.ID})
+			request := map[string]any{"sourceSnapshotId": snap.ID, "modelConfigId": cfg.ID}
+			if scenario == "observations" {
+				request["maxCostUsd"] = 1.25
+			}
+			status, body := doJSON(t, ts.URL+"/api/v1/scans", token, request)
 			if status != 200 {
 				t.Fatal(status, body)
 			}
@@ -233,16 +240,25 @@ func TestInputPipelineToSDK(t *testing.T) {
 		})
 	}
 
+	t.Run("sdk-operations", func(t *testing.T) {
+		runSDKOperationsAcceptance(t, s, agent, root, ts.URL, token, agentToken, scratch, snap.ID, encrypted)
+	})
+	t.Run("sdk-native", func(t *testing.T) {
+		runNativeSDKAcceptance(t, s, agent, root, ts.URL, token, agentToken, scratch, snap.ID, encrypted)
+	})
 	runDeliveryReliabilityAcceptance(t, s, api, agent, root, ts.URL, token, agentToken, scratch, snap.ID, encrypted)
 	runProcessReliabilityAcceptance(t, s, srv, agent, root, ts.URL, token, agentToken, scratch, snap.ID, encrypted)
 	if os.Getenv("AXIOM_TEST_WEB_INPUT") == "1" {
+		t.Run("browser-knowledge", func(t *testing.T) {
+			runKnowledgeWebAcceptance(t, s, agent, root, ts.URL, token, agentToken, scratch, snap.ID, encrypted)
+		})
 		t.Run("browser-progress", func(t *testing.T) {
 			t.Setenv("AXIOM_RESULT_TEST_SCENARIO", "observation-cancel")
 			cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture live progress", Provider: "openai", Model: "fixture-live-progress-model", ApiKeyEncrypted: encrypted})
 			if e != nil {
 				t.Fatal(e)
 			}
-			status, body := doJSON(t, ts.URL+"/api/v1/scans", token, map[string]any{"sourceSnapshotId": snap.ID, "modelConfigId": cfg.ID, "scanMode": "deep"})
+			status, body := doJSON(t, ts.URL+"/api/v1/scans", token, map[string]any{"sourceSnapshotId": snap.ID, "modelConfigId": cfg.ID, "scanMode": "deep", "maxCostUsd": 1.25})
 			if status != 200 {
 				t.Fatal(status, string(body))
 			}

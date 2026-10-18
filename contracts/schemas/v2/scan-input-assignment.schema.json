@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v2/scan-input-assignment.schema.json",
+  "title": "ScanInputAssignment",
+  "$ref": "#/$defs/ScanInputAssignment",
+  "$defs": {
+    "ScanInputAssignment": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 2
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "input": {
+          "$ref": "https://axiom.invalid/contracts/v1/scan-input.schema.json#/$defs/ScanInput"
+        },
+        "parentState": {
+          "$ref": "https://axiom.invalid/contracts/v1/sdk-parent-state.schema.json#/$defs/SDKParentState"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "input"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

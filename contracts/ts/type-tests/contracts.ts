@@ -22,3 +22,9 @@ const valid: Finding={fingerprint:'fixture',title:'fixture',severity:'info',desc
 // @ts-expect-error severity is an enum, not an arbitrary display string
 const invalid: Finding={fingerprint:'fixture',title:'fixture',severity:'urgent',description:'fixture'};
 void [ref,numeric,valid,invalid,narrow];
+const evidence=decode('FindingEvidence','{}');evidence.nodes[0]?.sourcePointer;
+const graph=decode('EvidenceGraph','{}');graph.execution.attempt;
+// @ts-expect-error evidence relations cannot pretend to be a real call graph
+graph.edges.push({kind:'calls'});
+// @ts-expect-error projected evidence does not contain SDK client objects
+graph.codexThread;

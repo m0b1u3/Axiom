@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v4/scanner-job.schema.json",
+  "title": "ScannerJobV4",
+  "$ref": "#/$defs/ScannerJobV4",
+  "$defs": {
+    "ScannerJobV4": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 4
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "source": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/LocalSource"
+        },
+        "output": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/LocalOutput"
+        },
+        "model": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ResolvedModel"
+        },
+        "policy": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ScanPolicy"
+        },
+        "resultSchemaVersion": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/SchemaVersion"
+        },
+        "progressSchemaVersion": {
+          "type": "integer",
+          "const": 2
+        },
+        "eventSchemaVersion": {
+          "type": "integer",
+          "const": 2
+        },
+        "scanInput": {
+          "$ref": "https://axiom.invalid/contracts/v1/scan-input.schema.json#/$defs/ScanInput"
+        },
+        "parentState": {
+          "$ref": "https://axiom.invalid/contracts/v1/sdk-parent-state.schema.json#/$defs/SDKParentState"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "source",
+        "output",
+        "model",
+        "policy",
+        "resultSchemaVersion",
+        "progressSchemaVersion",
+        "eventSchemaVersion",
+        "scanInput"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "policy": {
+                "properties": {
+                  "mode": {
+                    "const": "standard"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scanInput": {
+                "not": {
+                  "required": [
+                    "subagents"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "policy": {
+                "properties": {
+                  "mode": {
+                    "const": "deep"
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scanInput": {
+                "not": {
+                  "required": [
+                    "validationPrompt"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "policy": {
+                "properties": {
+                  "validation": {
+                    "properties": {
+                      "mode": {
+                        "const": "exploitability"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "scanInput": {
+                "not": {
+                  "required": [
+                    "validationPrompt"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

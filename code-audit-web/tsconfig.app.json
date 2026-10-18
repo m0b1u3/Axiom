@@ -29,6 +29,6 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.vue",
-    "../contracts/ts/src/types.gen.ts"
+    "../contracts/ts/src/**/*.ts"
   ]
 }

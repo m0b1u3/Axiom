@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "operationId": "91",
+  "identityId": "81",
+  "agentId": "fixture-input-agent",
+  "generation": 2,
+  "leaseToken": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "sequence": 1,
+  "status": "running",
+  "authenticated": null,
+  "instructions": null,
+  "error": null
+}

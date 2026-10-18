@@ -88,7 +88,7 @@ services:
     init: true
     read_only: true
     tmpfs: ["/tmp:uid=1001,gid=1001,mode=1777"]
-    # The SDK writes its own private state inside each /app/data attempt.
+    # SDK attempt state is private; persistent execution identities stay under /app/data/.sdk-identities.
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     healthcheck:

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 6,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "source": {
+    "path": "/fixture/source",
+    "snapshotId": "7",
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "output": {
+    "path": "/fixture/output/attempt-2"
+  },
+  "model": {
+    "providerId": "fixture-provider",
+    "connectionType": "openai_compatible",
+    "model": "fixture-model",
+    "baseUrl": "https://fixture.invalid/v1",
+    "wireApi": "responses",
+    "credentialEnv": "FIXTURE_API_KEY",
+    "configurationRevision": "fixture-revision-1"
+  },
+  "policy": {
+    "mode": "deep",
+    "timeBudget": {
+      "scanSeconds": 1800,
+      "finalizationGraceSeconds": 0
+    },
+    "includePaths": [],
+    "focus": [
+      "authz"
+    ],
+    "validation": {
+      "mode": "default"
+    },
+    "maxCostUsd": 5
+  },
+  "resultSchemaVersion": 1,
+  "progressSchemaVersion": 2,
+  "eventSchemaVersion": 2,
+  "scanInput": {
+    "schemaVersion": 1,
+    "knowledge": []
+  },
+  "gitTarget": {
+    "schemaVersion": 1,
+    "kind": "refs",
+    "objectFormat": "sha1",
+    "baseCommit": "1111111111111111111111111111111111111111",
+    "headCommit": "2222222222222222222222222222222222222222",
+    "baseTree": "3333333333333333333333333333333333333333",
+    "headTree": "4444444444444444444444444444444444444444",
+    "diffSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+    "headContentHash": "6666666666666666666666666666666666666666666666666666666666666666"
+  }
+}

@@ -22,24 +22,29 @@ import (
 )
 
 type createScanRequest struct {
-	SourcePath           string   `json:"sourcePath"`
-	SourceSnapshotID     int64    `json:"sourceSnapshotId"`
-	ModelConfigID        int64    `json:"modelConfigId"`
-	ProjectID            int64    `json:"projectId"`
-	Provider             string   `json:"provider"`
-	Model                string   `json:"model"`
-	BaseURL              string   `json:"baseUrl"`
-	ScanMode             string   `json:"scanMode"`
-	IncludePaths         []string `json:"includePaths"`
-	ScanFocus            []string `json:"scanFocus"`
-	ValidationMode       string   `json:"validationMode"`
-	BusinessContext      string   `json:"businessContext"`
-	TimeoutMinutes       int      `json:"timeoutMinutes"`
-	DeepMaxDiscoveryRuns int      `json:"deepMaxDiscoveryRuns"`
-	DeepStopAfterNoNew   int      `json:"deepStopAfterNoNew"`
-	MaxCostUSD           *float64 `json:"maxCostUsd"`
-	MaxTotalCostUSD      *float64 `json:"maxTotalCostUsd"`
-	Workers              *int     `json:"workers"`
+	SDKIdentityID        string               `json:"sdkIdentityId"`
+	Operation            string               `json:"operation"`
+	ParentTaskID         int64                `json:"parentTaskId"`
+	ScanInput            *contracts.ScanInput `json:"scanInput"`
+	KnowledgeVersionIDs  []int64              `json:"knowledgeVersionIds"`
+	SourcePath           string               `json:"sourcePath"`
+	SourceSnapshotID     int64                `json:"sourceSnapshotId"`
+	ModelConfigID        int64                `json:"modelConfigId"`
+	ProjectID            int64                `json:"projectId"`
+	Provider             string               `json:"provider"`
+	Model                string               `json:"model"`
+	BaseURL              string               `json:"baseUrl"`
+	ScanMode             string               `json:"scanMode"`
+	IncludePaths         []string             `json:"includePaths"`
+	ScanFocus            []string             `json:"scanFocus"`
+	ValidationMode       string               `json:"validationMode"`
+	BusinessContext      string               `json:"businessContext"`
+	TimeoutMinutes       int                  `json:"timeoutMinutes"`
+	DeepMaxDiscoveryRuns int                  `json:"deepMaxDiscoveryRuns"`
+	DeepStopAfterNoNew   int                  `json:"deepStopAfterNoNew"`
+	MaxCostUSD           *float64             `json:"maxCostUsd"`
+	MaxTotalCostUSD      *float64             `json:"maxTotalCostUsd"`
+	Workers              *int                 `json:"workers"`
 }
 
 func decodeScanRequest(w http.ResponseWriter, r *http.Request) (createScanRequest, error) {
@@ -188,6 +193,9 @@ func resolveModel(v createScanRequest, cfg *store.ModelConfigRow) (contracts.Res
 }
 
 func (s *Server) prepareScan(r *http.Request, v createScanRequest) (store.Task, error) {
+	if v.Operation != "" && v.Operation != "preflight" {
+		return store.Task{}, errors.New("此入口只支持原生预检或扫描")
+	}
 	if v.SourceSnapshotID < 0 || v.ModelConfigID < 0 || v.ProjectID < 0 {
 		return store.Task{}, errors.New("项目、快照和模型配置编号必须是正整数")
 	}
@@ -209,6 +217,9 @@ func (s *Server) prepareScan(r *http.Request, v createScanRequest) (store.Task, 
 	}
 	if cfg != nil {
 		v.ModelConfigID = cfg.ID
+		if cfg.ApiKeyEncrypted == "" && v.SDKIdentityID == "" {
+			return store.Task{}, errors.New("此模型需要选择已认证的 SDK 执行身份")
+		}
 	}
 	m, err := resolveModel(v, cfg)
 	if err != nil {
@@ -246,6 +257,65 @@ func (s *Server) prepareScan(r *http.Request, v createScanRequest) (store.Task, 
 			return t, errors.New("项目不存在")
 		}
 	}
+	if v.ScanInput != nil || len(v.KnowledgeVersionIDs) > 0 || v.ParentTaskID != 0 {
+		if t.SourceSnapshotID <= 0 {
+			return t, errors.New("高级输入与知识文档需要不可变代码快照")
+		}
+		input := v.ScanInput
+		if input == nil {
+			input = &contracts.ScanInput{SchemaVersion: 1, Knowledge: []contracts.KnowledgeDocument{}}
+		}
+		if len(input.Knowledge) != 0 {
+			return t, errors.New("知识文档只能引用 Web 管理的文档版本，不能直接传入正文")
+		}
+		if v.ParentTaskID < 0 {
+			return t, errors.New("父扫描任务编号无效")
+		}
+		if v.ParentTaskID > 0 {
+			state, parent, e := s.loadParentState(r, v.ParentTaskID)
+			if e != nil {
+				return t, e
+			}
+			if parent.SourceSnapshotID != t.SourceSnapshotID || state.SourceHash != t.SourceContentHash {
+				return t, errors.New("父扫描必须引用同一份不可变源码快照")
+			}
+			if input.ParentScanID.Present && input.ParentScanID.Value != state.ScanID {
+				return t, errors.New("父 SDK Scan ID 与选定父任务不匹配")
+			}
+			if input.WorkflowID.Present && parent.ScanInput != nil && parent.ScanInput.WorkflowID.Present && input.WorkflowID.Value == parent.ScanInput.WorkflowID.Value {
+				return t, errors.New("新扫描需要使用与父任务不同的 SDK 工作流 ID")
+			}
+			input.ParentScanID = contracts.Some(state.ScanID)
+			t.ParentState = state
+		} else if input.ParentScanID.Present {
+			return t, errors.New("父 SDK Scan ID 需要通过 Web 选择有效的父扫描任务")
+		}
+		input.Knowledge, err = s.Store.ResolveKnowledge(r.Context(), v.KnowledgeVersionIDs)
+		if err != nil {
+			return t, err
+		}
+		if err = store.ValidateScanInput(input, t.ScanMode, t.ValidationMode); err != nil {
+			return t, err
+		}
+		t.ScanInput = input
+		t.InputContractVersion = contracts.ScanInputVersion
+	}
+	if t.SourceSnapshotID > 0 {
+		target, e := s.Store.GitSnapshotTarget(r.Context(), t.SourceSnapshotID)
+		if e != nil {
+			return t, errors.New("Git 快照元数据不可读取")
+		}
+		if target != nil {
+			if p.Mode != "standard" || len(p.IncludePaths) != 0 {
+				return t, errors.New("Git 提交差异只支持标准扫描，不能叠加路径范围")
+			}
+			t.GitTarget = target
+			t.InputContractVersion = contracts.GitDiffInputVersion
+			if t.ScanInput == nil {
+				t.ScanInput = &contracts.ScanInput{SchemaVersion: 1, Knowledge: []contracts.KnowledgeDocument{}}
+			}
+		}
+	}
 	modelJSON, _ := json.Marshal(m)
 	policyJSON, _ := json.Marshal(p)
 	includeJSON, _ := json.Marshal(p.IncludePaths)
@@ -253,6 +323,21 @@ func (s *Server) prepareScan(r *http.Request, v createScanRequest) (store.Task, 
 	t.ModelSnapshotJSON, t.PolicySnapshotJSON, t.IncludePaths, t.ScanFocus = string(modelJSON), string(policyJSON), string(includeJSON), string(focusJSON)
 	if cfg != nil {
 		t.CredentialSnapshotEncrypted = cfg.ApiKeyEncrypted
+	}
+	if v.SDKIdentityID != "" {
+		identityID, err := strconv.ParseInt(v.SDKIdentityID, 10, 64)
+		if err != nil || identityID < 1 {
+			return t, store.ErrSDKIdentity
+		}
+		if t.SourceSnapshotID <= 0 || m.ProviderID != "openai" || m.ConnectionType != "openai" || (m.BaseURL.Present && m.BaseURL.Value != "https://api.openai.com/v1") || m.WireAPI != "responses" {
+			return t, errors.New("SDK 执行身份仅用于不可变源码的原生 OpenAI Responses 模型，请选择配套模型配置")
+		}
+		identity, e := s.Store.SDKIdentity(r.Context(), identityID)
+		if e != nil || identity.State != "authenticated" || identity.Authenticated == nil || !*identity.Authenticated || identity.CleanupPending {
+			return t, store.ErrSDKIdentity
+		}
+		t.SDKIdentity = &identity.Identity
+		t.CredentialSnapshotEncrypted = ""
 	}
 	return t, nil
 }

@@ -13,14 +13,14 @@ import stat
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
-ROOT_FILES = {".dockerignore", ".gitignore", "AGENTS.md", "README.md", "LICENSE", "NOTICE",
+ROOT_FILES = {".dockerignore", ".gitignore", ".gitattributes", "AGENTS.md", "README.md", "LICENSE", "NOTICE",
               "CONTRIBUTING.md", "SECURITY.md", "CHANGELOG.md", "VERSION", "DESIGN.md",
               "FRONTEND_DELIVERY.md", "PRODUCT.md", "api.md"}
 SOURCE_DIRS = {".github", "code-audit-agent", "code-audit-server", "code-audit-scanner",
                "code-audit-web", "contracts", "shared", "deploy", "docs", "design", "test-fixtures"}
-OMIT_DIRS = {".git", ".agents", ".codex", "node_modules", ".dist", "m0-out", "output",
+OMIT_DIRS = {".git", ".agents", ".codex", ".sdk-identities", ".playwright-cli", "node_modules", ".dist", "m0-out", "output",
              "__pycache__", "bin", "backups"}
-OMIT_SUFFIXES = {".env", ".db", ".sqlite", ".sqlite3", ".log", ".pem", ".key", ".pyc", ".tsbuildinfo"}
+OMIT_SUFFIXES = {".env", ".db", ".sqlite", ".sqlite3", ".dump", ".log", ".pem", ".key", ".p12", ".pfx", ".pyc", ".tsbuildinfo"}
 MANIFEST = "SOURCE_MANIFEST.json"
 
 
@@ -44,8 +44,8 @@ def excluded(relative):
     if name in {".env.example", ".env.production.example"}:
         return False
     return (name == ".env" or name.startswith(".env.") or relative.suffix in OMIT_SUFFIXES
-            or name.endswith((".db-shm", ".db-wal", ".sqlite3-shm", ".sqlite3-wal"))
-            or name in {"database.dump", "data.tar.gz", "auth.json", ".npmrc", ".netrc"})
+            or name.endswith((".db-shm", ".db-wal", ".sqlite-shm", ".sqlite-wal", ".sqlite3-shm", ".sqlite3-wal"))
+            or name in {"database.dump", "data.tar.gz", "auth.json", ".npmrc", ".netrc", "id_rsa", "id_ed25519"})
 
 
 def selected_files(root):

@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "17",
+    "attempt": 1
+  },
+  "observedAt": "2026-10-16T01:00:00Z",
+  "taskStatus": "failed",
+  "sdkVersion": "0.1.25",
+  "checkpointResume": {
+    "supported": true,
+    "reason": "SDK 0.1.25 has no interrupted-scan resume entry point."
+  },
+  "committedResult": {
+    "state": "recoverable",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "reason": "A complete committed result can be restored without model calls."
+  },
+  "restart": {
+    "allowed": true,
+    "reason": "A new execution can repeat model work."
+  },
+  "recovery": null,
+  "interruption": {
+    "allowed": false,
+    "reason": "Execution is already terminal."
+  }
+}

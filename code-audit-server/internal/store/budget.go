@@ -308,6 +308,21 @@ func (s *Store) recordProgressCost(ctx context.Context, tx *transaction, id int6
 	return e
 }
 func (s *Store) recordFinalCost(ctx context.Context, tx *transaction, c Completion) error {
+	// Component results can have known per-component lower bounds while matching
+	// has no fee API. Book those observations even if the final heartbeat was lost.
+	if c.contract != nil && c.contract.Result.Present && c.contract.Result.Value.Extensions.Present {
+		if raw := c.contract.Result.Value.Extensions.Value["componentScan"]; raw != nil {
+			v, e := contracts.DecodeComponentScanResult(raw, &c.contract.Execution)
+			if e != nil {
+				return ErrInvalidResult
+			}
+			lower := v.Snapshot.ObservedMicros
+			if _, e = tx.ExecContext(ctx, `UPDATE task_cost_attempts SET observed_micros=CASE WHEN observed_micros IS NULL OR observed_micros<? THEN ? ELSE observed_micros END,booked_micros=CASE WHEN booked_micros IS NULL OR booked_micros<? THEN ? ELSE booked_micros END,source='sdk_progress' WHERE task_id=? AND attempt=?`, lower, lower, lower, lower, c.TaskID, c.Attempt); e != nil {
+				return e
+			}
+		}
+	}
+
 	var n *int64
 	reason := "final_cost_missing"
 	if c.contract != nil && c.contract.Result.Present && c.contract.Result.Value.Cost.Present && c.contract.Result.Value.Cost.Value != nil {
@@ -324,7 +339,7 @@ func (s *Store) recordFinalCost(ctx context.Context, tx *transaction, c Completi
 	}
 	// A recovered/failed result may carry a partial estimate from an older
 	// compatible Scanner. It is evidence, not a complete execution settlement.
-	if n != nil && c.contract.Result.Value.Error.Present {
+	if n != nil && c.contract.Result.Value.Error.Present && !componentCostSettled(c.contract.Result.Value) {
 		if _, e := tx.ExecContext(ctx, `UPDATE task_cost_attempts SET observed_micros=CASE WHEN observed_micros IS NULL OR observed_micros<? THEN ? ELSE observed_micros END,booked_micros=CASE WHEN booked_micros IS NULL OR booked_micros<? THEN ? ELSE booked_micros END,source='sdk_progress' WHERE task_id=? AND attempt=?`, n, n, n, n, c.TaskID, c.Attempt); e != nil {
 			return e
 		}
@@ -332,6 +347,22 @@ func (s *Store) recordFinalCost(ctx context.Context, tx *transaction, c Completi
 		reason = "execution_incomplete"
 	}
 	state, source := "unknown", "none"
+	if c.recovery != nil {
+		var previousSource string
+		e := tx.QueryRowContext(ctx, `SELECT source FROM task_cost_attempts WHERE task_id=? AND attempt=?`, c.TaskID, c.Attempt).Scan(&previousSource)
+		if e != nil && !errors.Is(e, sql.ErrNoRows) {
+			return e
+		}
+		if previousSource == "manual_estimate" {
+			// Preserve the operator's estimate and its original provenance. A
+			// later recovered SDK total can raise, never lower, booked costs.
+			if _, e = tx.ExecContext(ctx, `UPDATE task_cost_attempts SET final_micros=COALESCE(CAST(? AS BIGINT),final_micros),reason=CASE WHEN CAST(? AS BIGINT)>booked_micros THEN 'recovered_final_above_manual' ELSE reason END,booked_micros=CASE WHEN CAST(? AS BIGINT)>booked_micros THEN ? ELSE booked_micros END,updated_at=? WHERE task_id=? AND attempt=?`, n, n, n, n, securityTime(time.Now()), c.TaskID, c.Attempt); e != nil {
+				return e
+			}
+			_, e = tx.ExecContext(ctx, `UPDATE task_budgets SET revision=revision+1 WHERE task_id=?`, c.TaskID)
+			return e
+		}
+	}
 	if n != nil {
 		state, source = "complete", "sdk_result"
 	}
@@ -404,6 +435,13 @@ func (s *Store) UpdateTotalBudget(ctx context.Context, id int64, usd float64, re
 			return e
 		}
 	}
+	var ops int
+	if e = tx.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM sdk_operations WHERE task_id=?)+(SELECT COUNT(*) FROM component_operations WHERE task_id=?)`, id, id).Scan(&ops); e != nil {
+		return e
+	}
+	if ops > 0 {
+		return ErrBudgetPolicy
+	}
 	v, e := s.readBudget(ctx, tx, id)
 	if e != nil {
 		return e
@@ -419,4 +457,24 @@ func (s *Store) UpdateTotalBudget(ctx context.Context, id int64, usd float64, re
 		return e
 	}
 	return tx.Commit()
+}
+
+func componentCostSettled(result contracts.ScanResult) bool {
+	if !result.Extensions.Present {
+		return false
+	}
+	raw := result.Extensions.Value["componentScan"]
+	if raw == nil {
+		return false
+	}
+	v, e := contracts.DecodeComponentScanResult(raw, &result.Execution)
+	if e != nil || v.Snapshot.Matching.CostState != "known" {
+		return false
+	}
+	for _, r := range v.Snapshot.Components {
+		if r.FinalMicros == nil {
+			return false
+		}
+	}
+	return true
 }

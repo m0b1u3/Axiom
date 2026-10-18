@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v8/scanner-job.schema.json",
+  "title": "ScannerJobV8",
+  "$ref": "#/$defs/ScannerJobV8",
+  "$defs": {
+    "ScannerJobV8": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 8
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "source": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/LocalSource"
+        },
+        "output": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/LocalOutput"
+        },
+        "model": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ResolvedModel"
+        },
+        "policy": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ScanPolicy"
+        },
+        "resultSchemaVersion": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/SchemaVersion"
+        },
+        "progressSchemaVersion": {
+          "type": "integer",
+          "const": 2
+        },
+        "eventSchemaVersion": {
+          "type": "integer",
+          "const": 2
+        },
+        "scanInput": {
+          "$ref": "https://axiom.invalid/contracts/v1/scan-input.schema.json#/$defs/ScanInput"
+        },
+        "componentScan": {
+          "$ref": "https://axiom.invalid/contracts/v1/component-scan.schema.json#/$defs/ComponentScanRequest"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "source",
+        "output",
+        "model",
+        "policy",
+        "resultSchemaVersion",
+        "progressSchemaVersion",
+        "eventSchemaVersion",
+        "scanInput",
+        "componentScan"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "policy": {
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "const": "standard"
+                },
+                "includePaths": {
+                  "maxItems": 0
+                },
+                "focus": {
+                  "maxItems": 0
+                },
+                "validation": {
+                  "maxProperties": 1,
+                  "properties": {
+                    "mode": {
+                      "type": "string",
+                      "const": "default"
+                    }
+                  }
+                }
+              }
+            },
+            "scanInput": {
+              "maxProperties": 2,
+              "properties": {
+                "knowledge": {
+                  "maxItems": 0
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

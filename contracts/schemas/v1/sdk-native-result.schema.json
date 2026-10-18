@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-native-result.schema.json",
+  "title": "SDKNativeResult",
+  "$ref": "#/$defs/SDKNativeResult",
+  "$defs": {
+    "SDKNativeResult": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.1.25"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "scanId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 512,
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "targetId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 512,
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reports": {
+          "type": "object",
+          "properties": {
+            "markdown": {
+              "$ref": "#/$defs/SDKNativeExport"
+            },
+            "sarif": {
+              "$ref": "#/$defs/SDKNativeExport"
+            }
+          },
+          "required": [
+            "markdown",
+            "sarif"
+          ],
+          "additionalProperties": false
+        },
+        "repositoryHistory": {
+          "$ref": "#/$defs/SDKRepositoryHistory"
+        },
+        "usageEstimate": {
+          "$ref": "https://axiom.invalid/contracts/v1/sdk-cost-estimate.schema.json#/$defs/SDKCostEstimate"
+        },
+        "diagnostics": {
+          "$ref": "https://axiom.invalid/contracts/v1/sdk-diagnostics.schema.json#/$defs/SDKDiagnostics"
+        },
+        "diagnosticJournal": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "diagnosticJournalError": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 4096
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sdkVersion",
+        "observedAt",
+        "scanId",
+        "targetId",
+        "reports",
+        "repositoryHistory",
+        "usageEstimate",
+        "diagnostics",
+        "diagnosticJournal",
+        "diagnosticJournalError"
+      ],
+      "additionalProperties": false
+    },
+    "SDKNativeExport": {
+      "type": "object",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": [
+            "markdown",
+            "sarif"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "available",
+            "not_generated",
+            "invalid"
+          ]
+        },
+        "artifact": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 4096
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "format",
+        "status",
+        "artifact",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "available"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "artifact": {
+                "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ArtifactRef"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "artifact": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "SDKRepositoryHistory": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "reported",
+            "not_reported",
+            "invalid"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 4096
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SDKRepositoryFinding"
+          }
+        }
+      },
+      "required": [
+        "state",
+        "reason",
+        "records"
+      ],
+      "additionalProperties": false
+    },
+    "SDKRepositoryFinding": {
+      "type": "object",
+      "properties": {
+        "findingId": {
+          "type": "string",
+          "maxLength": 512,
+          "minLength": 1
+        },
+        "occurrenceId": {
+          "type": "string",
+          "maxLength": 512,
+          "minLength": 1
+        },
+        "scanId": {
+          "type": "string",
+          "maxLength": 512,
+          "minLength": 1
+        },
+        "targetId": {
+          "type": "string",
+          "maxLength": 512,
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 32768
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 262144
+        },
+        "severity": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/JsonObject"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "closed"
+          ]
+        },
+        "confirmedInLatestScan": {
+          "type": "boolean"
+        },
+        "knownSince": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "knownScanIds": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 512,
+                "minLength": 1
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "matchedFindingIds": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "maxLength": 512,
+                "minLength": 1
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "findingId",
+        "occurrenceId",
+        "scanId",
+        "targetId",
+        "title",
+        "summary",
+        "severity",
+        "status",
+        "confirmedInLatestScan",
+        "knownSince",
+        "knownScanIds",
+        "matchedFindingIds"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

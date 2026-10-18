@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "operation": {
+    "schemaVersion": 1,
+    "id": "91",
+    "identity": {
+      "id": "81",
+      "name": "Fixtures / Mock identity",
+      "agentId": "fixture-input-agent",
+      "generation": 2,
+      "kind": "chatgpt"
+    },
+    "action": "login_device_code",
+    "status": "running",
+    "createdAt": "2026-10-18T00:00:00Z",
+    "updatedAt": "2026-10-18T00:00:00Z",
+    "deadline": "2026-10-18T00:10:00Z",
+    "instructions": null,
+    "error": null
+  },
+  "leaseToken": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "leaseSeconds": 15
+}

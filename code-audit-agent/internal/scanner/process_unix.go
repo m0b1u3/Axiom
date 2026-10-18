@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -32,4 +33,28 @@ func scannerParentEnvironment(env []string) []string {
 		}
 	}
 	return append(result, "AXIOM_SCANNER_PARENT_PID="+strconv.Itoa(os.Getpid()), "AXIOM_SCANNER_OWN_PROCESS_GROUP=1")
+}
+
+// Give a native device-code handle a bounded opportunity to cancel before
+// stopping the entire process group. The lease still bounds all descendants.
+func configureIdentityProcessGroup(cmd *exec.Cmd) func() {
+	configureProcessGroup(cmd)
+	done := make(chan struct{})
+	var canceled, closed sync.Once
+	cmd.Cancel = func() error {
+		var err error
+		canceled.Do(func() {
+			err = syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
+			go func() {
+				select {
+				case <-done:
+					return
+				case <-time.After(3 * time.Second):
+					_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+				}
+			}()
+		})
+		return err
+	}
+	return func() { closed.Do(func() { close(done) }) }
 }

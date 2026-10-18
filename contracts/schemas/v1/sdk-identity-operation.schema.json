@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-identity-operation.schema.json",
+  "title": "SDKIdentityOperation",
+  "$ref": "https://axiom.invalid/contracts/v1/sdk-identities.schema.json#/$defs/SDKIdentityOperation"
+}

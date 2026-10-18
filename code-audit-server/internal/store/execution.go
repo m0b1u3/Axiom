@@ -20,13 +20,14 @@ var ErrCompletionConflict = errors.New("completion content conflicts with the ar
 var ErrInvalidResult = errors.New("invalid execution result")
 
 type ClaimLimits struct {
-	Global        int
-	PerModel      int
-	PerProject    int
-	Lease         time.Duration
-	OutputRoot    string
-	MaxRecoveries int
-	StorageCheck  func(context.Context) string `json:"-"`
+	SDKIdentityCapable bool
+	Global             int
+	PerModel           int
+	PerProject         int
+	Lease              time.Duration
+	OutputRoot         string
+	MaxRecoveries      int
+	StorageCheck       func(context.Context) string `json:"-"`
 }
 type LeaseRef struct {
 	TaskID  int64  `json:"taskId"`
@@ -34,6 +35,7 @@ type LeaseRef struct {
 	AgentID string `json:"agentId"`
 }
 type Attempt struct {
+	ResultRecovery             *contracts.RecoveredResult    `json:"resultRecovery,omitempty"`
 	ObservationContractVersion int                           `json:"observationContractVersion"`
 	ProgressDiagnostic         *contracts.ContractError      `json:"progressDiagnostic,omitempty"`
 	ProgressDiagnosticJSON     string                        `json:"-"`
@@ -53,6 +55,7 @@ type Attempt struct {
 	ProgressJSON               string                        `json:"progressJson"`
 }
 type Completion struct {
+	recovery     *resultRecovery
 	contract     *contracts.ExecutionCompletion
 	Coverage     json.RawMessage `json:"coverage,omitempty"`
 	ProgressJSON string          `json:"progressJson,omitempty"`
@@ -102,6 +105,20 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 	limits.Global, limits.PerModel, limits.PerProject = settings.Global, settings.PerModel, settings.PerProject
 	now := time.Now().UTC()
 	stamp := now.Format(time.RFC3339)
+	// Validation cannot report final cost. A lost lease must never replay it.
+	if _, err = tx.ExecContext(ctx, `UPDATE scan_attempts a SET status='failed',finished_at=?,error_code='lease_expired',error_message='SDK validation interrupted; final cost unknown',lease_expires_at=NULL FROM scan_tasks t JOIN sdk_operations o ON o.task_id=t.id WHERE a.task_id=t.id AND a.attempt=t.attempt AND o.kind='validate' AND t.status IN ('claimed','scanning') AND (t.lease_expires_at IS NULL OR t.lease_expires_at<?)`, stamp, stamp); err != nil {
+		return nil, err
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE scan_tasks t SET status='failed',finished_at=?,error_code='lease_expired',error_message='SDK validation interrupted; final cost unknown',lease_expires_at=NULL FROM sdk_operations o WHERE o.task_id=t.id AND o.kind='validate' AND t.status IN ('claimed','scanning') AND (t.lease_expires_at IS NULL OR t.lease_expires_at<?)`, stamp, stamp); err != nil {
+		return nil, err
+	}
+
+	if _, err = tx.ExecContext(ctx, `UPDATE scan_attempts a SET status='failed',finished_at=?,error_code='lease_expired',error_message='组件规划中断；请在 Web 创建新的操作，费用保留未知',lease_expires_at=NULL FROM scan_tasks t JOIN component_operations o ON o.task_id=t.id WHERE a.task_id=t.id AND a.attempt=t.attempt AND t.status IN ('claimed','scanning') AND (t.lease_expires_at IS NULL OR t.lease_expires_at<?)`, stamp, stamp); err != nil {
+		return nil, err
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE scan_tasks t SET status='failed',finished_at=?,error_code='lease_expired',error_message='组件规划中断；请在 Web 创建新的操作，费用保留未知',lease_expires_at=NULL FROM component_operations o WHERE o.task_id=t.id AND t.status IN ('claimed','scanning') AND (t.lease_expires_at IS NULL OR t.lease_expires_at<?)`, stamp, stamp); err != nil {
+		return nil, err
+	}
 	// A total-budget execution that disappears has unknown final cost. Stop
 	// automatic recovery before creating another SDK call with a fresh allowance.
 	if _, err = tx.ExecContext(ctx, `UPDATE scan_attempts a SET status='failed',finished_at=?,error_code='lease_expired',error_message='final cost unknown; Web reconciliation required',lease_expires_at=NULL FROM scan_tasks t JOIN task_budgets b ON b.task_id=t.id WHERE b.total_micros IS NOT NULL AND a.task_id=t.id AND a.attempt=t.attempt AND t.status IN ('claimed','scanning') AND (t.lease_expires_at IS NULL OR t.lease_expires_at<?)`, stamp, stamp); err != nil {
@@ -131,9 +148,14 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 		return nil, tx.Commit()
 	}
 	var active int
-	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM scan_tasks WHERE status IN ('claimed','scanning','cancel_requested') AND lease_expires_at>=?`, stamp).Scan(&active); err != nil {
+	if err = tx.QueryRowContext(ctx, `SELECT COALESCE(SUM(CASE WHEN input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=scan_tasks.id),1) ELSE 1 END),0) FROM scan_tasks WHERE status IN ('claimed','scanning','cancel_requested') AND lease_expires_at>=?`, stamp).Scan(&active); err != nil {
 		return nil, err
 	}
+	var identityActive int
+	if e := tx.QueryRowContext(ctx, `SELECT count(*) FROM sdk_identity_operations WHERE status IN ('running','waiting') AND lease_until>=?`, stamp).Scan(&identityActive); e != nil {
+		return nil, e
+	}
+	active += identityActive
 	if active >= limits.Global {
 		return nil, tx.Commit()
 	}
@@ -158,6 +180,10 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 			return nil, tx.Commit()
 		}
 		runtimeAPI = int(runtime.ControlAPI)
+		limits.SDKIdentityCapable = limits.SDKIdentityCapable && runtime.ScannerDescriptionVersion != nil && *runtime.ScannerDescriptionVersion == contracts.SDKIdentityDescriptionVersion
+	}
+	if runtimeSeen == nil || now.Sub(*runtimeSeen) >= 30*time.Second {
+		limits.SDKIdentityCapable = false
 	}
 	caps := control.Capabilities{Input: capabilities, Result: results, Observation: observations}
 	filters := []string{}
@@ -172,11 +198,15 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 	err = tx.QueryRowContext(ctx, `SELECT t.id,t.attempt,t.status FROM scan_tasks t
  WHERE (t.status='pending' OR (t.status IN ('claimed','scanning') AND (t.lease_expires_at IS NULL OR t.lease_expires_at<?)))
  AND (`+strings.Join(filters, " OR ")+`)
- AND ((t.max_cost_usd IS NULL AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL)) OR (t.input_contract_version=1 AND ?))
+ AND (CASE WHEN t.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=t.id),1) ELSE 1 END)<=`+fmt.Sprint(limits.Global-active)+`
+ AND (NOT EXISTS(SELECT 1 FROM task_sdk_identities b WHERE b.task_id=t.id) OR (? AND EXISTS(SELECT 1 FROM task_sdk_identities b JOIN sdk_identities i ON i.id=b.identity_id WHERE b.task_id=t.id AND i.agent_id=? AND i.state='authenticated' AND i.authenticated=TRUE AND i.cleanup_pending=FALSE AND i.generation=(b.reference_json::jsonb->>'generation')::bigint AND NOT EXISTS(SELECT 1 FROM task_sdk_identities active_binding JOIN scan_tasks active_task ON active_task.id=active_binding.task_id WHERE active_binding.identity_id=i.id AND active_task.id<>t.id AND active_task.status IN ('claimed','scanning','cancel_requested') AND active_task.lease_expires_at>=?) AND NOT EXISTS(SELECT 1 FROM sdk_identity_operations o WHERE o.identity_id=i.id AND o.status IN ('queued','running','waiting')))))
+ AND (NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=t.id) OR `+fmt.Sprint(containsOperationJob(observations))+`)
+ AND (NOT EXISTS(SELECT 1 FROM task_scan_inputs si WHERE si.task_id=t.id) OR ?)
+ AND ((t.max_cost_usd IS NULL AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL)) OR (t.input_contract_version IN (1,2,3,4,5,6) AND ?))
  AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL AND (EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=t.id AND c.state='unknown') OR COALESCE((SELECT SUM(c.booked_micros) FROM task_cost_attempts c WHERE c.task_id=t.id),0)>=b.total_micros))
- AND (SELECT COUNT(*) FROM scan_tasks r WHERE r.status IN ('claimed','scanning','cancel_requested') AND r.lease_expires_at>=? AND COALESCE(r.model_config_id,0)=COALESCE(t.model_config_id,0) AND r.provider=t.provider)< ?
- AND (SELECT COUNT(*) FROM scan_tasks r WHERE r.status IN ('claimed','scanning','cancel_requested') AND r.lease_expires_at>=? AND COALESCE(r.project_id,0)=COALESCE(t.project_id,0))< ?
- ORDER BY t.queued_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, stamp, capabilities.MaxCostUSD, stamp, limits.PerModel, stamp, limits.PerProject).Scan(&id, &attempt, &previous)
+ AND (SELECT COALESCE(SUM(CASE WHEN r.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=r.id),1) ELSE 1 END),0) FROM scan_tasks r WHERE r.status IN ('claimed','scanning','cancel_requested') AND r.lease_expires_at>=? AND COALESCE(r.model_config_id,0)=COALESCE(t.model_config_id,0) AND r.provider=t.provider)+(CASE WHEN t.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=t.id),1) ELSE 1 END)<= ?
+ AND (SELECT COALESCE(SUM(CASE WHEN r.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=r.id),1) ELSE 1 END),0) FROM scan_tasks r WHERE r.status IN ('claimed','scanning','cancel_requested') AND r.lease_expires_at>=? AND COALESCE(r.project_id,0)=COALESCE(t.project_id,0))+(CASE WHEN t.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=t.id),1) ELSE 1 END)<= ?
+ ORDER BY t.queued_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, stamp, limits.SDKIdentityCapable, agent, stamp, containsJob4(observations), capabilities.MaxCostUSD, stamp, limits.PerModel, stamp, limits.PerProject).Scan(&id, &attempt, &previous)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, tx.Commit()
 	}
@@ -205,6 +235,9 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 	if _, err = tx.ExecContext(ctx, `INSERT INTO scan_attempts(task_id,attempt,agent_id,status,lease_expires_at,started_at,output_path,queued_at,result_contract_version,observation_contract_version) SELECT ?,?,?,'claimed',?,?,?,queued_at,result_contract_version,observation_contract_version FROM scan_tasks WHERE id=?`, id, attempt, agent, until, stamp, out, id); err != nil {
 		return nil, err
 	}
+	if err = s.reserveComponentScan(ctx, tx, id, attempt, grant); err != nil {
+		return nil, err
+	}
 	if err = s.reserveAttemptBudget(ctx, tx, id, attempt, grant); err != nil {
 		return nil, err
 	}
@@ -217,6 +250,15 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 		if grant != nil {
 			limit := dollars(*grant)
 			t.ExecutionMaxCostUSD = &limit
+		}
+	}
+	if err == nil && t != nil && t.ScanInput != nil && t.ScanInput.ParentScanID.Present {
+		t.ParentState, err = s.TaskParentState(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if t.ParentState == nil {
+			return nil, errors.New("frozen parent state unavailable")
 		}
 	}
 	return t, err
@@ -280,7 +322,14 @@ func (s *Store) CompleteExecution(ctx context.Context, c Completion) error {
 			return ErrInvalidResult
 		}
 	}
-	if IsTerminalStatus(status) {
+	if c.recovery != nil {
+		if err = s.authorizeResultRecovery(ctx, tx, c, status, lease); err != nil {
+			if errors.Is(err, errRecoveryReplayed) {
+				return tx.Commit()
+			}
+			return err
+		}
+	} else if IsTerminalStatus(status) {
 		var existing string
 		if err = tx.QueryRowContext(ctx, `SELECT COALESCE(completion_hash,'') FROM scan_attempts WHERE task_id=? AND attempt=? AND agent_id=?`, c.TaskID, c.Attempt, c.AgentID).Scan(&existing); err != nil {
 			return err
@@ -291,7 +340,7 @@ func (s *Store) CompleteExecution(ctx context.Context, c Completion) error {
 		return ErrCompletionConflict
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	if lease < now {
+	if c.recovery == nil && lease < now {
 		return ErrLeaseLost
 	}
 	if status == "cancel_requested" {
@@ -324,7 +373,22 @@ func (s *Store) CompleteExecution(ctx context.Context, c Completion) error {
 			return err
 		}
 	}
-	if _, err = tx.ExecContext(ctx, `UPDATE scan_tasks SET status=?,error_code=?,error_message=?,finding_count=?,finished_at=?,lease_expires_at=NULL,progress_json=CASE WHEN ?<>'' THEN ? ELSE progress_json END WHERE id=?`, c.Status, nullIfEmpty(c.ErrorCode), nullIfEmpty(c.ErrorMessage), len(c.Findings), now, c.ProgressJSON, c.ProgressJSON, c.TaskID); err != nil {
+	if c.contract != nil && c.contract.Result.Present && c.contract.Result.Value.Extensions.Present {
+		if data := c.contract.Result.Value.Extensions.Value["componentScan"]; data != nil {
+			v, e := contracts.DecodeComponentScanResult(data, &c.contract.Execution)
+			if e != nil {
+				return ErrInvalidResult
+			}
+			if e = s.recordComponentSnapshot(ctx, tx, c.TaskID, int64(c.Attempt), &v.Snapshot); e != nil {
+				return e
+			}
+		}
+	}
+	parentStatus, e := s.componentParentStatus(ctx, tx, c)
+	if e != nil {
+		return e
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE scan_tasks SET status=?,error_code=?,error_message=?,finding_count=?,finished_at=?,lease_expires_at=NULL,progress_json=CASE WHEN ?<>'' THEN ? ELSE progress_json END WHERE id=?`, parentStatus, nullIfEmpty(c.ErrorCode), nullIfEmpty(c.ErrorMessage), len(c.Findings), now, c.ProgressJSON, c.ProgressJSON, c.TaskID); err != nil {
 		return err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE scan_attempts SET status=?,error_code=?,error_message=?,finished_at=?,lease_expires_at=NULL,result_json=?,completion_hash=?,progress_json=CASE WHEN ?<>'' THEN ? ELSE progress_json END WHERE task_id=? AND attempt=? AND agent_id=?`, c.Status, c.ErrorCode, c.ErrorMessage, now, string(raw), hash, c.ProgressJSON, c.ProgressJSON, c.TaskID, c.Attempt, c.AgentID); err != nil {
@@ -335,8 +399,17 @@ func (s *Store) CompleteExecution(ctx context.Context, c Completion) error {
 			return err
 		}
 	}
+
 	if err = s.recordFinalCost(ctx, tx, c); err != nil {
 		return err
+	}
+	if err = s.indexNativeResult(ctx, tx, c); err != nil {
+		return err
+	}
+	if c.recovery != nil {
+		if err = saveResultRecovery(ctx, tx, c); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }
@@ -344,7 +417,7 @@ func (s *Store) ListAttempts(ctx context.Context, id int64) ([]Attempt, error) {
 	if !s.db.postgres {
 		return []Attempt{}, nil
 	}
-	rows, err := s.db.QueryContext(ctx, `SELECT progress_diagnostic_json,observation_contract_version,task_id,attempt,agent_id,status,started_at,COALESCE(finished_at,''),output_path,error_code,error_message,progress_json,queued_at,result_json IS NOT NULL,CASE WHEN result_contract_version=1 AND jsonb_typeof(result_json::jsonb->'result'->'findings')='array' THEN jsonb_array_length(result_json::jsonb->'result'->'findings') WHEN jsonb_typeof(result_json::jsonb->'findings')='array' THEN jsonb_array_length(result_json::jsonb->'findings') ELSE 0 END FROM scan_attempts WHERE task_id=? ORDER BY attempt DESC`, id)
+	rows, err := s.db.QueryContext(ctx, `SELECT progress_diagnostic_json,observation_contract_version,task_id,attempt,agent_id,status,started_at,COALESCE(finished_at,''),output_path,error_code,error_message,progress_json,queued_at,result_json IS NOT NULL,CASE WHEN result_contract_version=1 AND jsonb_typeof(result_json::jsonb->'result'->'findings')='array' THEN jsonb_array_length(result_json::jsonb->'result'->'findings') WHEN jsonb_typeof(result_json::jsonb->'findings')='array' THEN jsonb_array_length(result_json::jsonb->'findings') ELSE 0 END,COALESCE((SELECT document_json FROM scan_result_recoveries r WHERE r.task_id=scan_attempts.task_id AND r.attempt=scan_attempts.attempt),'') FROM scan_attempts WHERE task_id=? ORDER BY attempt DESC`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +425,8 @@ func (s *Store) ListAttempts(ctx context.Context, id int64) ([]Attempt, error) {
 	out := []Attempt{}
 	for rows.Next() {
 		var a Attempt
-		if err = rows.Scan(&a.ProgressDiagnosticJSON, &a.ObservationContractVersion, &a.TaskID, &a.Attempt, &a.AgentID, &a.Status, &a.StartedAt, &a.FinishedAt, &a.OutputPath, &a.ErrorCode, &a.ErrorMessage, &a.ProgressJSON, &a.QueuedAt, &a.ResultAvailable, &a.FindingCount); err != nil {
+		var recoveryJSON string
+		if err = rows.Scan(&a.ProgressDiagnosticJSON, &a.ObservationContractVersion, &a.TaskID, &a.Attempt, &a.AgentID, &a.Status, &a.StartedAt, &a.FinishedAt, &a.OutputPath, &a.ErrorCode, &a.ErrorMessage, &a.ProgressJSON, &a.QueuedAt, &a.ResultAvailable, &a.FindingCount, &recoveryJSON); err != nil {
 			return nil, err
 		}
 		if a.ObservationContractVersion == 1 && a.ProgressJSON != "" {
@@ -366,6 +440,13 @@ func (s *Store) ListAttempts(ctx context.Context, id int64) ([]Attempt, error) {
 			if json.Unmarshal([]byte(a.ProgressDiagnosticJSON), &d) == nil {
 				a.ProgressDiagnostic = &d
 			}
+		}
+		if recoveryJSON != "" {
+			var record contracts.RecoveredResult
+			if err = json.Unmarshal([]byte(recoveryJSON), &record); err != nil {
+				return nil, err
+			}
+			a.ResultRecovery = &record
 		}
 		out = append(out, a)
 	}
@@ -382,4 +463,13 @@ func (s *Store) GetAttempt(ctx context.Context, id int64, attempt int) (*Attempt
 		}
 	}
 	return nil, sql.ErrNoRows
+}
+
+func containsJob4(v contracts.ObservationCapabilities) bool {
+	for _, n := range v.JobVersions {
+		if n == contracts.ScanInputJobVersion {
+			return true
+		}
+	}
+	return false
 }

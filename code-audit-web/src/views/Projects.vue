@@ -24,9 +24,11 @@ const loadError = ref("");
 const dialogOpen = ref(false);
 const name = ref("");
 const creating = ref(false);
+const createError = ref("");
 
+let loadAgain = false;
 async function load(): Promise<void> {
-  if (loading.value) return;
+  if (loading.value) { loadAgain = true; return; }
   loading.value = true;
   loadError.value = "";
   try {
@@ -35,20 +37,22 @@ async function load(): Promise<void> {
     loadError.value = (error as Error).message;
   } finally {
     loading.value = false;
+    if (loadAgain) { loadAgain = false; void load(); }
   }
 }
 
 async function create(): Promise<void> {
-  if (creating.value) return;
-  if (!name.value.trim()) return;
+  if (!canOperate.value || creating.value) return;
+  if (!name.value.trim()) { createError.value = "请输入项目名称。"; return; }
   creating.value = true;
+  createError.value = "";
   try {
     await api.createProject(name.value.trim());
     name.value = "";
     dialogOpen.value = false;
     await load();
   } catch (error) {
-    message.error((error as Error).message);
+    createError.value = `项目创建失败：${(error as Error).message}`;
   } finally {
     creating.value = false;
   }
@@ -73,7 +77,7 @@ const columns: ColumnDef<Project>[] = [
   {
     accessorKey: "name",
     header: "项目",
-    cell: (c) => h("span", { style: { fontWeight: 500, color: "var(--text-primary)" } }, c.getValue<string>()),
+    cell: (c) => h("span", { class: "dt-cell-text", title: c.getValue<string>(), style: { fontWeight: 500, color: "var(--text-primary)" } }, c.getValue<string>()),
   },
   {
     accessorKey: "snapshotCount",
@@ -125,13 +129,14 @@ onMounted(load);
   <div>
     <div v-if="loadError" class="request-error" role="alert"><span>数据加载失败：{{loadError}}</span><Button variant="outline" size="sm" @click="load">重试</Button></div>
     <PageHeader title="项目" description="组织与浏览被审计的代码资产">
-      <Button v-if="canOperate" @click="dialogOpen = true">
+      <Button v-if="canOperate" @click="createError = ''; dialogOpen = true">
         <Plus :size="14" />新建项目
       </Button>
     </PageHeader>
 
     <DataTable
       :loading="loading"
+      :unavailable="!!loadError"
       :data="projects"
       :columns="columns"
       :row-click="(p) => router.push({ name: 'project-detail', params: { id: p.id } })"
@@ -140,7 +145,9 @@ onMounted(load);
     />
 
     <Dialog v-model:open="dialogOpen" title="新建项目">
-      <Input v-model="name" placeholder="项目名称" @enter="create" />
+      <label for="new-project-name">项目名称</label>
+      <Input id="new-project-name" v-model="name" placeholder="项目名称" :disabled="creating" :aria-invalid="!!createError" aria-describedby="create-project-error" @enter="create" />
+      <p v-if="createError" id="create-project-error" class="request-error" role="alert">{{ createError }}</p>
       <template #footer>
         <Button variant="secondary" @click="dialogOpen = false">取消</Button>
         <Button :loading="creating" @click="create">创建</Button>

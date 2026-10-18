@@ -47,9 +47,10 @@ def suite(env_file, work):
         stack.call("up", "-d", "--no-build", "--wait", "--wait-timeout", "120", "web", stdout=subprocess.DEVNULL)
         web = Web(stack)
         web.login()
-        assert sql("SELECT count(*) FROM schema_migrations;") == "13"
+        assert sql("SELECT count(*) FROM schema_migrations;") == str(len(list(folder.glob("*.sql"))))
         assert sql("SELECT to_regclass('public.storage_settings') IS NOT NULL;") == "t"
-        assert sql("SELECT row_to_json(t)::text FROM scan_tasks t ORDER BY id;") == before
+        after = json.loads(sql("SELECT row_to_json(t)::text FROM scan_tasks t ORDER BY id;"))
+        assert {name: after[name] for name in json.loads(before)} == json.loads(before), "historical task fields changed"
         assert sql("SELECT row_to_json(t)::text FROM task_cost_attempts t ORDER BY task_id,attempt;") == costs
         assert web.data("GET", "/api/v1/scans/1")["status"] == "completed"
         result = web.data("GET", "/api/v1/scans/1/attempts/1/result")
@@ -59,11 +60,11 @@ def suite(env_file, work):
         assert web.data("GET", "/api/v1/storage")["policy"]
         stack.call("restart", "server", stdout=subprocess.DEVNULL)
         wait_for(lambda: web.raw("GET", "/readyz")[0] == 200, 30, "upgraded Server did not become ready after restart")
-        assert sql("SELECT count(*) FROM schema_migrations;") == "13", "migration replay duplicated history"
+        assert sql("SELECT count(*) FROM schema_migrations;") == str(len(list(folder.glob("*.sql")))), "migration replay duplicated history"
         assert "agent" not in stack.output("ps", "--status", "running", "--services").splitlines()
         report = {"fixtureOnly":True, "modelCalls":0, "agentStarted":False,
                   "baseline":"frozen-postgresql-migrations-001-through-012",
-                  "target":"013_storage.sql", "previousPublicBinaryTested":False,
+                  "target":sorted(p.name for p in folder.glob("*.sql"))[-1], "previousPublicBinaryTested":False,
                   "checks":["frozen migration hashes", "additive schema upgrade", "historical task and raw evidence",
                             "unknown cost ledger unchanged", "historical HTML report", "new Web storage policy", "idempotent restart"]}
         (work/"report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2)+"\n")

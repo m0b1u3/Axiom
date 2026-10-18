@@ -105,15 +105,15 @@ type StorageReference struct {
 
 func (s *Store) StorageReferences(ctx context.Context) ([]StorageReference, error) {
 	out := []StorageReference{}
-	rows, e := s.db.QueryContext(ctx, `SELECT t.id,t.status,COALESCE(t.output_path,''),t.source_path,EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=t.id AND c.state<>'complete') FROM scan_tasks t`)
+	rows, e := s.db.QueryContext(ctx, `SELECT t.id,t.status,COALESCE(t.output_path,''),t.source_path,EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=t.id AND c.state<>'complete'),(EXISTS(SELECT 1 FROM sdk_operations o WHERE o.origin_task_id=t.id) OR EXISTS(SELECT 1 FROM component_operations o WHERE o.task_id=t.id)) FROM scan_tasks t`)
 	if e != nil {
 		return nil, e
 	}
 	for rows.Next() {
 		var id int64
 		var status, path, source string
-		var unknown bool
-		if e = rows.Scan(&id, &status, &path, &source, &unknown); e != nil {
+		var unknown, linked bool
+		if e = rows.Scan(&id, &status, &path, &source, &unknown, &linked); e != nil {
 			rows.Close()
 			return nil, e
 		}
@@ -122,6 +122,8 @@ func (s *Store) StorageReferences(ctx context.Context) ([]StorageReference, erro
 			reason = "running_task"
 		} else if unknown {
 			reason = "unknown_cost"
+		} else if linked {
+			reason = "sdk_operation_source"
 		}
 		out = append(out, StorageReference{path, reason, "scan", id}, StorageReference{source, "source_reference", "scan", id})
 	}
@@ -184,6 +186,13 @@ func (s *Store) CleanupResourcePaths(ctx context.Context, kind string, id int64,
 		return nil, ErrStorageProtected
 	}
 	if kind == "scan" {
+		var related int
+		if e := s.db.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM sdk_operations WHERE origin_task_id=?)+(SELECT COUNT(*) FROM component_operations WHERE task_id=?)`, id, id).Scan(&related); e != nil {
+			return nil, e
+		}
+		if related > 0 {
+			return nil, ErrStorageProtected
+		}
 		t, e := s.Get(ctx, id)
 		if e != nil {
 			return nil, e
@@ -214,7 +223,7 @@ func (s *Store) CleanupResourcePaths(ctx context.Context, kind string, id int64,
 			return nil, e
 		}
 		var count int
-		if e = s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM scan_tasks WHERE source_snapshot_id=? OR source_path=?`, id, v.SnapshotPath).Scan(&count); e != nil {
+		if e = s.db.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM scan_tasks WHERE source_snapshot_id=? OR source_path=?)+(SELECT COUNT(*) FROM component_plans WHERE snapshot_id=?)`, id, v.SnapshotPath, id).Scan(&count); e != nil {
 			return nil, e
 		}
 		if count > 0 {

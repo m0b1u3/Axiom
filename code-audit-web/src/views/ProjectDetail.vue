@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useAuth } from "../composables/auth";
 const { canOperate, canAdmin } = useAuth();
-import { h, onMounted, onUnmounted, ref } from "vue";
+import { h, computed, watch, onMounted, onUnmounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Plus, Upload, Trash2, ScanLine } from "lucide-vue-next";
 import type { ColumnDef } from "@tanstack/vue-table";
@@ -12,9 +12,12 @@ import StatusBadge from "../components/StatusBadge.vue";
 import DataTable from "../components/DataTable.vue";
 import Button from "../components/ui/Button.vue";
 import Select from "../components/ui/Select.vue";
+import Input from "../components/ui/Input.vue";
+import CatalogPagination from "../components/CatalogPagination.vue";
+import {useCatalog} from "../composables/catalog";
 import Tooltip from "../components/ui/Tooltip.vue";
 import { message } from "../lib/toast";
-import { confirm } from "../components/ui/confirm";
+import ResourceCleanupDialog from "../components/ResourceCleanupDialog.vue";
 import { relativeTime, absoluteTime } from "../utils/time";
 import { shortHash } from "../utils/format";
 
@@ -24,7 +27,8 @@ const router = useRouter();
 const id = Number(route.params.id);
 
 const project = ref<Project | null>(null);
-const snapshots = ref<SnapshotInfo[]>([]);
+const {result:snapshotResult,search:snapshotSearch,loading:snapshotLoading,error:snapshotError,sorting:snapshotSorting,load:reloadSnapshots,sort:sortSnapshots,page:changeSnapshotPage} = useCatalog<SnapshotInfo>(query=>api.snapshotPage({...query,projectId:id}), [], 'id','desc');
+const snapshots=computed(()=>snapshotResult.value?.items ?? []);
 const scans = ref<ScanTask[]>([]);
 const loading = ref(false);
 const loadError = ref("");
@@ -33,30 +37,42 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const orphans = ref<SnapshotInfo[]>([]);
 const attachId = ref("");
 const attaching = ref(false);
+const orphanSearch=ref(''), orphanLoading=ref(false), orphanError=ref('');
+const orphanPage=ref(1),orphanTotal=ref<number>();
+let orphanGeneration=0, orphanTimer:ReturnType<typeof setTimeout> | undefined;
+async function loadOrphans(page=orphanPage.value) {
+  if(!canOperate.value)return;
+  const gen=++orphanGeneration;orphanLoading.value=true;orphanError.value='';
+  try {
+    const [list,pinned]=await Promise.all([api.snapshotPage({projectId:0,q:orphanSearch.value,page}),attachId.value ? api.snapshotPage({projectId:0,id:Number(attachId.value)}) : Promise.resolve(null)]);
+    if(gen!==orphanGeneration)return;
+    orphans.value=list.items;orphanPage.value=list.page;orphanTotal.value=list.total;
+    const selected=pinned?.items[0];
+    if(selected && !orphans.value.some(s=>s.id===selected.id))orphans.value=[selected,...orphans.value];
+    if(attachId.value && !selected)attachId.value='';
+  }catch(error){if(gen===orphanGeneration)orphanError.value=(error as Error).message;}
+  finally{if(gen===orphanGeneration)orphanLoading.value=false;}
+}
+watch(orphanSearch,()=>{orphanGeneration++;orphanLoading.value=true;clearTimeout(orphanTimer);orphanTimer=setTimeout(()=>void loadOrphans(1),250)});
 let timer: number | undefined;
 
+let loadAgain = false;
 async function load(): Promise<void> {
-  if (loading.value) return;
+  if (loading.value) { loadAgain = true; return; }
   loading.value = true;
   loadError.value = "";
   try {
-    const [p, snaps, scs] = await Promise.all([
+    const [p, scs] = await Promise.all([
       api.getProject(id),
-      api.listSnapshots(id),
       api.listScans(id),
     ]);
     project.value = p;
-    snapshots.value = snaps;
     scans.value = scs;
-    // 未归属任何项目的快照可关联进来（含其历史扫描）
-    orphans.value = (await api.listSnapshots()).filter((s) => !s.projectId);
-    if (attachId.value && !orphans.value.some((s) => String(s.id) === attachId.value)) {
-      attachId.value = "";
-    }
   } catch (error) {
     loadError.value = (error as Error).message;
   } finally {
     loading.value = false;
+    if (loadAgain) { loadAgain = false; void load(); }
   }
 }
 
@@ -65,6 +81,7 @@ function pickFile(): void {
 }
 
 async function onFilePicked(event: Event): Promise<void> {
+  if (!canOperate.value || uploading.value) return;
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
@@ -77,7 +94,7 @@ async function onFilePicked(event: Event): Promise<void> {
   try {
     const snap = await api.uploadSnapshot(file, id);
     message.success(`已上传 ${snap.originalFilename}（${snap.fileCount} 个文件）`);
-    await load();
+    await Promise.all([load(),reloadSnapshots(),loadOrphans()]);
   } catch (error) {
     message.error((error as Error).message);
   } finally {
@@ -90,29 +107,18 @@ function scanSnapshot(snap: SnapshotInfo): void {
   void router.push({ name: "new-scan", query: { projectId: String(id), snapshotId: String(snap.id) } });
 }
 
-async function removeSnapshot(snap: SnapshotInfo): Promise<void> {
-  const ok = await confirm({
-    title: "删除代码快照",
-    body: `确定删除快照「${snap.originalFilename}」？解压目录将一并清除。`,
-  });
-  if (!ok) return;
-  try {
-    await api.deleteSnapshot(snap.id);
-    message.success("已删除");
-    await load();
-  } catch (error) {
-    message.error((error as Error).message);
-  }
-}
+const cleanupOpen = ref(false), cleanupSnapshot = ref(0);
+function removeSnapshot(snap: SnapshotInfo): void { cleanupSnapshot.value = snap.id; cleanupOpen.value = true; }
+async function snapshotDeleted(): Promise<void> { message.success("已删除代码快照与目录"); await Promise.all([load(),reloadSnapshots(),loadOrphans()]); }
 
 async function attach(): Promise<void> {
-  if (!attachId.value) return;
+  if (!canOperate.value || attaching.value || !attachId.value || orphanLoading.value || !!orphanError.value) return;
   attaching.value = true;
   try {
     await api.assignSnapshotProject(Number(attachId.value), id);
     message.success("已关联到本项目，其历史扫描一并归入");
     attachId.value = "";
-    await load();
+    await Promise.all([load(),reloadSnapshots(),loadOrphans()]);
   } catch (error) {
     message.error((error as Error).message);
   } finally {
@@ -132,7 +138,7 @@ const snapColumns: ColumnDef<SnapshotInfo>[] = [
     header: "归档",
     cell: ({ row }) =>
       h("span", { style: { display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 } }, [
-        h("span", { style: { fontWeight: 500, color: "var(--text-primary)" } }, row.original.originalFilename),
+        h("span", { class: "dt-cell-text", title: row.original.originalFilename, style: { fontWeight: 500, color: "var(--text-primary)" } }, row.original.originalFilename),
         h(Tooltip, { content: row.original.snapshotPath }, () =>
           h(
             "span",
@@ -184,12 +190,12 @@ const snapColumns: ColumnDef<SnapshotInfo>[] = [
       if (!canOperate.value) return null;
       return h("span", { style: { display: "flex", gap: "2px", justifyContent: "flex-end" } }, [
         h(Tooltip, { content: "用此快照新建扫描" }, () =>
-          h(Button, { variant: "ghost", size: "iconSm", onClick: () => scanSnapshot(s) }, () => h(ScanLine, { size: 13, "stroke-width": 1.7 })),
+          h(Button, { variant: "ghost", size: "iconSm", "aria-label": `扫描快照 ${s.originalFilename}`, onClick: () => scanSnapshot(s) }, () => h(ScanLine, { size: 13, "stroke-width": 1.7 })),
         ),
         h(Tooltip, { content: s.scanCount > 0 ? "有扫描引用，不可删除" : "删除快照" }, () =>
           h(
             Button,
-            { variant: "ghost", size: "iconSm", class: "row-danger", disabled: !canAdmin.value || s.scanCount > 0, onClick: () => void removeSnapshot(s) },
+            { variant: "ghost", size: "iconSm", class: "row-danger", "aria-label": `删除快照 ${s.originalFilename}`, disabled: !canAdmin.value || s.scanCount > 0, onClick: () => void removeSnapshot(s) },
             () => h(Trash2, { size: 13, "stroke-width": 1.7 }),
           ),
         ),
@@ -239,10 +245,11 @@ const scanColumns: ColumnDef<ScanTask>[] = [
 ];
 
 onMounted(() => {
-  void load();
+  void load(); void loadOrphans();
   timer = window.setInterval(() => void load(), 5000);
 });
 onUnmounted(() => {
+  orphanGeneration++;clearTimeout(orphanTimer);
   if (timer) window.clearInterval(timer);
 });
 </script>
@@ -251,35 +258,30 @@ onUnmounted(() => {
   <div>
     <div v-if="loadError" class="request-error" role="alert"><span>数据加载失败：{{loadError}}</span><Button variant="outline" size="sm" @click="load">重试</Button></div>
     <PageHeader :title="project?.name ?? '项目'" description="代码资产与审计执行记录">
-      <Button v-if="canOperate" variant="secondary" :loading="uploading" @click="pickFile">
+      <Button v-if="canOperate && project" variant="secondary" :loading="uploading" @click="pickFile">
         <Upload :size="14" />上传代码包
       </Button>
-      <Button v-if="canOperate" @click="router.push({ name: 'new-scan', query: { projectId: String(id) } })">
+      <Button v-if="canOperate && project" @click="router.push({ name: 'new-scan', query: { projectId: String(id) } })">
         <Plus :size="14" />新建扫描
       </Button>
     </PageHeader>
     <input ref="fileInput" type="file" accept=".zip,.tar.gz,.tgz" style="display: none" @change="onFilePicked" />
 
+    <p v-if="loading && !project" role="status">正在读取项目与代码快照…</p>
+    <template v-if="project">
     <!-- 代码快照（项目资产） -->
     <div class="section-title-bar">
       <span class="sec-label">代码快照</span>
       <span class="sec-right">
-        <template v-if="orphans.length">
-          <Select
-            v-model="attachId"
-            :options="orphans.map((s) => ({ value: String(s.id), label: `#${s.id}  ${s.originalFilename} · ${s.fileCount} 文件` }))"
-            placeholder="关联已有快照…"
-            style="width: 260px"
-          />
-          <Button size="sm" variant="secondary" :disabled="!canOperate || !attachId" :loading="attaching" @click="attach">
-            关联
-          </Button>
-        </template>
-        <span class="sec-count mono">{{ snapshots.length }} 个</span>
+        <span class="sec-count mono">{{ snapshotResult?.total ?? '—' }} 个</span>
       </span>
     </div>
+    <Input v-model="snapshotSearch" aria-label="搜索项目代码快照" placeholder="搜索本项目的全部快照" maxlength="256" />
+    <div v-if="snapshotError" class="request-error" role="alert">项目快照读取失败：{{snapshotError}}<Button variant="outline" size="sm" @click="reloadSnapshots">重读项目快照</Button></div>
     <DataTable
-      :loading="loading"
+      :loading="snapshotLoading"
+      :unavailable="!!snapshotError"
+      manual-sorting :sorting="snapshotSorting" @update:sorting="sortSnapshots"
       :data="snapshots"
       :columns="snapColumns"
       empty-title="还没有代码快照"
@@ -289,6 +291,18 @@ onUnmounted(() => {
         <Button v-if="canOperate" variant="link" size="sm" style="margin-top: 8px" @click="pickFile">上传代码包 →</Button>
       </template>
     </DataTable>
+    <CatalogPagination label="项目快照分页" :page="snapshotResult?.page" :page-size="snapshotResult?.pageSize" :total="snapshotResult?.total" :loading="snapshotLoading" :unavailable="!!snapshotError" @change="changeSnapshotPage" />
+    <section v-if="canOperate" class="snapshot-attach" aria-label="关联代码快照">
+      <h3>关联已有快照</h3>
+      <p class="upload-hint">选择尚未归属项目的快照，其历史扫描会一并归入。</p>
+      <Input v-model="orphanSearch" aria-label="搜索未归属快照" placeholder="搜索全部未归属快照" maxlength="256" />
+      <div v-if="orphanError" class="request-error" role="alert">未归属快照读取失败：{{orphanError}}<Button variant="outline" size="sm" @click="loadOrphans()">重读未归属快照</Button></div>
+      <div class="attach-controls">
+        <Select v-model="attachId" aria-label="待关联快照" :options="orphans.map(s=>({value:String(s.id),label:`#${s.id}  ${s.originalFilename} · ${s.fileCount} 文件`}))" clearable :disabled="orphanLoading || !!orphanError" placeholder="选择未归属快照…" />
+        <Button size="sm" variant="secondary" :disabled="!attachId || orphanLoading || !!orphanError" :loading="attaching" @click="attach">关联</Button>
+      </div>
+      <CatalogPagination label="未归属快照分页" :page="orphanTotal === undefined ? undefined : orphanPage" :total="orphanTotal" :loading="orphanLoading" :unavailable="!!orphanError" @change="loadOrphans" />
+    </section>
 
     <!-- 项目扫描记录 -->
     <div class="section-title-bar" style="margin-top: var(--space-6)">
@@ -297,16 +311,20 @@ onUnmounted(() => {
     </div>
     <DataTable
       :loading="loading"
+      :unavailable="!!loadError"
       :data="scans"
       :columns="scanColumns"
       :row-click="(s) => router.push({ name: 'scan-detail', params: { id: s.id } })"
       empty-title="还没有扫描记录"
       empty-hint="选择一个代码快照发起扫描。"
     />
+    </template>
+    <ResourceCleanupDialog v-model:open="cleanupOpen" kind="snapshot" :resource-id="cleanupSnapshot" @completed="snapshotDeleted" />
   </div>
 </template>
 
 <style scoped>
+.snapshot-attach{border-top:1px solid var(--border-default);padding-block:var(--space-4);max-width:var(--content-max-width)}.snapshot-attach h3{font-size:var(--font-size-sm);font-weight:var(--font-weight-medium)}.attach-controls{display:flex;align-items:center;gap:var(--space-2);margin-top:var(--space-2)}.attach-controls>:first-child{flex:1;min-width:0}
 .section-title-bar {
   display: flex;
   justify-content: space-between;

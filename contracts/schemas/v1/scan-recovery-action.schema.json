@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/scan-recovery-action.schema.json",
+  "title": "ScanRecoveryAction",
+  "$ref": "#/$defs/ScanRecoveryAction",
+  "$defs": {
+    "ScanRecoveryAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/scan-recovery-snapshot.schema.json#/$defs/RecoveryExecution"
+        },
+        "expectedStatus": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "claimed",
+            "scanning",
+            "cancel_requested",
+            "completed",
+            "partial",
+            "failed",
+            "canceled",
+            "timeout",
+            "abandoned"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "restore_result",
+            "restart",
+            "interrupt_expired"
+          ]
+        },
+        "resultSha256": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acknowledgeReexecution": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "expectedStatus",
+        "action",
+        "resultSha256",
+        "acknowledgeReexecution"
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "action": {
+              "const": "restore_result"
+            },
+            "acknowledgeReexecution": {
+              "const": false
+            },
+            "resultSha256": {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+            }
+          }
+        },
+        {
+          "properties": {
+            "action": {
+              "const": "restart"
+            },
+            "acknowledgeReexecution": {
+              "const": true
+            },
+            "resultSha256": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "action": {
+              "const": "interrupt_expired"
+            },
+            "acknowledgeReexecution": {
+              "const": false
+            },
+            "resultSha256": {
+              "type": "null"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

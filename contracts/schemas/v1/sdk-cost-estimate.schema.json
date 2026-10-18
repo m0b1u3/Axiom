@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-cost-estimate.schema.json",
+  "title": "SDKCostEstimate",
+  "$ref": "#/$defs/SDKCostEstimate",
+  "$defs": {
+    "SDKCostEstimate": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.1.25"
+        },
+        "method": {
+          "type": "string",
+          "const": "estimateScanCost"
+        },
+        "scope": {
+          "type": "string",
+          "const": "returned_turn_usage"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "estimated",
+            "missing_model",
+            "missing_usage",
+            "unsupported_model_or_usage",
+            "unavailable"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 4096
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "estimatedUsd": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "inputTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cachedInputTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cacheWriteInputTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outputTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "usage": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/JsonValue"
+        },
+        "currency": {
+          "type": "string",
+          "const": "USD"
+        },
+        "isEstimate": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sdkVersion",
+        "method",
+        "scope",
+        "observedAt",
+        "model",
+        "status",
+        "reason",
+        "estimatedUsd",
+        "inputTokens",
+        "cachedInputTokens",
+        "cacheWriteInputTokens",
+        "outputTokens",
+        "usage",
+        "currency",
+        "isEstimate"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "estimated"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "estimatedUsd": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "estimatedUsd": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

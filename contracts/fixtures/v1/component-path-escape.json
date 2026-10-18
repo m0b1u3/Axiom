@@ -1,0 +1,10 @@
+{
+  "components": [
+    {
+      "name": "完整源码",
+      "paths": [
+        "../secret"
+      ]
+    }
+  ]
+}

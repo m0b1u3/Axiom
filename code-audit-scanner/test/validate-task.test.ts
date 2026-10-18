@@ -17,6 +17,12 @@ function baseTask(overrides: Partial<ScanTask> = {}): ScanTask {
   };
 }
 
+test('independent finding evidence may use credential-shaped keys without becoming execution credentials',()=>{
+ const task=baseTask({taskId:'42',executionAttempt:1,sdkOperation:{schemaVersion:1,execution:{taskId:'42',attempt:1},kind:'validate',origin:{taskId:'20',attempt:1},findingId:'1',acknowledgeUnknownCost:true,finding:{request:{authorization:'Fixture header',password:'Fixture reproduction value',api_key:'Fixture evidence'}}}});
+ assert.doesNotThrow(()=>validateScanTask(task));
+ Object.assign(task,{apiKey:'must remain forbidden on configuration'});assert.throws(()=>validateScanTask(task),/secret field/);
+});
+
 test("accepts a minimal valid task", () => {
   assert.doesNotThrow(() => validateScanTask(baseTask()));
 });

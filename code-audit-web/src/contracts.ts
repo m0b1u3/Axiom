@@ -4,3 +4,20 @@ export type {ScanResult,ExecutionCompletion,Finding as ContractFinding,ArtifactR
 export type {TaskBudgetSnapshot,AttemptCost} from '../../contracts/ts/src/types.gen';
 
 export type {StorageSnapshot,StoragePolicy,CleanupJob,CleanupItem} from '../../contracts/ts/src/types.gen';
+
+export type {SDKLifecycle} from '../../contracts/ts/src/types.gen';
+
+export type {ScanInput,KnowledgeDocument} from '../../contracts/ts/src/types.gen';
+export type {ExecutionRef,SDKNativeResult,SDKRepositoryFinding,SDKNativeExport,SDKCostEstimate,SDKDiagnostics,SDKDiagnostic} from '../../contracts/ts/src/types.gen';
+
+export type {SDKOperation,SDKOperationResult,SDKSessionEvent,SDKSessionSummary} from '../../contracts/ts/src/types.gen';
+export type {ScanRecoverySnapshot,ScanRecoveryAction,RecoveredResult} from '../../contracts/ts/src/types.gen';
+export type {FindingEvidence,EvidenceGraph,EvidenceNode,EvidenceRelation,EvidenceLocation} from '../../contracts/ts/src/types.gen';
+
+export type {GitDiffTarget,GitDiffAssignment,GitDiffFile,GitDiffPreview,GitDiffContent} from '../../contracts/ts/src/types.gen';
+
+export type {ComponentSource,ComponentPlanDocument,ComponentPlanCoverage,ComponentPlanSnapshot, ComponentPlanView,ComponentPlanVersion,ComponentPlanningOperation,ComponentPlanningResult} from '../../contracts/ts/src/types.gen';
+
+export type {ComponentScanRequest,ComponentScanReceipt,ComponentScanMatching,ComponentScanSnapshot,ComponentScanResult,ComponentFindingBinding} from '../../contracts/ts/src/types.gen';
+
+export type {SDKIdentityRef,SDKIdentitySnapshot,SDKIdentityOperation,SDKTaskIdentity} from '../../contracts/ts/src/types.gen';

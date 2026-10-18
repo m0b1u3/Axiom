@@ -57,6 +57,30 @@ test('real API client preserves payloads, authorization, envelopes and blobs', a
   assert.equal(last.timeout,120000);
 });
 
+test('catalog page APIs preserve literal search, scope, sort and paged result metadata', async () => {
+  response = {data:{items:[],total:401,page:9,pageSize:50,counts:{'':401,low:1}}};
+  const query = {page:9,q:'中文 100%_! & CWE-20',severity:'low',status:'confirmed',projectId:0,sourceSnapshotId:7,sourcePath:'/src/%',sort:'lastSeenAt',order:'desc'};
+  const result = await api.findingPage(query);
+  assert.equal(last.url,'/findings');
+  assert.deepEqual(last.params,{pageSize:50,...query});
+  assert.deepEqual(result,response.data);
+  response = {data:{items:[],total:0,page:1,pageSize:100}};
+  assert.deepEqual(await api.snapshotPage({pageSize:100,projectId:0,usage:'unused',q:'%_!',id:201}),response.data);
+  assert.equal(last.url,'/snapshots');
+  assert.deepEqual(last.params,{page:1,pageSize:100,projectId:0,usage:'unused',q:'%_!',id:201});
+  response = {data:[]};
+  assert.deepEqual(await api.listSnapshots(7),[]);
+  assert.equal(last.url,'/snapshots?projectId=7');
+  assert.deepEqual(await api.listFindingsPool({q:'historic'}),[]);
+  assert.equal(new URL(last.url,'http://fixture').searchParams.has('page'),false);
+  await assert.rejects(api.snapshotPage({}),/Web 与 Server 升级到同一版本/);
+  await assert.rejects(api.findingPage({}),/Web 与 Server 升级到同一版本/);
+  response = {data:{items:[],total:-1,page:1,pageSize:50}};
+  await assert.rejects(api.snapshotPage({}),/有效的全量分页/);
+  response = {data:{items:[],total:1,page:1,pageSize:50,counts:{'':0}}};
+  await assert.rejects(api.findingPage({}),/有效的全量分页/);
+});
+
 test('expired session redirects once through the app event; failed login does not', async () => {
   let expired=0;
   const listener=()=>expired++;

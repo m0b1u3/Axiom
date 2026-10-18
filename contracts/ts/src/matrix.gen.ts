@@ -51,6 +51,61 @@ export const EXECUTION_MATRIX={
       "job": 3,
       "progress": 2,
       "event": 2
+    },
+    {
+      "id": "scan_input",
+      "input": 2,
+      "result": 1,
+      "observation": 1,
+      "controlAPI": 4,
+      "description": 5,
+      "job": 4,
+      "progress": 2,
+      "event": 2
+    },
+    {
+      "id": "sdk_operation",
+      "input": 3,
+      "result": 1,
+      "observation": 1,
+      "controlAPI": 4,
+      "description": 6,
+      "job": 5,
+      "progress": 2,
+      "event": 2
+    },
+    {
+      "id": "git_diff",
+      "input": 4,
+      "result": 1,
+      "observation": 1,
+      "controlAPI": 4,
+      "description": 7,
+      "job": 6,
+      "progress": 2,
+      "event": 2
+    },
+    {
+      "id": "component_planning",
+      "input": 5,
+      "result": 1,
+      "observation": 1,
+      "controlAPI": 4,
+      "description": 8,
+      "job": 7,
+      "progress": 2,
+      "event": 2
+    },
+    {
+      "id": "component_scan",
+      "input": 6,
+      "result": 1,
+      "observation": 1,
+      "controlAPI": 4,
+      "description": 9,
+      "job": 8,
+      "progress": 2,
+      "event": 2
     }
   ],
   "policies": {
@@ -69,4 +124,4 @@ export const EXECUTION_MATRIX={
     ]
   }
 } as const;
-export const EXECUTION_MATRIX_HASH="c2963879b58386fdf99df913edda790ff147f01290cedb476b5216990ea6b795" as const;
+export const EXECUTION_MATRIX_HASH="7f77589f40907b7d591be79f1a883d4d5f1f004f2a304db3c5cbde705d9cbfb9" as const;

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "receivedCount": 1,
+  "persistedCount": 1,
+  "omittedCount": 0,
+  "state": "complete",
+  "reason": null,
+  "journal": null
+}

@@ -4,7 +4,7 @@ import {mkdtemp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
-import {decode,type ScannerJobV2} from '@axiom/contracts';
+import {COMPATIBILITY,decode,type ScannerJobV2} from '@axiom/contracts';
 import {scanTaskFromJob} from '../src/contract/scanner-job.js';
 import {convertCodexResult} from '../src/converter/codex-finding-converter.js';
 import {contractResult,publishResult,InvalidSDKResultError} from '../src/artifact/result-publisher.js';
@@ -30,9 +30,19 @@ test('SDK rich result publishes a verified portable result and keeps native fiel
   assert.equal(result.cost?.inputTokens,0);assert.equal(result.cost?.estimatedUsd,1.125);
   assert.equal(result.findings[0]?.confidence?.level,'medium');assert.equal(result.findings[0]?.confidence?.value,undefined,'numeric confidence was invented');
   assert.equal(result.findings[0]?.confidence?.rationale,'Fixture rationale');assert.equal(result.findings[0]?.codeEvidence?.[0]?.explanation,'Fixture explanation');
-  assert.equal(result.findings[0]?.engineOccurrenceId,'fixture-occurrence');assert.deepEqual(result.findings[0]?.extensions,{future:[0,null,false,'']});
+  assert.equal(result.findings[0]?.engineOccurrenceId,'fixture-occurrence');assert.deepEqual(result.findings[0]?.extensions?.future,[0,null,false,'']);
+  const evidence=decode('FindingEvidence',JSON.stringify(result.findings[0]?.extensions?.axiomEvidence),input.execution);assert.equal(evidence.findingFingerprint,result.findings[0]?.fingerprint);assert.equal(evidence.nodes[1]?.sdkEvidenceId,'fixture-evidence');
   assert.equal(result.artifacts.length,1);assert.equal(result.artifacts[0]?.kind,'report');
  }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test('optional evidence cannot crowd out a source result near the document limit',async()=>{
+ const input=decode('ScannerJobV2',await readFile(new URL('../../contracts/fixtures/v1/job-v2-result.json',import.meta.url)));
+ const task=scanTaskFromJob(input),source=JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/evidence-source.json',import.meta.url),'utf8'));
+ const legacy:ScanResult={taskId:task.taskId,status:'completed',startedAt:'2026-10-13T00:00:00Z',finishedAt:'2026-10-13T00:01:00Z',engine:{name:'codex-security',version:'fixture'},model:{provider:task.provider,model:task.model},findings:[source],rawArtifactDir:'raw/codex-security',normalizedResultPath:'normalized/result.json',sdkRaw:{fixtureOnly:true,padding:''}};
+ const enriched=contractResult(task,legacy),without=structuredClone(enriched);delete without.findings[0]!.extensions!.axiomEvidence;
+ const baseline=Buffer.byteLength(JSON.stringify(without));legacy.sdkRaw!.padding='x'.repeat(COMPATIBILITY.limits.documentBytes-65536-baseline-1000);
+ const result=contractResult(task,legacy);assert.equal(result.findings[0]!.extensions!.axiomEvidence,undefined);assert.match(String(result.findings[0]!.extensions!.axiomEvidenceUnavailable),/容量/);assert.deepEqual(result.findings[0]!.raw,source.raw);assert.equal((result.extensions!.sdk as any).padding.length,(legacy.sdkRaw!.padding as string).length);
 });
 
 test('unknown result cost remains null; zero is an observed value; unknown severity is rejected',async()=>{

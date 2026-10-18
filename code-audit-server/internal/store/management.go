@@ -139,6 +139,9 @@ func (s *Store) ReportAgentWithObservations(ctx context.Context, id string, slot
 }
 
 type QueueTask struct {
+	capacityUnits      int
+	sdkOperation       bool
+	scanInput          bool
 	TaskID             int64              `json:"taskId"`
 	Status             string             `json:"status"`
 	AgentID            string             `json:"agentId"`
@@ -222,14 +225,14 @@ func (s *Store) QueueOverview(ctx context.Context, defaults ClaimLimits, taskID 
 	if e != nil {
 		return v, e
 	}
-	rows, e = tx.QueryContext(ctx, `SELECT id,status,COALESCE(agent_id,''),queued_at,COALESCE(started_at,''),COALESCE(finished_at,''),COALESCE(heartbeat_at,''),COALESCE(lease_expires_at,''),automatic_retries,COALESCE(model_config_id,0),COALESCE(project_id,0),provider,input_contract_version,result_contract_version,observation_contract_version,(max_cost_usd IS NOT NULL OR EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=scan_tasks.id AND b.total_micros IS NOT NULL)),(SELECT total_micros FROM task_budgets b WHERE b.task_id=scan_tasks.id),EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=scan_tasks.id AND c.state='unknown'),(SELECT LEAST(COALESCE(SUM(c.booked_micros),0),9007199254740991)::bigint FROM task_cost_attempts c WHERE c.task_id=scan_tasks.id) FROM scan_tasks WHERE status IN ('pending','claimed','scanning','cancel_requested') OR id=? ORDER BY queued_at,id`, taskID)
+	rows, e = tx.QueryContext(ctx, `SELECT COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=scan_tasks.id),1),EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id),EXISTS(SELECT 1 FROM task_scan_inputs si WHERE si.task_id=scan_tasks.id),id,status,COALESCE(agent_id,''),queued_at,COALESCE(started_at,''),COALESCE(finished_at,''),COALESCE(heartbeat_at,''),COALESCE(lease_expires_at,''),automatic_retries,COALESCE(model_config_id,0),COALESCE(project_id,0),provider,input_contract_version,result_contract_version,observation_contract_version,(max_cost_usd IS NOT NULL OR EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=scan_tasks.id AND b.total_micros IS NOT NULL)),(SELECT total_micros FROM task_budgets b WHERE b.task_id=scan_tasks.id),EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=scan_tasks.id AND c.state='unknown'),(SELECT LEAST(COALESCE(SUM(c.booked_micros),0),9007199254740991)::bigint FROM task_cost_attempts c WHERE c.task_id=scan_tasks.id) FROM scan_tasks WHERE status IN ('pending','claimed','scanning','cancel_requested') OR id=? ORDER BY queued_at,id`, taskID)
 	if e != nil {
 		return v, e
 	}
 	all := []QueueTask{}
 	for rows.Next() {
 		var t QueueTask
-		if e = rows.Scan(&t.TaskID, &t.Status, &t.AgentID, &t.QueuedAt, &t.StartedAt, &t.FinishedAt, &t.HeartbeatAt, &t.LeaseExpiresAt, &t.AutomaticRetries, &t.modelID, &t.projectID, &t.provider, &t.inputVersion, &t.resultVersion, &t.observationVersion, &t.budget, &t.budgetTotal, &t.budgetUnknown, &t.budgetUsed); e != nil {
+		if e = rows.Scan(&t.capacityUnits, &t.sdkOperation, &t.scanInput, &t.TaskID, &t.Status, &t.AgentID, &t.QueuedAt, &t.StartedAt, &t.FinishedAt, &t.HeartbeatAt, &t.LeaseExpiresAt, &t.AutomaticRetries, &t.modelID, &t.projectID, &t.provider, &t.inputVersion, &t.resultVersion, &t.observationVersion, &t.budget, &t.budgetTotal, &t.budgetUnknown, &t.budgetUsed); e != nil {
 			rows.Close()
 			return v, e
 		}
@@ -246,12 +249,24 @@ func (s *Store) QueueOverview(ctx context.Context, defaults ClaimLimits, taskID 
 	}
 	models := map[modelKey]int{}
 	projects := map[int64]int{}
+	activeUnits := 0
 	stamp := v.ServerTime.Format(time.RFC3339)
+	if s.IsPostgres() {
+		// Native login waits occupy real worker slots, even though they are
+		// independent of scan tasks and do not call a model.
+		var identities int
+		if e = tx.QueryRowContext(ctx, `SELECT count(*) FROM sdk_identity_operations WHERE status IN ('running','waiting') AND lease_until>=? AND deadline>=?`, stamp, stamp).Scan(&identities); e != nil {
+			return v, e
+		}
+		activeUnits += identities
+		v.Active += identities
+	}
 	for _, t := range all {
 		if t.Status != "pending" && IsRunningStatus(t.Status) && t.LeaseExpiresAt >= stamp {
 			v.Active++
-			models[modelKey{t.modelID, t.provider}]++
-			projects[t.projectID]++
+			activeUnits += t.capacityUnits
+			models[modelKey{t.modelID, t.provider}] += t.capacityUnits
+			projects[t.projectID] += t.capacityUnits
 		}
 	}
 	v.EffectiveCapacity = min(v.Settings.Global, v.ReadySlots)
@@ -275,11 +290,11 @@ func (s *Store) QueueOverview(ctx context.Context, defaults ClaimLimits, taskID 
 				t.Reason = "agent_offline"
 			case t.Compatibility.Reason != "":
 				t.Reason = t.Compatibility.Reason
-			case v.Active >= settings.Global:
+			case activeUnits+t.capacityUnits > settings.Global:
 				t.Reason = "global_limit"
-			case models[modelKey{t.modelID, t.provider}] >= settings.PerModel:
+			case models[modelKey{t.modelID, t.provider}]+t.capacityUnits > settings.PerModel:
 				t.Reason = "model_limit"
-			case projects[t.projectID] >= settings.PerProject:
+			case projects[t.projectID]+t.capacityUnits > settings.PerProject:
 				t.Reason = "project_limit"
 			case v.Active >= v.OnlineSlots:
 				t.Reason = "agent_capacity"
@@ -318,6 +333,8 @@ func (s *Store) AttemptResult(ctx context.Context, id int64, attempt int) (Attem
 	if !raw.Valid {
 		return v, nil
 	}
+	digest := sha256.Sum256([]byte(raw.String))
+	v.ArchiveSHA256 = hex.EncodeToString(digest[:])
 	if v.ContractVersion == 1 {
 		expected := contracts.ExecutionRef{TaskID: contracts.TaskID(fmt.Sprint(id)), Attempt: int64(attempt)}
 		full, err := contracts.DecodeExecutionCompletion([]byte(raw.String), &expected)
@@ -326,8 +343,6 @@ func (s *Store) AttemptResult(ctx context.Context, id int64, attempt int) (Attem
 		}
 		v.Available = true
 		v.Completion = &full
-		digest := sha256.Sum256([]byte(raw.String))
-		v.ArchiveSHA256 = hex.EncodeToString(digest[:])
 		if full.Result.Present {
 			r := full.Result.Value
 			v.Result = &r

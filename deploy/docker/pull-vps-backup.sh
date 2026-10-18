@@ -36,4 +36,4 @@ echo "listing $VPS_HOST:$REMOTE_DIR"
 ssh -i "$VPS_KEY" "$VPS_HOST" "ls -1 $REMOTE_DIR"
 
 echo "please choose one file (例如 axiom.dump 或 backup.tar.gz) and rerun:"
-echo "./pull-vps-backup.sh \"$REMOTE_DIR\" <filename>"  
+echo "./pull-vps-backup.sh \"$REMOTE_DIR\" <filename>"

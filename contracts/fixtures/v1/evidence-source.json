@@ -1,0 +1,27 @@
+{
+  "fingerprint": "fixture:evidence-chain",
+  "title": "Fixtures / Mock：查询输入进入数据库调用",
+  "severity": "high",
+  "description": "仅用于合同和浏览器验收，不代表真实漏洞。",
+  "raw": {
+    "findingId": "fixture-evidence-1",
+    "title": "Fixtures / Mock：查询输入进入数据库调用",
+    "summary": "合成证据链，用于验证引用和推断边界。",
+    "severity": {"level":"high"},
+    "codeEvidence": [
+      {"id":"E-source","label":"读取查询参数","path":"fixture.ts","startLine":2,"code":"const query = request.query.q;","explanation":"合成代码证据；确认代码存在不等于验证漏洞。"},
+      {"id":"E-sink","label":"数据库调用","path":"fixture.ts","startLine":3,"code":"database.execute(query);","explanation":"合成危险操作证据。"}
+    ],
+    "rootCause":{"summary":"SDK 假设：查询参数缺少约束","evidenceRefs":["E-source","E-sink"]},
+    "attackPath":{
+      "summary":"SDK 推断的输入传播路径",
+      "dataFlow":{"summary":"查询参数流向数据库调用","source":"request.query.q","sink":"database.execute","transformations":["将参数赋给 query"],"evidence_refs":["E-source","E-sink"]},
+      "steps":["读取外部参数","执行数据库调用"],
+      "assumptions":["假设上游没有进行参数约束"],
+      "controls":["需要检查数据库驱动的参数化行为"],
+      "evidenceRefs":["E-source"]
+    },
+    "validation":{"status":"verified","summary":"SDK 复核声称 reportable；本合成样本未执行独立复现","evidenceRefs":["E-sink"],"counterEvidence":["上游中间件可能已约束输入"],"limitations":["未提供实际请求与运行轨迹"]},
+    "unknownNative":{"retained":[null,0,false,""],"x/y~z":"原始字段"}
+  }
+}

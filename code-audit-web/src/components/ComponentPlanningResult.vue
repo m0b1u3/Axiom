@@ -1,0 +1,9 @@
+<script setup lang="ts">
+import {computed} from 'vue';
+import {validate} from '../../../contracts/ts/src/index';
+import type {ScanResult,ComponentPlanningResult} from '../contracts';
+const props=defineProps<{result:ScanResult}>();
+const operation=computed(()=>{try{const v=props.result.extensions?.componentPlanning;validate('ComponentPlanningResult',v,props.result.execution);return v as ComponentPlanningResult}catch{return null}});
+</script>
+<template><section class="component-result" aria-label="组件规划操作结果"><p v-if="!operation" role="alert">组件结果的合同版本或执行身份不匹配，完整归档仍可下载。</p><template v-else><h3>{{operation.operation.kind==='normalize'?'组件路径规范化与覆盖检查':'SDK 组件划分建议'}}</h3><p><RouterLink :to="'/component-plans/'+operation.operation.planId">返回组件计划 #{{operation.operation.planId}}</RouterLink> · 草稿 r{{operation.operation.revision}}</p><p>{{operation.cost.state==='known'?'本地校验 · 费用 $0 · 未调用模型':'自动规划费用未知，不能计为零；建议仍需人工审阅。'}}</p><p v-if="operation.error" role="alert">{{operation.error.code}}：{{operation.error.message}}</p><p v-if="operation.coverage">已覆盖 {{operation.coverage.coveredFileCount}} / {{operation.coverage.fileCount}} 个文件，{{operation.coverage.overlapCount}} 处重叠。{{operation.coverage.valid?'范围检查通过。':'范围需要调整。'}}</p><p>这是计划操作的结果，未执行组件扫描，也不构成漏洞结论。</p><details><summary>原始组件操作结果</summary><pre>{{JSON.stringify(operation,null,2)}}</pre></details></template></section></template>
+<style scoped>.component-result{font-size:var(--font-size-xs);border-top:1px solid var(--border-default);padding-top:var(--space-3);margin-top:var(--space-3)}h3{font-size:var(--font-size-sm);font-weight:var(--font-weight-semibold)}p{color:var(--text-secondary);line-height:var(--line-height-body);overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:360px;overflow:auto;background:var(--surface-secondary);padding:var(--space-2)}</style>

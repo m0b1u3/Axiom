@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-lifecycle.schema.json",
+  "title": "SDKLifecycle",
+  "$ref": "#/$defs/SDKLifecycle",
+  "$defs": {
+    "SDKLifecycle": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "authentication": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "enum": [
+                    "command",
+                    "api_key",
+                    "stored_credentials",
+                    "aws_credentials"
+                  ]
+                },
+                "verified": {
+                  "const": false,
+                  "type": "boolean"
+                },
+                "credentialType": {
+                  "type": "string",
+                  "enum": [
+                    "api_key",
+                    "chatgpt"
+                  ]
+                }
+              },
+              "required": [
+                "method",
+                "verified"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "trustedAccess": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "granted",
+                "not_granted",
+                "unknown"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outputReady": {
+          "type": "boolean"
+        },
+        "outputArchived": {
+          "type": "boolean"
+        },
+        "scanStarted": {
+          "type": "boolean"
+        },
+        "budgetApproaching": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "maxCostUsd": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "estimatedUsd": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "action": {
+                  "const": "retain_limit",
+                  "type": "string"
+                },
+                "observedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "maxCostUsd",
+                "estimatedUsd",
+                "action",
+                "observedAt"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "observedAt",
+        "authentication",
+        "trustedAccess",
+        "outputReady",
+        "outputArchived",
+        "scanStarted",
+        "budgetApproaching"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

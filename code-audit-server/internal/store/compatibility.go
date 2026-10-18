@@ -22,7 +22,7 @@ type TaskCompatibility struct {
 }
 
 func evaluateTaskCompatibility(t QueueTask, agents []AgentPresence) *TaskCompatibility {
-	v := &TaskCompatibility{Required: control.Requirements{Input: t.inputVersion, Result: t.resultVersion, Observation: t.observationVersion, Budget: t.budget}, Candidates: []CompatibilityCandidate{}}
+	v := &TaskCompatibility{Required: control.Requirements{SDKOperation: t.sdkOperation, ScanInput: t.scanInput, Input: t.inputVersion, Result: t.resultVersion, Observation: t.observationVersion, Budget: t.budget}, Candidates: []CompatibilityCandidate{}}
 	p, ok := control.RequiredProfile(v.Required)
 	v.Profile = p.ID
 	if !ok {
@@ -86,6 +86,16 @@ func evaluateTaskCompatibility(t QueueTask, agents []AgentPresence) *TaskCompati
 		v.Reason = "matrix_incompatible"
 	case blocked && !inputOK:
 		v.Reason = "scanner_incompatible"
+	case t.inputVersion == contracts.ComponentScanInputVersion:
+		v.Reason = "component_scan_incompatible"
+	case t.inputVersion == contracts.ComponentPlanningInputVersion:
+		v.Reason = "component_planning_incompatible"
+	case t.inputVersion == contracts.GitDiffInputVersion:
+		v.Reason = "git_diff_incompatible"
+	case t.inputVersion == contracts.SDKOperationInputVersion:
+		v.Reason = "sdk_operation_incompatible"
+	case t.scanInput:
+		v.Reason = "scan_input_incompatible"
 	case !inputOK:
 		v.Reason = "input_incompatible"
 	case !resultOK:

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "inputVersion": 3,
+  "operationVersion": 1,
+  "resultVersion": 1,
+  "jobVersion": 5,
+  "descriptionVersion": 6,
+  "controlAPI": 4,
+  "sessionEventVersion": 1,
+  "sessionSummaryVersion": 1,
+  "cost": {
+    "preflight": "known_zero_local",
+    "validate": "unknown"
+  }
+}

@@ -1,4 +1,5 @@
-import type {ResolvedModel} from "@axiom/contracts";
+import type {SDKTaskIdentity} from "@axiom/contracts";
+import type {ResolvedModel,ScanInput,SDKParentState} from "@axiom/contracts";
 /**
  * Scanner 输入合同。
  *
@@ -14,6 +15,15 @@ export type ScanProvider = string;
 export type ScanMode = "standard" | "deep";
 
 export interface ScanTask {
+ sdkIdentity?:SDKTaskIdentity;
+  componentScan?:import("@axiom/contracts").ComponentScanRequest;
+  componentPlanning?:import("@axiom/contracts").ComponentPlanningOperation;
+  gitTarget?:import("@axiom/contracts").GitDiffTarget;
+  sourceSnapshotId?:string;
+  sdkOperation?:import('@axiom/contracts').SDKOperation;
+ sourceContentHash?:string;
+ parentState?:SDKParentState;
+  scanInput?:ScanInput;
   resultSchemaVersion?: 1;
   progressSchemaVersion?: 2;
   eventSchemaVersion?: 2;

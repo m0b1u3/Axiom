@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "kind": "validate",
+  "origin": {
+    "taskId": "20",
+    "attempt": 1
+  },
+  "findingId": "30",
+  "finding": null,
+  "acknowledgeUnknownCost": true
+}

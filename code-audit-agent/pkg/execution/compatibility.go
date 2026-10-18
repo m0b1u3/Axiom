@@ -83,6 +83,9 @@ func (c *Client) Negotiate(ctx context.Context, id string, slots int) error {
 		if max == 0 {
 			return errors.New("Server declares no supported control API")
 		}
+		if v.Data.SDKIdentityVersion != 1 {
+			c.SDKIdentityVersion = 0
+		}
 		c.ControlAPI = max
 		c.RuntimeEndpoint = true
 		if v.Data.MatrixHash != control.MatrixHash {
@@ -99,6 +102,7 @@ func (c *Client) Negotiate(ctx context.Context, id string, slots int) error {
 	if r.StatusCode != 404 && r.StatusCode != 405 {
 		return errors.New("Server capability discovery failed")
 	}
+	c.SDKIdentityVersion = 0
 	// An old Server has no descriptor. Probe known presence payloads, without
 	// scan credentials or task claims. Never fall back on auth/network failures.
 	apis := control.ControlAPIs()
@@ -120,9 +124,24 @@ func (c *Client) validateLease(l *Lease) (*Lease, error) {
 	if !l.HasTask() {
 		return l, nil
 	}
-	v := control.Requirements{Result: l.ResultContractVersion, Observation: l.ObservationContractVersion}
+	v := control.Requirements{SDKOperation: l.SDKOperation != nil, ScanInput: l.ScanInput != nil, Result: l.ResultContractVersion, Observation: l.ObservationContractVersion}
 	if l.Assignment != nil {
 		v.Input = int(l.Assignment.SchemaVersion)
+		if l.ScanInput != nil {
+			v.Input = contracts.ScanInputVersion
+		}
+		if l.ComponentScan != nil {
+			v.Input = contracts.ComponentScanInputVersion
+		}
+		if l.ComponentPlanning != nil {
+			v.Input = contracts.ComponentPlanningInputVersion
+		}
+		if l.SDKOperation != nil {
+			v.Input = contracts.SDKOperationInputVersion
+		}
+		if l.GitDiff != nil {
+			v.Input = contracts.GitDiffInputVersion
+		}
 		v.Budget = l.Assignment.Policy.MaxCostUSD.Present
 	}
 	if l.Legacy != nil {
@@ -130,7 +149,7 @@ func (c *Client) validateLease(l *Lease) (*Lease, error) {
 		v.Budget = l.Legacy.Task.MaxCostUSD != nil
 	}
 	p, ok := control.RequiredProfile(v)
-	if !ok || p.ControlAPI > c.selectedAPI() || !c.capabilities().ReadyFor(v) || (v.Input == 1 && l.Assignment == nil) {
+	if !ok || p.ControlAPI > c.selectedAPI() || !c.capabilities().ReadyFor(v) || (v.Input > 0 && l.Assignment == nil) {
 		return nil, &ProtocolError{Code: contracts.ErrorCodeProtocolVersionUnsupported, Origin: contracts.ErrorOriginAgent, Message: "claimed task contracts are not supported by this Server/Agent/Scanner combination", Retryable: false}
 	}
 	return l, nil

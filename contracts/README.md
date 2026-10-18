@@ -1,6 +1,6 @@
 # Axiom 合同基线
 
-本模块定义 Server、Agent、Scanner 边界的数据，采用 JSON Schema Draft 2020-12 并生成 Go/TS 类型。Assignment 和完整结果保持 v1；新任务使用 Job v3 指定 ProgressSnapshot / ScanEvent v2，ScannerDescription 升级到 v4，心跳为 ExecutionHeartbeat v1。现有 HTTP、共享文件与 JSONL 保留；老任务的 v1/v2 job、legacy 进度/事件、结果及描述入口仍可读取。
+本模块定义 Server、Agent、Scanner 边界的数据，采用 JSON Schema Draft 2020-12 并生成 Go/TS 类型。基础 Assignment 和完整结果保持 v1；普通任务使用 Job v3，高级输入/知识文档任务使用 base Assignment v1 + ScanInputAssignment v2 并生成 Job v4。SDK 独立操作使用 input v3 + SDKOperation v1 并生成 Job v5；Git 提交差异使用 input v4 + GitDiffAssignment v1 并生成 Job v6；ScannerDescription 为 v7；ProgressSnapshot / ScanEvent 保持 v2，心跳为 ExecutionHeartbeat v1。现有 HTTP、共享文件与 JSONL 保留；老任务的 v1/v2 job、legacy 进度/事件、结果及描述入口仍可读取。
 
 Axiom 的用户入口为纯 Web。本文命令供开发与部署人员使用；Scanner 的进程接口由后台自动调用，使用者通过网页配置和管理扫描。审计能力由服务端 Scanner 调用 Codex Security SDK 提供。
 
@@ -20,7 +20,7 @@ cd ..
 npm test
 ~~~
 
-npm test 会检查生成文件、构建 TS、检查 TS 类型用法与 Scanner 描述入口、执行 Go 单元测试、构建测试 codec，再运行共同样本和双向序列化测试。当前包含 132 个共同样本（63 个有效、69 个无效）和 5 个回归测试；Go 另验证 128 个任务/能力/预算组合。仅使用合成合同样本和模拟引擎，不调用模型，也不需要数据库或 API Key。Go 缓存可通过 GOMODCACHE/GOCACHE 设置到本机可写目录。
+npm test 会检查生成文件、构建 TS、检查 TS 类型用法与 Scanner 描述入口、执行 Go 单元测试、构建测试 codec，再运行共同样本和双向序列化测试。当前包含 291 个共同样本（124 个有效、167 个无效）和 5 个回归测试；Go 另验证 1792 个任务/能力/预算组合及 Git 可选操作能力组合。仅使用合成合同样本和模拟引擎，不调用模型，也不需要数据库或 API Key。Go 缓存可通过 GOMODCACHE/GOCACHE 设置到本机可写目录。
 
 ~~~sh
 npm run generate
@@ -32,9 +32,10 @@ npm run build
 
 ## 定义与生成文件
 
-- schemas/v1/definitions.schema.json 是字段与枚举的唯一可编辑定义源，其他 Schema 提供独立入口；v2/v3/v4 入口引用公共定义；旧描述、job 和结果的结构与约束保持可读。
+- schemas/v1/definitions.schema.json 保存历史公共字段与枚举，v2/v3/v4/v5/v6/v7 入口引用公共定义。新增独立能力可在自己的 Schema 内定义 $defs（例如 sdk-lifecycle.schema.json）；生成器拒绝重复定义名。不要为新增能力改写历史合同；旧描述、job 和结果的结构与约束保持可读。
 - data/compatibility.json 保存错误别名、退出码、默认策略目录及字节限制。默认策略是目录数据，校验器不会自动填入缺失值。
 - data/execution-compatibility.json 是任务、控制接口和 Scanner 格式组合的唯一矩阵源；生成 Go/TS 元数据与 [兼容矩阵](COMPATIBILITY.md)，Server 派发与等待诊断共用同一规则。
+- data/git-diff-compatibility.json 冻结已提交 refs 的 input/job/描述版本、Standard/SHA-1 限制与预览容量；新 Git Schema 定义目标、执行绑定、连续分页与文件状态。
 - tools/generate.mjs 从上述输入生成 Go/TS 类型、Schema 资源、codec、常量及 Scanner 的基线版本元数据。
 - go/ 是独立模块 axiom/contracts，不依赖 Server、Agent、数据库或 SDK。
 - ts/ 是独立类型与校验包，构建输出在 ts/dist/。
@@ -101,7 +102,7 @@ npm run scan -- --describe
 
 该命令使用现有 tsx 启动方式。合同测试通过原生 TS 加载适配运行它，不安装或加载 SDK。
 
-输出区分 baselineVersions 和 runtime.versions：Assignment 为 v1，Job 支持 v1/v2/v3，进度与事件支持 v2，结果和完成支持 v1；jobFile、maxCostUsd、versionedResults、atomicResultCommit 开启。新版 Job v3 的事件为 scan_event（v2），structuredEvents 为 true；旧 Job v1/v2 保留原格式。配置中的 SDK 版本与 ScanResult 中记录的实际 SDK/插件/补丁版本分别表示。
+输出区分 baselineVersions 和 runtime.versions：Assignment 为 v1，Job 支持 v1/v2/v3/v4，进度与事件支持 v2，结果和完成支持 v1；jobFile、maxCostUsd、versionedResults、atomicResultCommit 开启。新版 Job v3 的事件为 scan_event（v2），structuredEvents 为 true；旧 Job v1/v2 保留原格式。配置中的 SDK 版本与 ScanResult 中记录的实际 SDK/插件/补丁版本分别表示。
 
 ## 已接入的输入链路
 
@@ -157,3 +158,31 @@ ExecutionHeartbeat 直接携带 progress 对象或 null，核对内外 taskId/at
 Provider 预设位于 Server 配置层。Agent 使用 Assignment 的完整连接描述和选定凭据，不查供应商注册表；新供应商的 `_API_KEY` 环境变量也不会作为其他 Web 任务的备用登录。源码树哈希位于独立的 `axiom/sourceidentity` 标准库模块。
 
 Server/Agent/合同/源码哈希四个 Go 模块由 `deploy/check_go_boundaries.py` 检查真实构建、测试及 module 图，`go-boundaries.yml` 在 CI 拦截跨应用依赖和 Agent 的数据库依赖。旧任务 JSON、执行身份、模型参数快照和密钥轮换均有回归测试。
+
+## 扫描输入与知识文档增量
+
+`ScanInput` v1 定义高级参数和冻结的 `KnowledgeDocument`；输入合同版本为 2，侧带为 `ScanInputAssignment` v2，进程输入为 `ScannerJobV4`。它们是独立新 Schema，历史 Assignment/Policy/Job 没有增加字段。`data/scan-input-compatibility.json` 生成双方共用的输入版本、Job/描述要求与知识文档大小限制。
+
+同一领取响应内的基础 Assignment 和输入侧带必须绑定同一 execution；缺失侧带、错误身份、未知输入版本或没有 Job v4 能力都会在 SDK 前拒绝。只有高级参数、知识文档或父扫描引用的任务选择 2/1/1 profile，普通任务仍为 1/1/1。兼容矩阵追加新 profile，原四项保持不变；矩阵摘要不一致的部署必须同步升级配套组件。
+
+每次最多 8 份非空 UTF-8 文档，每份最多 65536 字节；正文、标题、版本记录 ID 和 SHA-256 在创建任务的事务中冻结。浏览器只提交版本 ID，Agent 只用固定的版本 ID 文件名私有物化，Scanner 再核验字节和哈希。`subagents=0` 与缺失分别表示，且仅 Deep 接受；自定义验证仅 Standard/default 接受。
+
+`SDKParentState` v1 是固定 SDK 0.1.25 的有界不透明工作台快照，包含父 execution、原生 Scan ID、源码/结果哈希及最多 8 MiB SQLite 的 base64。Server 校验封存标记和哈希，冻结后经现有 HTTP 下发；只有 Scanner 理解本地工作台位置，Go 不读取 SDK 表。浏览器和公开产物清单不包含该私有快照。详见 [扫描输入与知识库基线](../docs/SDK_INPUT_KNOWLEDGE.md)。
+
+## SDK 原生结果与诊断增量
+
+SDKNativeResult / SDKCostEstimate / SDKDiagnostic / SDKDiagnostics v1 是独立根 Schema。进度和结果仅使用既有扩展字段；旧 ScanEvent v2 不增加字段，完整诊断另经版本化 JSONL 保留。Go/TS 共检内外身份、累计数量及有序序号；产物引用另与完整归档匹配。基础合同、描述、Job 和执行矩阵保持原值。设计、限制和 Web/API 见 [原生结果基线](../docs/SDK_NATIVE_RESULTS.md)。
+
+SDK 原生预检、独立复核、完整会话事件与未知费用边界见 [操作基线](../docs/SDK_OPERATIONS.md)。版本数值由 `data/sdk-operation-compatibility.json` 生成并核对，历史严格 Schema 不增加可选字段。
+
+扫描中断恢复追加 `ScanRecoverySnapshot` / `ScanRecoveryAction` v1。只读快照区分 SDK 断点续扫不支持、提交结果恢复与重新执行；动作带确认、提交哈希及观察到的执行身份，恢复前完成信封同样校验身份。现有执行合同与传输不改，见 [恢复基线](../docs/SCAN_RECOVERY.md)。
+
+单个漏洞证据链追加 `FindingEvidence` / `EvidenceGraph` v1，当前共 47 个 Schema / 46 个入口。事实保存在 Finding 的可选 `extensions.axiomEvidence`，SDK 适配只在 Scanner；图谱状态明确区分推断、代码观察和需要独立依据的验证。重复、悬空引用和来源 Pointer 均做语义校验，旧结果不要求新扩展，见[证据链基线](../docs/FINDING_EVIDENCE_GRAPH.md)。
+
+## 组件计划增量
+
+组件规划使用独立 ComponentPlanningOperation / Result、ComponentPlanView 与冻结版本合同，业务输入 5 / Job 7 / 描述 8；沿用控制 API 4、结果 1、进度/事件 2 和历史读取。完整语义及 Web 验收入口见 [组件计划基线](../docs/SDK_COMPONENT_PLANS.md)。
+
+## SDK 执行身份增量
+
+追加 SDKIdentityRef / Snapshot / Operation / Claim / Report / TaskIdentity / DeviceInstructions v1，ScannerDescription v10 声明身份版本 1。基础输入 1–6、Job 1–8、结果 1、进度/事件 2、控制 API 4 不改；身份侧带与任务 execution、Agent、凭据版本严格绑定，缺少能力不降级凭据。身份 Claim 明确下发 leaseSeconds，单独控制队列共用容量和存储准入，登录/退出没有模型调用。历史不含身份引用的任务继续走原凭据链路。协议策略由 data/sdk-identity-compatibility.json 生成。详见 [执行身份基线](../docs/SDK_EXECUTION_IDENTITIES.md)。

@@ -33,7 +33,7 @@ function download(){if(!result.value||!selected.value)return;const blob=new Blob
   <div v-if="currentQueue" class="execution-meta">
    <template v-if="task.status==='pending'"><strong>{{queueReasons[currentQueue.reason]??'等待调度'}}</strong><span>入队第 {{currentQueue.position}} 位</span><span>已等待 {{elapsed(currentQueue.queuedAt,overview?.serverTime)}}</span></template>
    <template v-else><span>执行机 <strong>{{currentQueue.agentId||'尚未分配'}}</strong></span><span>排队 {{elapsed(currentQueue.queuedAt,currentQueue.startedAt||currentQueue.finishedAt||overview?.serverTime)}}</span><span>执行 {{elapsed(currentQueue.startedAt,currentQueue.finishedAt||overview?.serverTime)}}</span><span v-if="currentQueue.reason">{{queueReasons[currentQueue.reason]}}</span></template>
-   <span v-if="currentQueue.automaticRetries">自动恢复 {{currentQueue.automaticRetries}} 次<span v-if="overview?.maxRecoveries!==undefined"> / 上限 {{overview.maxRecoveries}} 次</span></span>
+   <span v-if="currentQueue.automaticRetries">租约过期后自动重新执行 {{currentQueue.automaticRetries}} 次<span v-if="overview?.maxRecoveries!==undefined"> / 上限 {{overview.maxRecoveries}} 次</span></span>
   </div>
   <ExecutionCompatibility v-if="task.status==='pending' && currentQueue?.compatibility" :compatibility="currentQueue.compatibility" :agents="overview?.agents??[]" />
   <p v-if="task.status==='pending' && currentQueue && !currentQueue.compatibility" class="record-note" role="status">Server 未上报兼容诊断；任务状态与历史报告仍可读取。若任务持续等待，请更新 Server 和配套执行节点。</p>
@@ -41,8 +41,8 @@ function download(){if(!result.value||!selected.value)return;const blob=new Blob
   <div v-if="fault" class="failure-note" role="status"><strong>{{fault.title}}</strong><p>{{fault.action}}</p><details v-if="rawError"><summary>原始错误</summary><pre>{{rawError}}</pre></details></div>
   <details v-if="attempts.length" class="history-table-wrap">
    <summary>执行历史 <span>{{attempts.length}} 次</span></summary>
-   <div class="table-scroll"><table><thead><tr><th>执行</th><th>状态</th><th>开始时间</th><th>执行机</th><th>排队 / 执行耗时</th><th>检出</th><th><span class="sr-only">操作</span></th></tr></thead><tbody><tr v-for="a in attempts" :key="a.attempt" :class="{chosen:selected?.attempt===a.attempt}"><td>第 {{a.attempt}} 次</td><td><StatusBadge :status="a.status" /></td><td>{{absoluteTime(a.startedAt)}}</td><td>{{a.agentId}}</td><td>{{elapsed(a.queuedAt,a.startedAt)}} / {{elapsed(a.startedAt,a.finishedAt||overview?.serverTime)}}</td><td>{{a.resultAvailable?a.findingCount:'—'}}</td><td><Button size="sm" variant="ghost" @click="choose(a)">查看结果与日志</Button></td></tr></tbody></table></div>
-   <p class="record-note">每次重试保留独立记录。旧版缺失的排队时间与结果以「—」表示，不作推算。</p>
+   <div class="table-scroll"><table><thead><tr><th>执行</th><th>状态</th><th>开始时间</th><th>执行机</th><th>排队 / 执行耗时</th><th>检出</th><th><span class="sr-only">操作</span></th></tr></thead><tbody><tr v-for="a in attempts" :key="a.attempt" :class="{chosen:selected?.attempt===a.attempt}"><td>第 {{a.attempt}} 次<span v-if="a.resultRecovery"> · 结果恢复入库</span></td><td><StatusBadge :status="a.status" /></td><td>{{absoluteTime(a.startedAt)}}</td><td>{{a.agentId}}</td><td>{{elapsed(a.queuedAt,a.startedAt)}} / {{elapsed(a.startedAt,a.finishedAt||overview?.serverTime)}}</td><td>{{a.resultAvailable?a.findingCount:'—'}}</td><td><Button size="sm" variant="ghost" @click="choose(a)">查看结果与日志</Button></td></tr></tbody></table></div>
+   <p class="record-note">每次重新执行保留独立记录，不代表 SDK 断点续扫。旧版缺失的排队时间与结果以「—」表示，不作推算。</p>
   </details>
   <section v-if="selected" class="attempt-result" aria-label="所选执行结果">
    <div class="result-heading"><h2>第 {{selected.attempt}} 次执行</h2><StatusBadge :status="selected.status" /><Button variant="ghost" size="sm" @click="emit('select','current')">返回当前任务</Button><Button v-if="result?.available" variant="outline" size="sm" @click="download">下载本次结果</Button></div>

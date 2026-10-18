@@ -124,3 +124,24 @@ func TestCompatibilityReasonsUseWholeNodeAndPreserveUnknowns(t *testing.T) {
 		t.Fatal(v)
 	}
 }
+
+func TestGitDiffQueueCompatibilityKeepsOperationCapabilitySeparate(t *testing.T) {
+	a := richPresence()
+	a.ObservationCapabilities.JobVersions = []int64{3, 4, 6}
+	task := QueueTask{inputVersion: contracts.GitDiffInputVersion, resultVersion: 1, observationVersion: 1, scanInput: true}
+	if v := evaluateTaskCompatibility(task, []AgentPresence{a}); v.Reason != "" {
+		t.Fatal("Git scan should be runnable", v)
+	}
+	task.sdkOperation = true
+	if v := evaluateTaskCompatibility(task, []AgentPresence{a}); v.Reason == "" || v.Candidates[0].Ready {
+		t.Fatal("operation support invented", v)
+	}
+	a.ObservationCapabilities.JobVersions = append(a.ObservationCapabilities.JobVersions, 5)
+	if v := evaluateTaskCompatibility(task, []AgentPresence{a}); v.Reason != "" || !v.Required.SDKOperation {
+		t.Fatal("Git operation requirements lost", v)
+	}
+	a.ObservationCapabilities.JobVersions = []int64{3, 4, 5}
+	if v := evaluateTaskCompatibility(task, []AgentPresence{a}); v.Reason != "git_diff_incompatible" || v.Candidates[0].Ready {
+		t.Fatal("old Scanner should wait", v)
+	}
+}

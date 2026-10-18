@@ -111,7 +111,7 @@ function toFinding(item: CodexLikeFinding): Finding {
     if (reach) {
       finding.reachability = typeof reach === "string" ? reach : reach.summary ?? "";
     }
-    const dataflow = item.attackPath.dataflow ?? item.attackPath.data_flow ?? item.attackPath.dataflowText;
+    const dataflow = item.attackPath.dataFlow ?? item.attackPath.dataflow ?? item.attackPath.data_flow ?? item.attackPath.dataflowText;
     if (dataflow) {
       finding.dataflow =
         typeof dataflow === "string" ? dataflow : (dataflow.summary ?? JSON.stringify(dataflow));
@@ -300,6 +300,7 @@ export interface CodexLikeFinding {
         entrypoint?: string;
         source?: string;
         dataflow?: string | { summary?: string } | null;
+        dataFlow?: string | { summary?: string } | null;
         data_flow?: string | { summary?: string } | null;
         dataflowText?: string | null;
         sink?: string | null;

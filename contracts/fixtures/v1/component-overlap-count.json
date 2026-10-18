@@ -1,0 +1,11 @@
+{
+  "inventoryHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "fileCount": 3,
+  "coveredFileCount": 3,
+  "uncoveredPaths": [],
+  "overlapCount": 1,
+  "overlaps": [],
+  "emptyComponents": [],
+  "duplicateNames": [],
+  "valid": true
+}

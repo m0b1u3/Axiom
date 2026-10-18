@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-parent-state.schema.json",
+  "title": "SDKParentState",
+  "$ref": "#/$defs/SDKParentState",
+  "$defs": {
+    "SDKParentState": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.1.25"
+        },
+        "scanId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "sourceHash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "resultSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "data": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 11184812,
+          "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sdkVersion",
+        "scanId",
+        "sourceHash",
+        "resultSha256",
+        "sha256",
+        "data"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

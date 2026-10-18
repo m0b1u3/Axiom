@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "operation": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "9007199254740993",
+      "attempt": 2
+    },
+    "planId": "9",
+    "revision": 1,
+    "kind": "suggest",
+    "source": {
+      "snapshotId": "7",
+      "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "headCommit": null
+    },
+    "document": null,
+    "acknowledgeUnknownCost": true
+  },
+  "sdkVersion": "0.1.25",
+  "document": {
+    "components": [
+      {
+        "name": "完整源码",
+        "paths": [
+          "."
+        ]
+      }
+    ]
+  },
+  "coverage": {
+    "inventoryHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "fileCount": 3,
+    "coveredFileCount": 3,
+    "uncoveredPaths": [],
+    "overlapCount": 0,
+    "overlaps": [],
+    "emptyComponents": [],
+    "duplicateNames": [],
+    "valid": true
+  },
+  "cost": {
+    "state": "unknown",
+    "estimatedUsd": null
+  },
+  "native": {
+    "components": [
+      {
+        "name": "完整源码",
+        "paths": [
+          "."
+        ]
+      }
+    ]
+  },
+  "error": null
+}

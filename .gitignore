@@ -2,6 +2,8 @@
 **/dist/
 **/.dist/
 **/data/
+**/.sdk-identities/
+**/.playwright-cli/
 # Contract compatibility metadata is source, not runtime data.
 !contracts/data/
 !contracts/data/**
@@ -20,10 +22,23 @@
 **/data.tar.gz
 *.pem
 *.key
+*.p12
+*.pfx
+*.dump
 *.db
 *.db-shm
 *.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 *.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+auth.json
+.npmrc
+.netrc
+id_rsa
+id_ed25519
 *.log
 .DS_Store
 work/

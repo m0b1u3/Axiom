@@ -1,8 +1,9 @@
 import axios from "axios";
-import type {ContractError} from './contracts';
+import type {ContractError,ScanInput} from './contracts';
 import type { Account, LoginSession, OperationRecord, QueueOverview, QueueSettings, AttemptResult, Dashboard, Finding, FindingSummary, Project, ScanCompare, ScanAttempt, ScanLogEvent, ScanTask, User } from "./types";
 
 export interface SnapshotInfo {
+  gitDiff?:boolean;
   id: number;
   originalFilename: string;
   archiveSha256: string;
@@ -15,7 +16,20 @@ export interface SnapshotInfo {
   createdAt: string;
 }
 
+export interface KnowledgeVersion { latestVersion?:number;id:number; documentId:string; version:number; title:string; content?:string; sha256:string; createdAt:string; archived:boolean }
+export interface CatalogPage<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  counts?: Record<string, number>;
+}
+export interface CatalogQuery { page?: number; pageSize?: number; q?: string; sort?: string; order?: string; projectId?: string | number }
+export interface SnapshotQuery extends CatalogQuery { usage?: string; id?: number }
+export interface FindingQuery extends CatalogQuery { severity?: string; status?: string; sourceSnapshotId?: string | number; sourcePath?: string }
+
 export interface ModelConfig {
+ sdkIdentityOnly?:boolean;
   id: number;
   name: string;
   provider: string;
@@ -55,6 +69,7 @@ export interface ProviderPreset {
 
 /** 模型配置的写载荷：API Key 留空 = 不修改（仅 update） */
 export interface ModelConfigPayload {
+ sdkIdentityOnly?:boolean;
   name: string;
   provider: string;
   baseUrl: string;
@@ -84,6 +99,15 @@ export function clearToken(): void {
 
 export class ApiError extends Error {
   constructor(message: string, readonly status = 0, readonly retryAfter = 0) { super(message); }
+}
+
+function catalogResponse<T>(value: CatalogPage<T>, finding = false): CatalogPage<T> {
+  if (!value || !Array.isArray(value.items) || !Number.isSafeInteger(value.total) || value.total < 0 ||
+      !Number.isSafeInteger(value.page) || value.page < 1 || !Number.isSafeInteger(value.pageSize) || value.pageSize < 1 || value.pageSize > 100 ||
+      value.items.length > value.pageSize || (finding && (!value.counts || !Number.isSafeInteger(value.counts['']) || value.counts['']! < value.total))) {
+    throw new ApiError('Server 未提供有效的全量分页结果，请将 Web 与 Server 升级到同一版本后重试');
+  }
+  return value;
 }
 
 const http = axios.create({
@@ -116,6 +140,11 @@ http.interceptors.response.use(
 );
 
 export interface CreateScanInput {
+ sdkIdentityId?:string;
+    operation?:"preflight";
+    parentTaskId?:number;
+    scanInput?:ScanInput;
+    knowledgeVersionIds?:number[];
     deepMaxDiscoveryRuns?: number;
     deepStopAfterNoNew?: number;
     sourcePath?: string;
@@ -139,6 +168,33 @@ export interface CreateScanInput {
 }
 
 export const api = {
+ async sdkIdentities():Promise<import('./contracts').SDKIdentitySnapshot[]>{return http.get('/sdk-identities') as never;},
+ async createSDKIdentity(value:{name:string;agentId:string;kind:string}):Promise<import('./contracts').SDKIdentitySnapshot>{return http.post('/sdk-identities',value) as never;},
+ async sdkIdentityOperations(id:string):Promise<import('./contracts').SDKIdentityOperation[]>{return http.get('/sdk-identities/'+id+'/operations') as never;},
+ async startSDKIdentityOperation(id:string,value:{generation:number;action:string;apiKey?:string}):Promise<import('./contracts').SDKIdentityOperation>{return http.post('/sdk-identities/'+id+'/operations',value) as never;},
+ async cancelSDKIdentityOperation(id:string):Promise<void>{return http.post('/sdk-identity-operations/'+id+'/cancel') as never;},
+ async createComponentScan(id:string,value:{sdkIdentityId?:string;version:number;versionSha256:string;modelConfigId:number;workers:number;timeoutMinutes:number;maxCostUsd:number;maxTotalCostUsd:number;componentCostUsd:number;acknowledgeMatchingCost:boolean}):Promise<{id:number}>{return http.post('/component-plans/'+id+'/scans',value) as never;},
+ async componentExecutions(id:number):Promise<import('./utils/component-scans').ComponentExecutionsView>{return http.get('/scans/'+id+'/component-executions') as never;},
+ async retryComponents(id:number,value:{attempt:number;expectedStatus:string;indices:number[];acknowledgeReexecution:boolean}):Promise<unknown>{return http.post('/scans/'+id+'/component-executions/retry',value) as never;},
+ async componentPlans(snapshotId:number,page=1):Promise<CatalogPage<import('./contracts').ComponentPlanSnapshot>>{return http.get('/component-plans',{params:{snapshotId,page}}) as never;},
+ async createComponentPlan(value:{snapshotId:number;title:string;document:import('./contracts').ComponentPlanDocument}):Promise<import('./contracts').ComponentPlanSnapshot>{return http.post('/component-plans',value) as never;},
+ async componentPlan(id:string):Promise<import('./utils/component-plans').ComponentPlanView>{return http.get('/component-plans/'+id) as never;},
+ async saveComponentPlan(id:string,revision:number,document:import('./contracts').ComponentPlanDocument):Promise<import('./contracts').ComponentPlanSnapshot>{return http.put('/component-plans/'+id,{revision,document}) as never;},
+ async componentOperation(id:string,value:{sdkIdentityId?:string;revision:number;kind:'normalize'|'suggest';modelConfigId?:number;acknowledgeUnknownCost?:boolean}):Promise<ScanTask>{return http.post('/component-plans/'+id+'/operations',value) as never;},
+ async applyComponentSuggestion(id:string,value:{revision:number;taskId:string;resultSha256:string}):Promise<import('./contracts').ComponentPlanSnapshot>{return http.post('/component-plans/'+id+'/apply-suggestion',value) as never;},
+ async freezeComponentPlan(id:string,value:{revision:number;taskId:string;resultSha256:string}):Promise<import('./contracts').ComponentPlanVersion>{return http.post('/component-plans/'+id+'/freeze',value) as never;},
+ async componentVersions(id:string,page=1):Promise<CatalogPage<import('./utils/component-plans').ComponentVersionItem>>{return http.get('/component-plans/'+id+'/versions',{params:{page}}) as never;},
+ async componentVersion(id:string,version:number):Promise<import('./contracts').ComponentPlanVersion>{return http.get('/component-plans/'+id+'/versions/'+version) as never;},
+
+ async uploadGitSnapshot(file:File,base:string,head:string,projectId?:number):Promise<{snapshot:SnapshotInfo;target:import("./contracts").GitDiffTarget}>{const data=new FormData();data.append("file",file);data.append("base",base);data.append("head",head);if(projectId)data.append("projectId",String(projectId));return http.post("/git-snapshots",data,{timeout:180000}) as never;},
+ async gitDiffPreview(id:number,page=1):Promise<import("./contracts").GitDiffPreview>{return http.get(`/snapshots/${id}/git-diff`,{params:{page}}) as never;},
+ async gitDiffContent(id:number,index:number):Promise<import("./contracts").GitDiffContent>{return http.get(`/snapshots/${id}/git-diff/files/${index}`) as never;},
+ async scanParentState(id:number):Promise<{taskId:number;attempt:number;scanId:string;sourceSnapshotId:number;sdkVersion:string}>{return http.get(`/scans/${id}/parent-state`) as Promise<{taskId:number;attempt:number;scanId:string;sourceSnapshotId:number;sdkVersion:string}>;},
+ async knowledge(query:{page?:number;q?:string;archived?:boolean;documentId?:string}={}):Promise<CatalogPage<KnowledgeVersion>> {return catalogResponse(await http.get('/knowledge',{params:query}));},
+ async knowledgeVersion(id:number):Promise<KnowledgeVersion>{return http.get(`/knowledge/versions/${id}`) as Promise<KnowledgeVersion>;},
+ async saveKnowledge(value:{title:string;content:string;baseVersion:number},id?:string):Promise<KnowledgeVersion>{return http.post(id?`/knowledge/${id}/versions`:'/knowledge',value) as Promise<KnowledgeVersion>;},
+ async archiveKnowledge(id:string,archived:boolean):Promise<{ok:boolean}>{return http.put(`/knowledge/${id}/archive`,{archived}) as Promise<{ok:boolean}>;},
+
  async storage():Promise<import('./contracts').StorageSnapshot>{return http.get('/storage') as Promise<import('./contracts').StorageSnapshot>},
  async updateStoragePolicy(policy:import('./contracts').StoragePolicy):Promise<import('./contracts').StorageSnapshot>{return http.put('/storage/policy',policy) as Promise<import('./contracts').StorageSnapshot>},
  async cleanupJobs():Promise<import('./contracts').CleanupJob[]>{return http.get('/storage/cleanup') as Promise<import('./contracts').CleanupJob[]>},
@@ -201,6 +257,13 @@ export const api = {
   async executionSettings(): Promise<{ settings: QueueSettings; canEdit: boolean; history: QueueSettings[] }> { return http.get('/settings/execution') as Promise<{ settings: QueueSettings; canEdit: boolean; history: QueueSettings[] }>; },
   async saveExecutionSettings(v: QueueSettings): Promise<QueueSettings> { return http.put('/settings/execution', {global:v.global,perModel:v.perModel,perProject:v.perProject,revision:v.revision}) as Promise<QueueSettings>; },
   async resultArtifact(id:number,attempt:number,path:string):Promise<Blob>{return http.get(`/scans/${id}/attempts/${attempt}/artifacts`,{params:{path},responseType:'blob'}) as Promise<Blob>;},
+  async findingEvidenceGraph(id:number,attempt:number,fingerprint:string):Promise<import('./contracts').EvidenceGraph>{return http.get(`/scans/${id}/attempts/${attempt}/evidence-graph`,{params:{fingerprint}}) as Promise<import('./contracts').EvidenceGraph>;},
+  async createSDKOperation(id:number,payload:{kind:'preflight'|'validate';findingId?:string;originAttempt?:number;acknowledgeUnknownCost?:boolean}):Promise<ScanTask>{return http.post(`/scans/${id}/sdk-operations`,payload) as Promise<ScanTask>;},
+  async sdkOperations(id:number,page=1):Promise<{items:ScanTask[];total:number;page:number;pageSize:number}>{return http.get(`/scans/${id}/sdk-operations`,{params:{page}}) as never;},
+  async uncommittedSDKSessions(id:number,attempt:number):Promise<Blob>{return http.get(`/scans/${id}/attempts/${attempt}/sdk-sessions`,{params:{download:1},responseType:'blob'}) as Promise<Blob>;},
+  async sdkSessions(id:number,attempt:number,after=0):Promise<{execution?:import('./contracts').ExecutionRef;uncommitted?:boolean;capturedCount?:number;reason?:string;summary:import('./contracts').SDKSessionSummary|null;items:import('./contracts').SDKSessionEvent[];next:number;hasMore:boolean}>{return http.get(`/scans/${id}/attempts/${attempt}/sdk-sessions`,{params:{after}}) as never;},
+  async sdkCostEstimate(id:number,attempt:number):Promise<import('./contracts').SDKCostEstimate>{return http.get(`/scans/${id}/attempts/${attempt}/sdk-cost-estimate`) as Promise<import('./contracts').SDKCostEstimate>;},
+  async sdkHistoryLinks(id:number,attempt:number,scanId:string,page=1):Promise<CatalogPage<{execution:import('./contracts').ExecutionRef;scanNo:string;status:string}>>{return http.get(`/scans/${id}/attempts/${attempt}/sdk-history-links`,{params:{scanId,page}}) as Promise<CatalogPage<{execution:import('./contracts').ExecutionRef;scanNo:string;status:string}>>;},
   async attemptResult(id: number, attempt: number): Promise<AttemptResult> { return http.get(`/scans/${id}/attempts/${attempt}/result`) as Promise<AttemptResult>; },
   async scanAttempts(scanId: number): Promise<ScanAttempt[]> { return http.get(`/scans/${scanId}/attempts`) as Promise<ScanAttempt[]>; },
   async scanLogs(scanId: number, after: number, attempt?: number): Promise<{ events: ScanLogEvent[]; nextAfter: number; total: number; hasMore?: boolean;format?:string;invalidRecords?:number;diagnostic?:ContractError;recordCount?:number }> {
@@ -210,11 +273,11 @@ export const api = {
       total: number;
     }>;
   },
-  async exportReport(scanId: number): Promise<Blob> {
-    return http.get(`/scans/${scanId}/report`, { responseType: "blob" }) as Promise<Blob>;
+  async exportReport(scanId: number, attempt?: number): Promise<Blob> {
+    return http.get(`/scans/${scanId}/report`, { params: {attempt}, responseType: "blob" }) as Promise<Blob>;
   },
-  async exportReportPdf(scanId: number): Promise<Blob> {
-    return http.get(`/scans/${scanId}/report.pdf`, { responseType: "blob", timeout: 120_000 }) as Promise<Blob>;
+  async exportReportPdf(scanId: number, attempt?: number): Promise<Blob> {
+    return http.get(`/scans/${scanId}/report.pdf`, { params: {attempt}, responseType: "blob", timeout: 120_000 }) as Promise<Blob>;
   },
   async cancelScan(scanId: number): Promise<ScanTask> {
     return http.post(`/scans/${scanId}/cancel`) as Promise<ScanTask>;
@@ -222,6 +285,8 @@ export const api = {
   async retryScan(scanId: number): Promise<ScanTask> {
     return http.post(`/scans/${scanId}/retry`) as Promise<ScanTask>;
   },
+  async scanRecovery(id:number):Promise<import('./contracts').ScanRecoverySnapshot>{return http.get(`/scans/${id}/recovery`) as Promise<import('./contracts').ScanRecoverySnapshot>;},
+  async recoverScan(id:number,action:import('./contracts').ScanRecoveryAction):Promise<ScanTask>{return http.post(`/scans/${id}/recovery`,action) as Promise<ScanTask>;},
   async deleteScan(scanId: number): Promise<{ id: number }> {
     return http.delete(`/scans/${scanId}`) as Promise<{ id: number }>;
   },
@@ -234,6 +299,12 @@ export const api = {
   async listSnapshots(projectId?: number): Promise<SnapshotInfo[]> {
     const q = projectId ? `?projectId=${projectId}` : "";
     return http.get(`/snapshots${q}`) as Promise<SnapshotInfo[]>;
+  },
+  async snapshotPage(query: SnapshotQuery): Promise<CatalogPage<SnapshotInfo>> {
+    return catalogResponse(await http.get('/snapshots', {params:{page:1,pageSize:50,...query}}) as CatalogPage<SnapshotInfo>);
+  },
+  async findingPage(query: FindingQuery): Promise<CatalogPage<FindingSummary>> {
+    return catalogResponse(await http.get('/findings', {params:{page:1,pageSize:50,...query}}) as CatalogPage<FindingSummary>, true);
   },
   async deleteSnapshot(id: number): Promise<{ id: number }> {
     return http.delete(`/snapshots/${id}`) as Promise<{ id: number }>;

@@ -24,11 +24,15 @@ for (const name of await schemaNames(schemaDir)) {
 }
 const metadataText = await readFile(path.join(root, 'data/compatibility.json'), 'utf8');
 const metadata = JSON.parse(metadataText);
-const common = entries.find(e => e.name === 'v1/definitions.schema.json').schema;
-const defs = common.$defs;
+// New contracts may own their definitions without rewriting historical schemas.
+const defs = {};
+for (const entry of entries) for (const [name, definition] of Object.entries(entry.schema.$defs ?? {})) {
+  if (Object.hasOwn(defs, name)) throw new Error('Duplicate contract definition: ' + name);
+  defs[name] = definition;
+}
 const roots = entries.filter(e => e.schema.title).map(e => ({name: e.schema.title, id: e.schema.$id}));
 const names = new Set(Object.keys(defs));
-const allowed = new Set(['$schema','$id','$defs','$ref','title','description','type','properties','required','additionalProperties','enum','const','items','minimum','maximum','exclusiveMinimum','minLength','maxLength','pattern','format','uniqueItems','allOf','anyOf','oneOf','not','if','then','else','minItems','maxItems']);
+const allowed = new Set(['$schema','$id','$defs','$ref','title','description','type','properties','required','additionalProperties','enum','const','items','minimum','maximum','exclusiveMinimum','minLength','maxLength','pattern','format','uniqueItems','allOf','anyOf','oneOf','not','if','then','else','minItems','maxItems','maxProperties']);
 function inspect(s) {
   if (typeof s !== 'object' || s === null) throw new Error('Schema nodes must be objects');
   for (const key of Object.keys(s)) if (!allowed.has(key)) throw new Error('Unsupported schema keyword: ' + key);
@@ -49,9 +53,33 @@ const ajv = new Ajv2020({strict: true, strictTypes: false, strictRequired: false
 addFormats(ajv);
 for (const e of entries) ajv.addSchema(e.schema);
 for (const r of roots) ajv.getSchema(r.id);
+const scanInputPolicyText=await readFile(path.join(root,'data/scan-input-compatibility.json'),'utf8');
+const scanInputPolicy=JSON.parse(scanInputPolicyText);
+if(scanInputPolicy.schemaVersion!==1||scanInputPolicy.inputVersion!==defs.ScanInputAssignment.properties.schemaVersion.const||scanInputPolicy.jobVersion!==defs.ScannerJobV4.properties.schemaVersion.const||scanInputPolicy.descriptionVersion!==defs.ScannerDescriptionV5.properties.schemaVersion.const||scanInputPolicy.controlAPI!==4||scanInputPolicy.knowledgeMaxDocuments!==defs.ScanInput.properties.knowledge.maxItems||scanInputPolicy.knowledgeDocumentMaxBytes!==defs.KnowledgeDocument.properties.content.maxLength)throw new Error('Scan input compatibility drift');
+const sdkOperationPolicyText=await readFile(path.join(root,'data/sdk-operation-compatibility.json'),'utf8');
+const sdkOperationPolicy=JSON.parse(sdkOperationPolicyText);
+if(sdkOperationPolicy.inputVersion!==3||sdkOperationPolicy.jobVersion!==defs.ScannerJobV5.properties.schemaVersion.const||sdkOperationPolicy.descriptionVersion!==defs.ScannerDescriptionV6.properties.schemaVersion.const||sdkOperationPolicy.operationVersion!==defs.SDKOperation.properties.schemaVersion.const||sdkOperationPolicy.resultVersion!==defs.SDKOperationResult.properties.schemaVersion.const||sdkOperationPolicy.sessionEventVersion!==defs.SDKSessionEvent.properties.schemaVersion.const||sdkOperationPolicy.sessionSummaryVersion!==defs.SDKSessionSummary.properties.schemaVersion.const||sdkOperationPolicy.controlAPI!==4)throw new Error('SDK operation compatibility drift');
+const gitDiffPolicyText=await readFile(path.join(root,'data/git-diff-compatibility.json'),'utf8');
+const gitDiffPolicy=JSON.parse(gitDiffPolicyText);
+if(gitDiffPolicy.inputVersion!==4||gitDiffPolicy.jobVersion!==defs.ScannerJobV6.properties.schemaVersion.const||gitDiffPolicy.descriptionVersion!==defs.ScannerDescriptionV7.properties.schemaVersion.const)throw new Error('Git diff compatibility drift');
+const componentPolicyText=await readFile(path.join(root,'data/component-planning-compatibility.json'),'utf8');
+const componentPolicy=JSON.parse(componentPolicyText);
+if(componentPolicy.inputVersion!==5||componentPolicy.jobVersion!==defs.ScannerJobV7.properties.schemaVersion.const||componentPolicy.descriptionVersion!==defs.ScannerDescriptionV8.properties.schemaVersion.const)throw new Error('Component planning compatibility drift');
+const componentScanPolicyText=await readFile(path.join(root,'data/component-scan-compatibility.json'),'utf8');
+const componentScanPolicy=JSON.parse(componentScanPolicyText);
+if(componentScanPolicy.inputVersion!==6||componentScanPolicy.jobVersion!==defs.ScannerJobV8.properties.schemaVersion.const||componentScanPolicy.descriptionVersion!==defs.ScannerDescriptionV9.properties.schemaVersion.const)throw new Error('Component scan compatibility drift');
+const sdkIdentityPolicyText=await readFile(path.join(root,'data/sdk-identity-compatibility.json'),'utf8');
+const sdkIdentityPolicy=JSON.parse(sdkIdentityPolicyText);
+if(sdkIdentityPolicy.identityVersion!==defs.SDKTaskIdentity.properties.schemaVersion.const||sdkIdentityPolicy.descriptionVersion!==defs.ScannerDescriptionV10.properties.schemaVersion.const||sdkIdentityPolicy.controlAPI!==4)throw new Error('SDK identity compatibility drift');
 const hash = createHash('sha256');
 for (const e of entries) hash.update(e.name + '\0' + e.text);
 hash.update('compatibility.json\0' + metadataText);
+hash.update('sdk-operation-compatibility.json\0'+sdkOperationPolicyText);
+hash.update('scan-input-compatibility.json\0'+scanInputPolicyText);
+hash.update('git-diff-compatibility.json\0'+gitDiffPolicyText);
+hash.update('component-planning-compatibility.json\0'+componentPolicyText);
+hash.update('component-scan-compatibility.json\0'+componentScanPolicyText);
+hash.update('sdk-identity-compatibility.json\0'+sdkIdentityPolicyText);
 const digest = hash.digest('hex');
 const header = '// Generated by contracts/tools/generate.mjs; DO NOT EDIT.\n// Schema SHA-256: ' + digest + '\n';
 const goName = value => value.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(/[^A-Za-z0-9]+/).filter(Boolean).map(w => ({id:'ID',json:'JSON',sdk:'SDK',url:'URL',api:'API',usd:'USD',sha256:'SHA256'}[w.toLowerCase()] ?? w[0].toUpperCase() + w.slice(1))).join('');
@@ -92,6 +120,11 @@ ts += '\nexport interface ContractTypes {\n' + roots.map(r => '  ' + r.name + ':
 ts += 'export const SCHEMA_VERSION = ' + defs.SchemaVersion.const + ' as const;\n';
 ts += 'export const SCHEMA_HASH = ' + JSON.stringify(digest) + ';\n';
 ts += 'export const COMPATIBILITY = ' + JSON.stringify(metadata,null,2) + ' as const;\n';
+ts += 'export const SCAN_INPUT_POLICY = '+JSON.stringify(scanInputPolicy)+' as const;\n';
+ts += 'export const SDK_IDENTITY_POLICY = '+JSON.stringify(sdkIdentityPolicy)+' as const;\n';
+ts += 'export const SDK_OPERATION_POLICY = '+JSON.stringify(sdkOperationPolicy)+' as const;\n';
+ts += 'export const COMPONENT_PLANNING_POLICY = '+JSON.stringify(componentPolicy)+' as const;\n';
+ts += 'export const GIT_DIFF_POLICY = '+JSON.stringify(gitDiffPolicy)+' as const;\n';
 ts += 'export const CONTRACT_KINDS = ' + JSON.stringify(roots.map(r=>r.name)) + ' as const;\n';
 
 const extraDefs = new Map();
@@ -153,6 +186,13 @@ resources += 'var terminalExitCodes=map[TerminalStatus]int{\n'+Object.entries(me
 resources += 'var canonicalErrorCodes=map[ErrorCode]bool{\n'+defs.ErrorCode.enum.map(k=>JSON.stringify(k)+': true,').join('\n')+'\n}\n';
 resources += 'const MaxDocumentBytes='+metadata.limits.documentBytes+'\nconst MaxProgressBytes='+metadata.limits.progressBytes+'\nconst MaxEventBytes='+metadata.limits.eventBytes+'\nconst DeepFinalizationGraceSeconds='+metadata.deepFinalizationGraceSeconds+'\n';
 resources += 'const DefaultScanMode ScanMode='+JSON.stringify(metadata.defaults.scanMode)+'\nconst DefaultScanSeconds='+metadata.defaults.scanSeconds+'\nconst DefaultValidationMode ValidationMode='+JSON.stringify(metadata.defaults.validationMode)+'\n';
+resources += 'const ScanInputVersion='+scanInputPolicy.inputVersion+'\n';
+resources += 'const ScanInputJobVersion='+scanInputPolicy.jobVersion+'\nconst ScanInputDescriptionVersion='+scanInputPolicy.descriptionVersion+'\nconst KnowledgeMaxDocuments='+scanInputPolicy.knowledgeMaxDocuments+'\nconst KnowledgeDocumentMaxBytes='+scanInputPolicy.knowledgeDocumentMaxBytes+'\n';
+resources += 'const SDKOperationInputVersion='+sdkOperationPolicy.inputVersion+'\nconst SDKOperationJobVersion='+sdkOperationPolicy.jobVersion+'\nconst SDKOperationDescriptionVersion='+sdkOperationPolicy.descriptionVersion+'\n';
+resources += 'const GitDiffInputVersion='+gitDiffPolicy.inputVersion+'\nconst GitDiffJobVersion='+gitDiffPolicy.jobVersion+'\nconst GitDiffDescriptionVersion='+gitDiffPolicy.descriptionVersion+'\n';
+resources += 'const ComponentPlanningInputVersion='+componentPolicy.inputVersion+'\nconst ComponentPlanningJobVersion='+componentPolicy.jobVersion+'\nconst ComponentPlanningDescriptionVersion='+componentPolicy.descriptionVersion+'\n';
+resources += 'const SDKIdentityVersion='+sdkIdentityPolicy.identityVersion+'\nconst SDKIdentityDescriptionVersion='+sdkIdentityPolicy.descriptionVersion+'\n';
+resources += 'const ComponentScanInputVersion=6\nconst ComponentScanJobVersion=8\nconst ComponentScanDescriptionVersion=9\n';
 const schemaTS = header + '\nexport const SCHEMA_RESOURCES = '+JSON.stringify(Object.fromEntries(entries.map(e=>[e.schema.$id,e.schema])))+' as const;\nexport const SCHEMA_IDS = '+JSON.stringify(Object.fromEntries(roots.map(r=>[r.name,r.id])),null,2)+' as const;\n';
 
 async function emit(relative,content) {
@@ -172,18 +212,23 @@ await emit('ts/src/schemas.gen.ts',schemaTS);
 await emit('go/types.gen.go',go);
 await emit('go/codec.gen.go',codec);
 await emit('go/schemas.gen.go',resources);
-await emit('../code-audit-scanner/src/runtime/contract-baseline.gen.ts',header+'\nexport const CONTRACT_BASELINE_VERSION = '+defs.SchemaVersion.const+' as const;\nexport const SCANNER_DESCRIPTION_VERSION = '+defs.ScannerDescriptionV4.properties.schemaVersion.const+' as const;\n');
+await emit('../code-audit-scanner/src/runtime/contract-baseline.gen.ts',header+'\nexport const CONTRACT_BASELINE_VERSION = '+defs.SchemaVersion.const+' as const;\nexport const SCANNER_DESCRIPTION_VERSION = '+defs.ScannerDescriptionV10.properties.schemaVersion.const+' as const;\n');
 const matrixText=await readFile(path.join(root,'data/execution-compatibility.json'),'utf8');
 const matrix=JSON.parse(matrixText);
-if(matrix.matrixVersion!==1 || JSON.stringify(matrix.controlAPIs)!=='[1,2,3,4]' || matrix.profiles.length!==4)throw new Error('Invalid execution compatibility matrix');
+if(matrix.matrixVersion!==1 || JSON.stringify(matrix.controlAPIs)!=='[1,2,3,4]' || matrix.profiles.length!==9)throw new Error('Invalid execution compatibility matrix');
 const expectedPolicy={discovery:'presence-only',fallbackOn:[404,405],claimFallback:false,unknownContracts:'reject-before-model',history:'preserve-readers',upgradeOrder:['server','agent-and-scanner','web']};
 if(Object.keys(matrix.policies).length!==Object.keys(expectedPolicy).length || Object.entries(expectedPolicy).some(([k,v])=>JSON.stringify(matrix.policies[k])!==JSON.stringify(v)))throw new Error('Unsupported compatibility policy; update the consumer and tests before changing it');
-for(const [i,p] of matrix.profiles.entries()){
+for(const [i,p] of matrix.profiles.slice(0,4).entries()){
  if(p.id!==['legacy','input','result','observations'][i] || p.progress!==(i===3?2:0) || p.event!==(i===3?2:0) || p.controlAPI!==i+1 || p.description!==i+1 || p.job!==i || p.input!==(i?1:0) || p.result!==(i>=2?1:0) || p.observation!==(i===3?1:0))throw new Error('Unsupported profile matrix');
 }
+if(JSON.stringify(matrix.profiles[4])!==JSON.stringify({id:'scan_input',input:2,result:1,observation:1,controlAPI:4,description:5,job:4,progress:2,event:2}))throw new Error('Invalid scan input profile');
+if(JSON.stringify(matrix.profiles[5])!==JSON.stringify({id:'sdk_operation',input:3,result:1,observation:1,controlAPI:4,description:6,job:5,progress:2,event:2}))throw new Error('Invalid SDK operation profile');
+if(JSON.stringify(matrix.profiles[6])!==JSON.stringify({id:'git_diff',input:4,result:1,observation:1,controlAPI:4,description:7,job:6,progress:2,event:2}))throw new Error('Invalid Git diff profile');
+if(JSON.stringify(matrix.profiles[7])!==JSON.stringify({id:'component_planning',input:5,result:1,observation:1,controlAPI:4,description:8,job:7,progress:2,event:2}))throw new Error('Invalid component planning profile');
+if(JSON.stringify(matrix.profiles[8])!==JSON.stringify({id:'component_scan',input:6,result:1,observation:1,controlAPI:4,description:9,job:8,progress:2,event:2}))throw new Error('Invalid component scan profile');
 const matrixHash=createHash('sha256').update(matrixText).digest('hex');
 const matrixHeader='// Generated from data/execution-compatibility.json. Do not edit.\n';
 await emit('go/control/matrix.gen.go',matrixHeader+'package control\nconst MatrixVersion=1\nconst MatrixHash='+JSON.stringify(matrixHash)+'\nvar controlAPIs=[]int{'+matrix.controlAPIs.join(',')+'}\nvar profiles=[]Profile{\n'+matrix.profiles.map(p=>' {ID:'+JSON.stringify(p.id)+',Input:'+p.input+',Result:'+p.result+',Observation:'+p.observation+',ControlAPI:'+p.controlAPI+',Description:'+p.description+',Job:'+p.job+',Progress:'+p.progress+',Event:'+p.event+'},').join('\n')+'\n}\n');
 await emit('ts/src/matrix.gen.ts',matrixHeader+'export const EXECUTION_MATRIX='+JSON.stringify(matrix,null,2)+' as const;\nexport const EXECUTION_MATRIX_HASH='+JSON.stringify(matrixHash)+' as const;\n');
-await emit('COMPATIBILITY.md','# 执行合同兼容矩阵\n\n<!-- Generated from data/execution-compatibility.json. -->\n\n包版本用于诊断；任务派发以实际声明的合同能力为准。HTTP 控制接口版本与文档 schemaVersion 分别管理。\n\n| 任务格式 | 输入 / 结果 / 观察 | 最低控制接口 | Scanner 描述 | Job | 进度 / 事件 |\n| --- | --- | --- | --- | --- | --- |\n'+matrix.profiles.map(p=>'| '+p.id+' | '+p.input+' / '+p.result+' / '+p.observation+' | '+p.controlAPI+' | '+p.description+' | '+(p.job||'旧参数')+' | '+p.progress+' / '+p.event+' |').join('\n')+'\n\n最新 Server 支持控制接口 1–4，并发布矩阵摘要。带摘要的 Server 与 Agent 必须使用同一份矩阵；摘要不一致会阻止模型启动，并上报配套组件诊断，不能据包版本猜测兼容。旧组件缺少运行元数据时，以已声明合同能力判定，缺失的版本显示为未知。新 Agent 只用 presence 探测旧 Server：仅 404/405 可尝试下一接口；认证、网络和数据错误不降级。领取失败不切换接口，已领取任务的固定合同不降级。不支持的格式在模型启动前拒绝。\n\n升级顺序：Server 消费者及迁移 → 配套 Agent/Scanner → Web。旧 Agent/Scanner 只能领取其支持的任务，新 Web 任务保持输入/结果/观察 1/1/1。历史任务、结果、日志、覆盖报告和 HTML/PDF 报告读取器保留。未知合同不能推断为兼容。运行诊断每 10 秒上报，30 秒后失效；在线槽位与通过预检的可用槽位分别展示。缺少、无效或未知版本的 Scanner 描述会阻止新 Agent 领取任务，并向新版 Server 上报诊断。\n\nSchema 核心字段变化（含严格对象中的新增 optional 字段）必须新增 schemaVersion，先发布消费者，再切换生产者。已有任务及 attempt 的合同组合不修改、不降级。旧 reader 保留；仅在证明无入口引用且没有历史写入需求后移除 adapter。升级后用独立 Fixture 验证任务创建、取消、结果/日志/报告读取和组件组合，不以生成类型通过代替进程验收。\n');
+await emit('COMPATIBILITY.md','# 执行合同兼容矩阵\n\n<!-- Generated from data/execution-compatibility.json. -->\n\n包版本用于诊断；任务派发以实际声明的合同能力为准。HTTP 控制接口版本与文档 schemaVersion 分别管理。\n\n| 任务格式 | 输入 / 结果 / 观察 | 最低控制接口 | Scanner 描述 | Job | 进度 / 事件 |\n| --- | --- | --- | --- | --- | --- |\n'+matrix.profiles.map(p=>'| '+p.id+' | '+p.input+' / '+p.result+' / '+p.observation+' | '+p.controlAPI+' | '+p.description+' | '+(p.job||'旧参数')+' | '+p.progress+' / '+p.event+' |').join('\n')+'\n\n最新 Server 支持控制接口 1–4，并发布矩阵摘要。带摘要的 Server 与 Agent 必须使用同一份矩阵；摘要不一致会阻止模型启动，并上报配套组件诊断，不能据包版本猜测兼容。旧组件缺少运行元数据时，以已声明合同能力判定，缺失的版本显示为未知。新 Agent 只用 presence 探测旧 Server：仅 404/405 可尝试下一接口；认证、网络和数据错误不降级。领取失败不切换接口，已领取任务的固定合同不降级。不支持的格式在模型启动前拒绝。\n\n升级顺序：Server 消费者及迁移 → 配套 Agent/Scanner → Web。旧 Agent/Scanner 只能领取其支持的任务，普通新 Web 任务保持输入/结果/观察 1/1/1；高级参数和知识文档任务为 2/1/1，使用 base Assignment v1 + ScanInputAssignment v2，绑定同一 execution，再物化 Job v4。SDK 独立操作为 3/1/1，另绑定 SDKOperation v1，物化 Job v5，由 Scanner Description v6 声明；缺少操作 sidecar 或 Job v5 能力会在 SDK 前拒绝。Git 差异任务为 4/1/1，使用 GitDiffAssignment v1 和 Job v6、Description v7，严格绑定冻结 base/head 与源码哈希；旧节点不得领取或降级。组件审计为 6/1/1，绑定 ComponentScanRequest v1 与冻结计划，物化 Job v8、由 Description v9 声明；缺少源码、执行、版本或预算绑定时在 SDK 前拒绝。旧 Server 的已知 profile 无法领取 input=2，不能回退或丢弃新参数。历史任务、结果、日志、覆盖报告和 HTML/PDF 报告读取器保留。未知合同不能推断为兼容。运行诊断每 10 秒上报，30 秒后失效；在线槽位与通过预检的可用槽位分别展示。缺少、无效或未知版本的 Scanner 描述会阻止新 Agent 领取任务，并向新版 Server 上报诊断。\n\nSchema 核心字段变化（含严格对象中的新增 optional 字段）必须新增 schemaVersion，先发布消费者，再切换生产者。已有任务及 attempt 的合同组合不修改、不降级。旧 reader 保留；仅在证明无入口引用且没有历史写入需求后移除 adapter。升级后用独立 Fixture 验证任务创建、取消、结果/日志/报告读取和组件组合，不以生成类型通过代替进程验收。\n\nSDK 执行身份侧带为版本 1，由 ScannerDescription v10 和 Server 发现字段 sdkIdentityVersion=1 共同声明。身份控制队列需最近 30 秒内 ready、矩阵匹配、控制 API 4/描述 10 的节点报告；身份任务另核对冻结的 Agent/凭据版本，且同一身份的父执行串行。新 Agent 遇旧 Server 不下发身份字段；旧节点保留历史 profile，不能领取身份任务。此增量不改变上述历史 profile 或严格 Schema。\n');
 console.log((check?'Verified':'Generated')+' Go/TS contracts from '+entries.length+' schemas ('+digest.slice(0,12)+')');

@@ -3,6 +3,7 @@ package scanner
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -22,6 +23,14 @@ const (
 )
 
 type Request struct {
+	SDKIdentity                *contracts.SDKTaskIdentity
+	DataDir, AgentID           string
+	ComponentScan              *contracts.ComponentScanRequest
+	ComponentPlanning          *contracts.ComponentPlanningOperation
+	GitTarget                  *contracts.GitDiffTarget
+	SDKOperation               *contracts.SDKOperation
+	ParentState                *contracts.SDKParentState
+	ScanInput                  *contracts.ScanInput
 	ObservationContractVersion int
 	ResultContractVersion      int
 	Job                        *contracts.ScannerJob
@@ -109,6 +118,17 @@ func Run(ctx context.Context, req Request) (*Result, error) {
 			return nil, err
 		}
 		args = append(entryArguments(req.ScannerDir), "--job", jobPath)
+		if req.SDKIdentity != nil {
+			caps, e := ProbeContracts(ctx, req.ScannerDir, req.NodePath)
+			if e != nil || caps.IdentityVersion != 1 {
+				return nil, errors.New("Scanner does not support SDK identity sessions")
+			}
+			file, _, e := prepareTaskIdentity(req)
+			if e != nil {
+				return nil, e
+			}
+			args = append(args, "--identity", file)
+		}
 		if req.Mock {
 			args = append(args, "--mock")
 		}
@@ -180,6 +200,33 @@ func Run(ctx context.Context, req Request) (*Result, error) {
 		}
 	}
 	cmd.Env = append(isolated, "CODEX_SECURITY_STATE_DIR="+filepath.Join(req.OutputPath, "runtime", "sdk"))
+	if req.SDKIdentity != nil {
+		_, home, e := prepareTaskIdentity(req)
+		if e != nil {
+			return nil, e
+		}
+		root := filepath.Join(home, "executions", fmt.Sprint(req.TaskID)+"-"+fmt.Sprint(req.Attempt))
+		if e = os.MkdirAll(root, 0700); e != nil {
+			return nil, e
+		}
+		defer os.RemoveAll(root)
+		next := jobEnvironment(cmd.Env, "")
+		clean := next[:0]
+		for _, kv := range next {
+			key, _, _ := strings.Cut(kv, "=")
+			if key != "CODEX_SECURITY_STATE_DIR" {
+				clean = append(clean, kv)
+			}
+		}
+		cmd.Env = append(clean, "CODEX_SECURITY_STATE_DIR="+filepath.Join(root, "sdk"), "CODEX_HOME="+filepath.Join(home, "sdk", "codex-home"), "AXIOM_SDK_IDENTITY_HOME="+home)
+		if req.SDKIdentity.Identity.Kind == "api_key" {
+			key, e := os.ReadFile(filepath.Join(home, "selected-api-key"))
+			if e != nil || len(key) == 0 {
+				return nil, errors.New("SDK API Key session unavailable")
+			}
+			cmd.Env = append(cmd.Env, "OPENAI_API_KEY="+string(key))
+		}
+	}
 	// Bound the Scanner to this Agent even when the Agent receives SIGKILL and
 	// cannot run its context cancellation handler. Never accept ambient values.
 	cmd.Env = scannerParentEnvironment(cmd.Env)

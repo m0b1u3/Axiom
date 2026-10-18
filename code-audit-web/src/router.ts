@@ -13,6 +13,8 @@ export const router = createRouter({
       path: "/",
       component: () => import("./components/AppLayout.vue"),
       children: [
+ {path:"component-plans",name:"component-plans",component:()=>import("./views/ComponentPlans.vue"),meta:{title:"组件计划",description:"编辑、校验和确认不可变源码的组件边界"}},
+ {path:"component-plans/:id([1-9]\\d*)",name:"component-plan",component:()=>import("./views/ComponentPlans.vue"),meta:{title:"组件计划",description:"草稿校验与冻结版本"}},
         {
           path: "",
           name: "dashboard",
@@ -26,7 +28,7 @@ export const router = createRouter({
           meta: { title: "项目", description: "组织与浏览被审计的代码资产" },
         },
         {
-          path: "projects/:id",
+          path: "projects/:id([1-9]\\d*)",
           name: "project-detail",
           component: () => import("./views/ProjectDetail.vue"),
           meta: { title: "项目详情", description: "代码快照与该项目扫描记录" },
@@ -43,6 +45,7 @@ export const router = createRouter({
           component: () => import("./views/Findings.vue"),
           meta: { title: "漏洞", description: "全局风险视图" },
         },
+        {path:"knowledge",name:"knowledge",component:()=>import("./views/Knowledge.vue"),meta:{title:"知识文档",description:"管理扫描参考文档与不可变版本"}},
         {
           path: "assets",
           name: "assets",
@@ -68,10 +71,16 @@ export const router = createRouter({
           meta: { title: "新建扫描", description: "上传源码包生成不可变快照" },
         },
         {
-          path: "scans/:id",
+          path: "scans/:id([1-9]\\d*)",
           name: "scan-detail",
           component: () => import("./views/ScanDetail.vue"),
           meta: { title: "扫描详情", description: "进度、漏洞与报告" },
+        },
+        {
+          path: ":pathMatch(.*)*",
+          name: "not-found",
+          component: () => import("./views/NotFound.vue"),
+          meta: { title: "页面不存在" },
         },
       ],
     },

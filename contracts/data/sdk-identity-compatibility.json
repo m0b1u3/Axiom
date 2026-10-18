@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "identityVersion": 1,
+  "descriptionVersion": 10,
+  "controlAPI": 4,
+  "compatibleInputs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "compatibleJobs": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "resultVersion": 1,
+  "legacyCredentials": "preserve",
+  "missingCapability": "deny-identity-before-sdk",
+  "identityStates": [
+    "unconfigured",
+    "authenticating",
+    "authenticated",
+    "signed_out",
+    "revoked",
+    "unknown"
+  ]
+}

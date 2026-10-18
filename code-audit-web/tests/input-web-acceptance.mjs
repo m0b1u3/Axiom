@@ -18,7 +18,7 @@ try {
  await page.getByRole('button',{name:'登录控制台',exact:true}).click();
  await page.waitForURL(url=>!url.pathname.endsWith('/login'));
  await page.goto(base+'/scans/new');
- await page.locator('input[type=file]').setInputFiles(process.env.AXIOM_TEST_WEB_ARCHIVE);
+ await page.locator('input[type=file]:not(#git-archive)').setInputFiles(process.env.AXIOM_TEST_WEB_ARCHIVE);
  await page.getByText(/快照已生成/).waitFor();
  await page.getByLabel('扫描范围（可选）',{exact:true}).fill('src/a,b.ts\n源码/测试.ts');
  await page.locator('#scan-timeout').fill('47');

@@ -1,0 +1,23 @@
+<script setup lang="ts">
+import {ref,watch} from 'vue';
+import {api} from '../api';
+import Button from './ui/Button.vue';
+const parentLoading=ref(false),parentError=ref('');let parentGeneration=0;
+import type {AdvancedScanForm} from '../utils/advanced-scan-input';
+import Input from './ui/Input.vue';import Select from './ui/Select.vue';
+const form=defineModel<AdvancedScanForm>({required:true});const props=defineProps<{mode:string;validation:string;sourceSnapshotId:number}>();
+watch([()=>form.value.parentTaskId,()=>props.sourceSnapshotId],()=>{parentGeneration++;form.value.parentScanId='';parentError.value='';parentLoading.value=false;});
+async function loadParent(){const gen=++parentGeneration;parentLoading.value=true;parentError.value='';try{const v=await api.scanParentState(Number(form.value.parentTaskId));if(gen!==parentGeneration)return;if(v.sourceSnapshotId!==props.sourceSnapshotId)throw new Error('父扫描必须使用同一份代码快照。');form.value.parentScanId=v.scanId;}catch(e){if(gen===parentGeneration)parentError.value=(e as Error).message;}finally{if(gen===parentGeneration)parentLoading.value=false;}}
+const prompts=[{key:'scanPrompt',label:'补充扫描指令',help:'追加到范围与审计重点之后；不改变源码快照。'},{key:'validationPrompt',label:'自定义验证指令',help:'仅 Standard 默认验证可用；填写后使用 SDK 自定义验证流程。'},{key:'postScanPrompt',label:'扫描后处理指令',help:'可能继续调用模型并产生费用，仍受本次扫描预算和时限约束。'}] as const;
+const metadata=[{key:'workflowId',label:'SDK 工作流 ID',help:'可选，持久工作流关联标识。'},{key:'safetyIdentifier',label:'隐私标识',help:'可选，稳定匿名标识，最多 64 字符；请勿填写邮箱或个人信息。'},{key:'expectedPluginVersion',label:'预期插件版本',help:'可选，版本不匹配时停止执行，例如 0.1.94。'}] as const;
+const severities=[{value:'',label:'沿用 SDK 默认值'},...['critical','high','medium','low','informational'].map(value=>({value,label:value}))];
+</script>
+<template><details class="advanced-scan"><summary>高级 SDK 参数</summary><div class="advanced-fields">
+ <div><label for="sdk-subagents">每个 Worker 的子代理数量</label><Input id="sdk-subagents" v-model="form.subagents" type="number" min="0" max="64" step="1" placeholder="留空使用 SDK 默认值"/><p>仅 Deep 可用；0 表示关闭子代理，与独立扫描 Worker 数量分开。</p></div>
+ <div v-for="p in prompts" :key="p.key"><label :for="'sdk-'+p.key">{{p.label}}</label><textarea :id="'sdk-'+p.key" v-model="form[p.key]" rows="4" maxlength="16000" :aria-describedby="'help-'+p.key"></textarea><p :id="'help-'+p.key">{{p.help}} 最多 16000 字符。</p></div>
+ <section class="parent-scan"><label for="sdk-parent-task">父 Web 扫描任务（可选）</label><div class="parent-controls"><Input id="sdk-parent-task" v-model="form.parentTaskId" type="number" min="1" step="1" placeholder="同一代码快照的已完成任务编号"/><Button type="button" variant="outline" size="sm" :loading="parentLoading" :disabled="!Number.isSafeInteger(Number(form.parentTaskId))||Number(form.parentTaskId)<1" @click="loadParent">读取父扫描</Button></div><p>复制该执行的 SDK 工作台状态，最多 8 MiB；凭据保持隔离。本次创建独立扫描，按本次预算执行。</p><p v-if="form.parentScanId">父 SDK Scan ID · {{form.parentScanId}}</p><p v-if="parentError" role="alert">{{parentError}}</p></section>
+ <div class="metadata-fields"><div v-for="m in metadata" :key="m.key"><label :for="'sdk-'+m.key">{{m.label}}</label><Input :id="'sdk-'+m.key" v-model="form[m.key]" :maxlength="m.key==='safetyIdentifier'?64:128"/><p>{{m.help}}</p></div><div><label for="sdk-failureSeverity">SDK 严重程度阈值</label><Select aria-label="SDK 严重程度阈值" id="sdk-failureSeverity" v-model="form.failureSeverity" :options="severities" placeholder="沿用 SDK 默认值" clearable/><p>传入原生扫描 recipe；不会自动修改漏洞的人工处理状态。</p></div></div>
+</div></details></template>
+<style scoped>
+.advanced-scan{margin-top:var(--space-4);border-top:1px solid var(--border-subtle);padding-top:var(--space-3)}summary{cursor:pointer;font-size:var(--font-size-sm);font-weight:var(--font-weight-medium)}.advanced-fields{display:grid;gap:var(--space-4);margin-top:var(--space-3)}label{display:block;font-size:var(--font-size-sm);font-weight:var(--font-weight-medium);margin-bottom:var(--space-1)}p{font-size:var(--font-size-xs);color:var(--text-secondary);margin:var(--space-1) 0 0;line-height:var(--line-height-body)}textarea{width:100%;resize:vertical;border:1px solid var(--border-control);border-radius:var(--radius-sm);padding:var(--space-2);font:var(--font-size-sm)/var(--line-height-body) var(--font-ui);background:var(--surface-primary);color:var(--text-primary)}.parent-controls{display:flex;align-items:center;gap:var(--space-2)}.parent-controls input{flex:1}.parent-controls button{white-space:nowrap}.metadata-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}@media(max-width:760px){.metadata-fields{grid-template-columns:1fr}}
+</style>

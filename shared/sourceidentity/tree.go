@@ -13,6 +13,16 @@ import (
 )
 
 func TreeHash(ctx context.Context, root string) (string, int, int64, error) {
+	return treeHash(ctx, root, false)
+}
+
+// WorktreeHash binds the checked-out source independently of Git's object store.
+// TreeHash retains its historical byte-for-byte algorithm, including dotfiles.
+func WorktreeHash(ctx context.Context, root string) (string, int, int64, error) {
+	return treeHash(ctx, root, true)
+}
+
+func treeHash(ctx context.Context, root string, ignoreGit bool) (string, int, int64, error) {
 	type entry struct {
 		rel  string
 		size int64
@@ -28,6 +38,9 @@ func TreeHash(ctx context.Context, root string) (string, int, int64, error) {
 			return err
 		}
 		if info.IsDir() {
+			if ignoreGit && p != root && info.Name() == ".git" {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if !info.Mode().IsRegular() {

@@ -1030,6 +1030,1288 @@
       "kind": "CleanupJob",
       "file": "cleanup-unknown-item-state.json",
       "valid": false
+    },
+    {
+      "id": "sdk-lifecycle",
+      "kind": "SDKLifecycle",
+      "file": "sdk-lifecycle.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-lifecycle-unreported",
+      "kind": "SDKLifecycle",
+      "file": "sdk-lifecycle-unreported.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-lifecycle-false-verification",
+      "kind": "SDKLifecycle",
+      "file": "sdk-lifecycle-false-verification.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-lifecycle-budget-raise",
+      "kind": "SDKLifecycle",
+      "file": "sdk-lifecycle-budget-raise.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-lifecycle-credential",
+      "kind": "SDKLifecycle",
+      "file": "sdk-lifecycle-credential.json",
+      "valid": false
+    },
+    {
+      "id": "scan-input-rich",
+      "kind": "ScanInput",
+      "file": "scan-input-rich.json",
+      "valid": true
+    },
+    {
+      "id": "scan-input-deep-zero",
+      "kind": "ScanInput",
+      "file": "scan-input-deep-zero.json",
+      "valid": true
+    },
+    {
+      "id": "scan-input-invalid-unknown",
+      "kind": "ScanInput",
+      "file": "scan-input-invalid-unknown.json",
+      "valid": false
+    },
+    {
+      "id": "scan-input-invalid-unsafe-path",
+      "kind": "ScanInput",
+      "file": "scan-input-invalid-unsafe-path.json",
+      "valid": false
+    },
+    {
+      "id": "scan-input-invalid-subagents",
+      "kind": "ScanInput",
+      "file": "scan-input-invalid-subagents.json",
+      "valid": false
+    },
+    {
+      "id": "scan-input-invalid-blank-validation",
+      "kind": "ScanInput",
+      "file": "scan-input-invalid-blank-validation.json",
+      "valid": false
+    },
+    {
+      "id": "job-v4-standard",
+      "kind": "ScannerJobV4",
+      "file": "job-v4-standard.json",
+      "valid": true
+    },
+    {
+      "id": "job-v4-standard-subagents",
+      "kind": "ScannerJobV4",
+      "file": "job-v4-standard-subagents.json",
+      "valid": false
+    },
+    {
+      "id": "job-v4-deep",
+      "kind": "ScannerJobV4",
+      "file": "job-v4-deep.json",
+      "valid": true
+    },
+    {
+      "id": "job-v4-deep-validation",
+      "kind": "ScannerJobV4",
+      "file": "job-v4-deep-validation.json",
+      "valid": false
+    },
+    {
+      "id": "scan-input-assignment",
+      "kind": "ScanInputAssignment",
+      "file": "scan-input-assignment.json",
+      "valid": true
+    },
+    {
+      "id": "scan-input-assignment-future",
+      "kind": "ScanInputAssignment",
+      "file": "scan-input-assignment-future.json",
+      "valid": false
+    },
+    {
+      "id": "scanner-description-v5",
+      "kind": "ScannerDescriptionV5",
+      "file": "scanner-description-v5.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-parent-state",
+      "kind": "SDKParentState",
+      "file": "sdk-parent-state.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-parent-state-version",
+      "kind": "SDKParentState",
+      "file": "sdk-parent-state-version.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-parent-state",
+      "kind": "SDKParentState",
+      "file": "sdk-parent-state.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-parent-state-version",
+      "kind": "SDKParentState",
+      "file": "sdk-parent-state-version.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-diagnostic-warning",
+      "kind": "SDKDiagnostic",
+      "file": "sdk-diagnostic-warning.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk-diagnostic-observer",
+      "kind": "SDKDiagnostic",
+      "file": "sdk-diagnostic-observer.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-diagnostics-snapshot",
+      "kind": "SDKDiagnostics",
+      "file": "sdk-diagnostics-snapshot.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-cost-estimate-zero",
+      "kind": "SDKCostEstimate",
+      "file": "sdk-cost-estimate-zero.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-cost-estimate-unknown",
+      "kind": "SDKCostEstimate",
+      "file": "sdk-cost-estimate-unknown.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-native-result-rich",
+      "kind": "SDKNativeResult",
+      "file": "sdk-native-result-rich.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk-diagnostic-future",
+      "kind": "SDKDiagnostic",
+      "file": "sdk-diagnostic-future.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-diagnostics-counts",
+      "kind": "SDKDiagnostics",
+      "file": "sdk-diagnostics-counts.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-diagnostics-sequence",
+      "kind": "SDKDiagnostics",
+      "file": "sdk-diagnostics-sequence.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-diagnostics-identity",
+      "kind": "SDKDiagnostics",
+      "file": "sdk-diagnostics-identity.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-cost-estimate-null",
+      "kind": "SDKCostEstimate",
+      "file": "sdk-cost-estimate-null.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-native-result-identity",
+      "kind": "SDKNativeResult",
+      "file": "sdk-native-result-identity.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-native-result-report",
+      "kind": "SDKNativeResult",
+      "file": "sdk-native-result-report.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-native-result-history",
+      "kind": "SDKNativeResult",
+      "file": "sdk-native-result-history.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-operation-preflight",
+      "kind": "SDKOperation",
+      "file": "sdk-operation-preflight.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-operation-validate",
+      "kind": "SDKOperation",
+      "file": "sdk-operation-validate.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-operation-no-ack",
+      "kind": "SDKOperation",
+      "file": "sdk-operation-no-ack.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-operation-no-finding",
+      "kind": "SDKOperation",
+      "file": "sdk-operation-no-finding.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-operation-no-origin",
+      "kind": "SDKOperation",
+      "file": "sdk-operation-no-origin.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-operation-unknown",
+      "kind": "SDKOperation",
+      "file": "sdk-operation-unknown.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-operation-future",
+      "kind": "SDKOperation",
+      "file": "sdk-operation-future.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-operation-wrong-execution",
+      "kind": "SDKOperation",
+      "file": "sdk-operation-wrong-execution.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 3
+      }
+    },
+    {
+      "id": "sdk-operation-result-preflight",
+      "kind": "SDKOperationResult",
+      "file": "sdk-operation-result-preflight.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-operation-result-verified",
+      "kind": "SDKOperationResult",
+      "file": "sdk-operation-result-verified.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-validation-result-reportable",
+      "kind": "SDKOperationResult",
+      "file": "sdk-validation-result-reportable.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-validation-result-suppressed",
+      "kind": "SDKOperationResult",
+      "file": "sdk-validation-result-suppressed.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-validation-result-not_applicable",
+      "kind": "SDKOperationResult",
+      "file": "sdk-validation-result-not_applicable.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-validation-result-deferred",
+      "kind": "SDKOperationResult",
+      "file": "sdk-validation-result-deferred.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-validation-result-fake-zero",
+      "kind": "SDKOperationResult",
+      "file": "sdk-validation-result-fake-zero.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-operation-result-empty",
+      "kind": "SDKOperationResult",
+      "file": "sdk-operation-result-empty.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-operation-result-failed",
+      "kind": "SDKOperationResult",
+      "file": "sdk-operation-result-failed.json",
+      "valid": true
+    },
+    {
+      "id": "job-sdk-operation",
+      "kind": "ScannerJobV5",
+      "file": "job-sdk-operation.json",
+      "valid": true
+    },
+    {
+      "id": "job-sdk-operation-cross-execution",
+      "kind": "ScannerJobV5",
+      "file": "job-sdk-operation-cross-execution.json",
+      "valid": false
+    },
+    {
+      "id": "job-sdk-operation-missing",
+      "kind": "ScannerJobV5",
+      "file": "job-sdk-operation-missing.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-session-event-all-types",
+      "kind": "SDKSessionEvent",
+      "file": "sdk-session-event-all-types.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-session-event-zero-sequence",
+      "kind": "SDKSessionEvent",
+      "file": "sdk-session-event-zero-sequence.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-session-summary-complete",
+      "kind": "SDKSessionSummary",
+      "file": "sdk-session-summary-complete.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-session-summary-incomplete",
+      "kind": "SDKSessionSummary",
+      "file": "sdk-session-summary-incomplete.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-session-summary-miscount",
+      "kind": "SDKSessionSummary",
+      "file": "sdk-session-summary-miscount.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-session-summary-no-reason",
+      "kind": "SDKSessionSummary",
+      "file": "sdk-session-summary-no-reason.json",
+      "valid": false
+    },
+    {
+      "id": "recovery-snapshot",
+      "kind": "ScanRecoverySnapshot",
+      "file": "recovery-snapshot.json",
+      "valid": true
+    },
+    {
+      "id": "recovery-legacy-snapshot",
+      "kind": "ScanRecoverySnapshot",
+      "file": "recovery-legacy-snapshot.json",
+      "valid": true
+    },
+    {
+      "id": "recovery-false-resume",
+      "kind": "ScanRecoverySnapshot",
+      "file": "recovery-false-resume.json",
+      "valid": false
+    },
+    {
+      "id": "recovery-unverified-version",
+      "kind": "ScanRecoverySnapshot",
+      "file": "recovery-unverified-version.json",
+      "valid": false
+    },
+    {
+      "id": "recovery-restored-snapshot",
+      "kind": "ScanRecoverySnapshot",
+      "file": "recovery-restored-snapshot.json",
+      "valid": true
+    },
+    {
+      "id": "recovery-restore-action",
+      "kind": "ScanRecoveryAction",
+      "file": "recovery-restore-action.json",
+      "valid": true
+    },
+    {
+      "id": "recovery-restart-action",
+      "kind": "ScanRecoveryAction",
+      "file": "recovery-restart-action.json",
+      "valid": true
+    },
+    {
+      "id": "recovery-restart-no-ack",
+      "kind": "ScanRecoveryAction",
+      "file": "recovery-restart-no-ack.json",
+      "valid": false
+    },
+    {
+      "id": "recovery-restore-no-hash",
+      "kind": "ScanRecoveryAction",
+      "file": "recovery-restore-no-hash.json",
+      "valid": false
+    },
+    {
+      "id": "recovery-unsupported-resume",
+      "kind": "ScanRecoveryAction",
+      "file": "recovery-unsupported-resume.json",
+      "valid": false
+    },
+    {
+      "id": "recovery-ambiguous-action",
+      "kind": "ScanRecoveryAction",
+      "file": "recovery-ambiguous-action.json",
+      "valid": false
+    },
+    {
+      "id": "recovery-arbitrary-path",
+      "kind": "ScanRecoveryAction",
+      "file": "recovery-arbitrary-path.json",
+      "valid": false
+    },
+    {
+      "id": "recovery-cross-execution",
+      "kind": "ScanRecoveryAction",
+      "file": "recovery-cross-execution.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "18",
+        "attempt": 1
+      }
+    },
+    {
+      "id": "recovery-interrupt-expired",
+      "kind": "ScanRecoveryAction",
+      "file": "recovery-interrupt-expired.json",
+      "valid": true
+    },
+    {
+      "id": "recovery-previous-completion",
+      "kind": "ScanRecoverySnapshot",
+      "file": "recovery-previous-completion.json",
+      "valid": true
+    },
+    {
+      "id": "recovery-previous-cross-execution",
+      "kind": "ScanRecoverySnapshot",
+      "file": "recovery-previous-cross-execution.json",
+      "valid": false
+    },
+    {
+      "id": "recovery-previous-cost",
+      "kind": "ScanRecoverySnapshot",
+      "file": "recovery-previous-cost.json",
+      "valid": true
+    },
+    {
+      "id": "recovery-cost-cross-execution",
+      "kind": "ScanRecoverySnapshot",
+      "file": "recovery-cost-cross-execution.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-facts",
+      "kind": "FindingEvidence",
+      "file": "evidence-facts.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "evidence-graph",
+      "kind": "EvidenceGraph",
+      "file": "evidence-graph.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "evidence-future-facts",
+      "kind": "FindingEvidence",
+      "file": "evidence-future-facts.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-future-graph",
+      "kind": "EvidenceGraph",
+      "file": "evidence-future-graph.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-duplicate-node",
+      "kind": "EvidenceGraph",
+      "file": "evidence-duplicate-node.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-duplicate-edge",
+      "kind": "FindingEvidence",
+      "file": "evidence-duplicate-edge.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-dangling-edge",
+      "kind": "EvidenceGraph",
+      "file": "evidence-dangling-edge.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-bad-pointer",
+      "kind": "EvidenceGraph",
+      "file": "evidence-bad-pointer.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-bad-escape",
+      "kind": "FindingEvidence",
+      "file": "evidence-bad-escape.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-observed-sdk-claim",
+      "kind": "FindingEvidence",
+      "file": "evidence-observed-sdk-claim.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-verified-without-proof",
+      "kind": "EvidenceGraph",
+      "file": "evidence-verified-without-proof.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-bad-line-range",
+      "kind": "EvidenceGraph",
+      "file": "evidence-bad-line-range.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-cross-finding",
+      "kind": "EvidenceGraph",
+      "file": "evidence-cross-finding.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-unknown-relation",
+      "kind": "FindingEvidence",
+      "file": "evidence-unknown-relation.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-outside-source",
+      "kind": "FindingEvidence",
+      "file": "evidence-outside-source.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-future-state",
+      "kind": "EvidenceGraph",
+      "file": "evidence-future-state.json",
+      "valid": false
+    },
+    {
+      "id": "evidence-observed-code",
+      "kind": "EvidenceGraph",
+      "file": "evidence-observed-code.json",
+      "valid": true
+    },
+    {
+      "id": "evidence-cycle",
+      "kind": "EvidenceGraph",
+      "file": "evidence-cycle.json",
+      "valid": true
+    },
+    {
+      "id": "evidence-escaped-pointer",
+      "kind": "EvidenceGraph",
+      "file": "evidence-escaped-pointer.json",
+      "valid": true
+    },
+    {
+      "id": "evidence-wrong-execution",
+      "kind": "FindingEvidence",
+      "file": "evidence-wrong-execution.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 3
+      }
+    },
+    {
+      "id": "evidence-code-binding",
+      "file": "evidence-code-binding.json",
+      "kind": "EvidenceGraph",
+      "valid": false
+    },
+    {
+      "id": "evidence-location-binding",
+      "file": "evidence-location-binding.json",
+      "kind": "EvidenceGraph",
+      "valid": false
+    },
+    {
+      "id": "evidence-id-binding",
+      "file": "evidence-id-binding.json",
+      "kind": "EvidenceGraph",
+      "valid": false
+    },
+    {
+      "id": "evidence-ref-binding",
+      "file": "evidence-ref-binding.json",
+      "kind": "EvidenceGraph",
+      "valid": false
+    },
+    {
+      "id": "git-target",
+      "kind": "GitDiffTarget",
+      "file": "git-target.json",
+      "valid": true
+    },
+    {
+      "id": "git-target-same-commit",
+      "kind": "GitDiffTarget",
+      "file": "git-target-same-commit.json",
+      "valid": false
+    },
+    {
+      "id": "git-target-future",
+      "kind": "GitDiffTarget",
+      "file": "git-target-future.json",
+      "valid": false
+    },
+    {
+      "id": "git-target-command-ref",
+      "kind": "GitDiffTarget",
+      "file": "git-target-command-ref.json",
+      "valid": false
+    },
+    {
+      "id": "git-assignment",
+      "kind": "GitDiffAssignment",
+      "file": "git-assignment.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "git-assignment-wrong-execution",
+      "kind": "GitDiffAssignment",
+      "file": "git-assignment-wrong-execution.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 3
+      }
+    },
+    {
+      "id": "git-assignment-base-evidence",
+      "kind": "GitDiffAssignment",
+      "file": "git-assignment-base-evidence.json",
+      "valid": false
+    },
+    {
+      "id": "git-assignment-same-commit",
+      "kind": "GitDiffAssignment",
+      "file": "git-assignment-same-commit.json",
+      "valid": false
+    },
+    {
+      "id": "git-preview",
+      "kind": "GitDiffPreview",
+      "file": "git-preview.json",
+      "valid": true
+    },
+    {
+      "id": "git-preview-invalid-added",
+      "kind": "GitDiffPreview",
+      "file": "git-preview-invalid-added.json",
+      "valid": false
+    },
+    {
+      "id": "git-preview-path-traversal",
+      "kind": "GitDiffPreview",
+      "file": "git-preview-path-traversal.json",
+      "valid": false
+    },
+    {
+      "id": "git-preview-overpage",
+      "kind": "GitDiffPreview",
+      "file": "git-preview-overpage.json",
+      "valid": false
+    },
+    {
+      "id": "git-content",
+      "kind": "GitDiffContent",
+      "file": "git-content.json",
+      "valid": true
+    },
+    {
+      "id": "git-content-invalid-deleted",
+      "kind": "GitDiffContent",
+      "file": "git-content-invalid-deleted.json",
+      "valid": false
+    },
+    {
+      "id": "job-git-diff",
+      "kind": "ScannerJobV6",
+      "file": "job-git-diff.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "job-git-preflight",
+      "kind": "ScannerJobV6",
+      "file": "job-git-preflight.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "job-git-operation-identity",
+      "kind": "ScannerJobV6",
+      "file": "job-git-operation-identity.json",
+      "valid": false
+    },
+    {
+      "id": "job-git-operation-target",
+      "kind": "ScannerJobV6",
+      "file": "job-git-operation-target.json",
+      "valid": false
+    },
+    {
+      "id": "job-git-deep",
+      "kind": "ScannerJobV6",
+      "file": "job-git-deep.json",
+      "valid": false
+    },
+    {
+      "id": "job-git-path-override",
+      "kind": "ScannerJobV6",
+      "file": "job-git-path-override.json",
+      "valid": false
+    },
+    {
+      "id": "job-git-missing-target",
+      "kind": "ScannerJobV6",
+      "file": "job-git-missing-target.json",
+      "valid": false
+    },
+    {
+      "id": "job-git-subagents",
+      "kind": "ScannerJobV6",
+      "file": "job-git-subagents.json",
+      "valid": false
+    },
+    {
+      "id": "git-preview-sparse-index",
+      "kind": "GitDiffPreview",
+      "file": "git-preview-sparse-index.json",
+      "valid": false
+    },
+    {
+      "id": "git-preview-missing-file",
+      "kind": "GitDiffPreview",
+      "file": "git-preview-missing-file.json",
+      "valid": false
+    },
+    {
+      "id": "git-content-truncation-without-reason",
+      "kind": "GitDiffContent",
+      "file": "git-content-truncation-without-reason.json",
+      "valid": false
+    },
+    {
+      "id": "scanner-description-v6",
+      "kind": "ScannerDescriptionV6",
+      "file": "scanner-description-v6.json",
+      "valid": true
+    },
+    {
+      "id": "scanner-description-v7",
+      "kind": "ScannerDescriptionV7",
+      "file": "scanner-description-v7.json",
+      "valid": true
+    },
+    {
+      "id": "scanner-description-future-v8",
+      "kind": "ScannerDescriptionV7",
+      "file": "scanner-description-future-v8.json",
+      "valid": false
+    },
+    {
+      "id": "component-source",
+      "kind": "ComponentSource",
+      "file": "component-source.json",
+      "valid": true
+    },
+    {
+      "id": "component-document",
+      "kind": "ComponentPlanDocument",
+      "file": "component-document.json",
+      "valid": true
+    },
+    {
+      "id": "component-coverage",
+      "kind": "ComponentPlanCoverage",
+      "file": "component-coverage.json",
+      "valid": true
+    },
+    {
+      "id": "component-normalize",
+      "kind": "ComponentPlanningOperation",
+      "file": "component-normalize.json",
+      "valid": true
+    },
+    {
+      "id": "component-result",
+      "kind": "ComponentPlanningResult",
+      "file": "component-result.json",
+      "valid": true
+    },
+    {
+      "id": "component-snapshot",
+      "kind": "ComponentPlanSnapshot",
+      "file": "component-snapshot.json",
+      "valid": true
+    },
+    {
+      "id": "component-version",
+      "kind": "ComponentPlanVersion",
+      "file": "component-version.json",
+      "valid": true
+    },
+    {
+      "id": "component-suggest",
+      "kind": "ComponentPlanningOperation",
+      "file": "component-suggest.json",
+      "valid": true
+    },
+    {
+      "id": "component-suggest-result",
+      "kind": "ComponentPlanningResult",
+      "file": "component-suggest-result.json",
+      "valid": true
+    },
+    {
+      "id": "job-components",
+      "kind": "ScannerJobV7",
+      "file": "job-components.json",
+      "valid": true
+    },
+    {
+      "id": "scanner-description-v8",
+      "kind": "ScannerDescriptionV8",
+      "file": "scanner-description-v8.json",
+      "valid": true
+    },
+    {
+      "id": "component-unknown-version",
+      "kind": "ComponentPlanningOperation",
+      "file": "component-unknown-version.json",
+      "valid": false
+    },
+    {
+      "id": "component-suggest-no-ack",
+      "kind": "ComponentPlanningOperation",
+      "file": "component-suggest-no-ack.json",
+      "valid": false
+    },
+    {
+      "id": "component-normalize-no-document",
+      "kind": "ComponentPlanningOperation",
+      "file": "component-normalize-no-document.json",
+      "valid": false
+    },
+    {
+      "id": "component-path-escape",
+      "kind": "ComponentPlanDocument",
+      "file": "component-path-escape.json",
+      "valid": false
+    },
+    {
+      "id": "component-foreign-result-execution",
+      "kind": "ComponentPlanningResult",
+      "file": "component-foreign-result-execution.json",
+      "valid": false
+    },
+    {
+      "id": "component-normalize-unknown-cost",
+      "kind": "ComponentPlanningResult",
+      "file": "component-normalize-unknown-cost.json",
+      "valid": false
+    },
+    {
+      "id": "component-suggest-zero-cost",
+      "kind": "ComponentPlanningResult",
+      "file": "component-suggest-zero-cost.json",
+      "valid": false
+    },
+    {
+      "id": "component-forged-valid",
+      "kind": "ComponentPlanCoverage",
+      "file": "component-forged-valid.json",
+      "valid": false
+    },
+    {
+      "id": "component-missing-uncovered",
+      "kind": "ComponentPlanCoverage",
+      "file": "component-missing-uncovered.json",
+      "valid": false
+    },
+    {
+      "id": "component-overlap-count",
+      "kind": "ComponentPlanCoverage",
+      "file": "component-overlap-count.json",
+      "valid": false
+    },
+    {
+      "id": "component-version-invalid-coverage",
+      "kind": "ComponentPlanVersion",
+      "file": "component-version-invalid-coverage.json",
+      "valid": false
+    },
+    {
+      "id": "component-job-foreign-source",
+      "kind": "ScannerJobV7",
+      "file": "component-job-foreign-source.json",
+      "valid": false
+    },
+    {
+      "id": "component-job-foreign-execution",
+      "kind": "ScannerJobV7",
+      "file": "component-job-foreign-execution.json",
+      "valid": false
+    },
+    {
+      "id": "component-job-budget",
+      "kind": "ScannerJobV7",
+      "file": "component-job-budget.json",
+      "valid": false
+    },
+    {
+      "id": "component-view",
+      "kind": "ComponentPlanView",
+      "file": "component-view.json",
+      "valid": true
+    },
+    {
+      "id": "component-view-no-operation",
+      "kind": "ComponentPlanView",
+      "file": "component-view-no-operation.json",
+      "valid": true
+    },
+    {
+      "id": "component-view-canceled",
+      "kind": "ComponentPlanView",
+      "file": "component-view-canceled.json",
+      "valid": true
+    },
+    {
+      "id": "component-view-foreign-source",
+      "kind": "ComponentPlanView",
+      "file": "component-view-foreign-source.json",
+      "valid": false
+    },
+    {
+      "id": "component-view-foreign-result",
+      "kind": "ComponentPlanView",
+      "file": "component-view-foreign-result.json",
+      "valid": false
+    },
+    {
+      "id": "component-view-missing-operation",
+      "kind": "ComponentPlanView",
+      "file": "component-view-missing-operation.json",
+      "valid": false
+    },
+    {
+      "id": "component-job-scan-prompt",
+      "kind": "ScannerJobV7",
+      "file": "component-job-scan-prompt.json",
+      "valid": false
+    },
+    {
+      "id": "component-job-focus",
+      "kind": "ScannerJobV7",
+      "file": "component-job-focus.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-request",
+      "kind": "ComponentScanRequest",
+      "file": "component-scan-request.json",
+      "valid": true
+    },
+    {
+      "id": "component-scan-snapshot",
+      "kind": "ComponentScanSnapshot",
+      "file": "component-scan-snapshot.json",
+      "valid": true
+    },
+    {
+      "id": "component-scan-result",
+      "kind": "ComponentScanResult",
+      "file": "component-scan-result.json",
+      "valid": true
+    },
+    {
+      "id": "component-finding-binding",
+      "kind": "ComponentFindingBinding",
+      "file": "component-finding-binding.json",
+      "valid": true
+    },
+    {
+      "id": "job-component-scan",
+      "kind": "ScannerJobV8",
+      "file": "job-component-scan.json",
+      "valid": true
+    },
+    {
+      "id": "component-scan-no-ack",
+      "kind": "ComponentScanRequest",
+      "file": "component-scan-no-ack.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-duplicate-selection",
+      "kind": "ComponentScanRequest",
+      "file": "component-scan-duplicate-selection.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-outside-plan",
+      "kind": "ComponentScanRequest",
+      "file": "component-scan-outside-plan.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-unsorted-selection",
+      "kind": "ComponentScanRequest",
+      "file": "component-scan-unsorted-selection.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-unaffordable",
+      "kind": "ComponentScanRequest",
+      "file": "component-scan-unaffordable.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-workers-excess",
+      "kind": "ComponentScanRequest",
+      "file": "component-scan-workers-excess.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-forged-cost",
+      "kind": "ComponentScanSnapshot",
+      "file": "component-scan-forged-cost.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-forged-reservation",
+      "kind": "ComponentScanSnapshot",
+      "file": "component-scan-forged-reservation.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-overcommit",
+      "kind": "ComponentScanSnapshot",
+      "file": "component-scan-overcommit.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-duplicate-receipt",
+      "kind": "ComponentScanSnapshot",
+      "file": "component-scan-duplicate-receipt.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-unknown-as-zero",
+      "kind": "ComponentScanSnapshot",
+      "file": "component-scan-unknown-as-zero.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-wrong-result-execution",
+      "kind": "ComponentScanResult",
+      "file": "component-scan-wrong-result-execution.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-wrong-result-source",
+      "kind": "ComponentScanResult",
+      "file": "component-scan-wrong-result-source.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-wrong-result-version",
+      "kind": "ComponentScanResult",
+      "file": "component-scan-wrong-result-version.json",
+      "valid": false
+    },
+    {
+      "id": "component-scan-wrong-allocation",
+      "kind": "ComponentScanResult",
+      "file": "component-scan-wrong-allocation.json",
+      "valid": false
+    },
+    {
+      "id": "job-component-scan-foreign-source",
+      "kind": "ScannerJobV8",
+      "file": "job-component-scan-foreign-source.json",
+      "valid": false
+    },
+    {
+      "id": "job-component-scan-foreign-execution",
+      "kind": "ScannerJobV8",
+      "file": "job-component-scan-foreign-execution.json",
+      "valid": false
+    },
+    {
+      "id": "job-component-scan-wrong-grant",
+      "kind": "ScannerJobV8",
+      "file": "job-component-scan-wrong-grant.json",
+      "valid": false
+    },
+    {
+      "id": "job-component-scan-unhandled-prompt",
+      "kind": "ScannerJobV8",
+      "file": "job-component-scan-unhandled-prompt.json",
+      "valid": false
+    },
+    {
+      "id": "scanner-description-v9",
+      "kind": "ScannerDescriptionV9",
+      "file": "scanner-description-v9.json",
+      "valid": true
+    },
+    {
+      "id": "identity-snapshot",
+      "kind": "SDKIdentitySnapshot",
+      "file": "identity-snapshot.json",
+      "valid": true
+    },
+    {
+      "id": "identity-operation",
+      "kind": "SDKIdentityOperation",
+      "file": "identity-operation.json",
+      "valid": true
+    },
+    {
+      "id": "identity-claim",
+      "kind": "SDKIdentityClaim",
+      "file": "identity-claim.json",
+      "valid": true
+    },
+    {
+      "id": "identity-report",
+      "kind": "SDKIdentityReport",
+      "file": "identity-report.json",
+      "valid": true
+    },
+    {
+      "id": "identity-task",
+      "kind": "SDKTaskIdentity",
+      "file": "identity-task.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 1
+      }
+    },
+    {
+      "id": "identity-bad-state",
+      "kind": "SDKIdentitySnapshot",
+      "file": "identity-bad-state.json",
+      "valid": false
+    },
+    {
+      "id": "identity-bad-url",
+      "kind": "SDKDeviceInstructions",
+      "file": "identity-bad-url.json",
+      "valid": false
+    },
+    {
+      "id": "identity-bad-generation",
+      "kind": "SDKTaskIdentity",
+      "file": "identity-bad-generation.json",
+      "valid": false
+    },
+    {
+      "id": "identity-future",
+      "kind": "SDKTaskIdentity",
+      "file": "identity-future.json",
+      "valid": false
+    },
+    {
+      "id": "identity-wrong-attempt",
+      "kind": "SDKTaskIdentity",
+      "file": "identity-wrong-attempt.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "identity-claim-unexpected-secret",
+      "kind": "SDKIdentityClaim",
+      "file": "identity-claim-unexpected-secret.json",
+      "valid": false
+    },
+    {
+      "id": "identity-report-unknown-as-zero",
+      "kind": "SDKIdentityReport",
+      "file": "identity-report-unknown-as-zero.json",
+      "valid": false
+    },
+    {
+      "id": "identity-waiting-without-code",
+      "kind": "SDKIdentityOperation",
+      "file": "identity-waiting-without-code.json",
+      "valid": false
+    },
+    {
+      "id": "identity-public-secret-apiKey",
+      "kind": "SDKIdentitySnapshot",
+      "file": "identity-public-secret-apiKey.json",
+      "valid": false
+    },
+    {
+      "id": "identity-public-secret-identityPath",
+      "kind": "SDKIdentitySnapshot",
+      "file": "identity-public-secret-identityPath.json",
+      "valid": false
     }
   ]
 }

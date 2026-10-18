@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 8,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "source": {
+    "path": "/fixture/source",
+    "snapshotId": "7",
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "output": {
+    "path": "/fixture/output/attempt-2"
+  },
+  "model": {
+    "providerId": "fixture-provider",
+    "connectionType": "openai_compatible",
+    "model": "fixture-model",
+    "baseUrl": "https://fixture.invalid/v1",
+    "wireApi": "responses",
+    "credentialEnv": "FIXTURE_API_KEY",
+    "configurationRevision": "fixture-revision-1"
+  },
+  "policy": {
+    "mode": "standard",
+    "timeBudget": {
+      "scanSeconds": 1800,
+      "finalizationGraceSeconds": 0
+    },
+    "includePaths": [],
+    "focus": [],
+    "validation": {
+      "mode": "default"
+    },
+    "maxCostUsd": 5
+  },
+  "resultSchemaVersion": 1,
+  "progressSchemaVersion": 2,
+  "eventSchemaVersion": 2,
+  "scanInput": {
+    "schemaVersion": 1,
+    "knowledge": []
+  },
+  "componentScan": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "9007199254740993",
+      "attempt": 2
+    },
+    "planVersion": {
+      "schemaVersion": 1,
+      "planId": "9",
+      "source": {
+        "snapshotId": "7",
+        "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "headCommit": null
+      },
+      "version": 1,
+      "revision": 1,
+      "document": {
+        "components": [
+          {
+            "name": "API",
+            "paths": [
+              "api"
+            ]
+          },
+          {
+            "name": "Web",
+            "paths": [
+              "web"
+            ]
+          }
+        ]
+      },
+      "coverage": {
+        "inventoryHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "fileCount": 3,
+        "coveredFileCount": 3,
+        "uncoveredPaths": [],
+        "overlapCount": 0,
+        "overlaps": [],
+        "emptyComponents": [],
+        "duplicateNames": [],
+        "valid": true
+      },
+      "origin": "manual",
+      "validationExecution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      },
+      "resultSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "confirmedBy": "1",
+      "confirmedAt": "2026-10-17T01:00:00Z"
+    },
+    "selectedIndices": [
+      0,
+      1
+    ],
+    "workers": 2,
+    "componentLimitMicros": 3000000,
+    "grantMicros": 4000001,
+    "acknowledgeMatchingCost": true
+  }
+}

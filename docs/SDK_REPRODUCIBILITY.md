@@ -76,3 +76,56 @@ node deploy/sdk/rebuild.mjs --output /absolute/path/to/new-directory
 `verify-runtime.mjs` 同时检查 bundled 配置和一次全新插件安装后的配置。完整隔离重建路径为 `/opt/Axiom-rebuild-task-management`，扫描器回归测试增加 worker 失败日志检查。SDK 原始审计报告仍是历史基线，新增变更由 manifest、override 与第 6 个 diff 单独记录。
 
 应用层同时修复 `task_complete.error` 被会话过滤器丢弃的问题：错误以 error 级别进入活动流，保留线程/worker 标识并脱敏，即使关闭推理日志也会保留错误。此次问题不会再只表现为反复“会话开始”。
+
+## 公开能力接入基线（2026-10-16）
+
+当前完整集成范围固定到 `@openai/codex-security 0.1.25`。升级另做兼容验收。
+`deploy/sdk/integration.json` 按 25 个能力组记录公开 API、现有实现证据、缺口与实施顺序；这些组不是完成百分比。
+`integration-check.mjs` 只解析 16 份声明文件并核对哈希，不导入 SDK 运行时、不登录、不调用模型、不发布数据。
+检查已接入 `input-chain.yml`；本地使用 Scanner 的 `verify:sdk-integration` 和 `test:sdk-integration`。
+
+### 已落地的增量
+
+- 独立 `SDKLifecycle` Schema 生成 Go/TS 类型，经现有进度 `extensions.sdkLifecycle` 传递；历史 Schema 和传输方式保持不变。
+- Scanner 记录认证来源（始终 `verified:false`）、Trusted Access、产物就绪/归档、扫描开始和接近预算上限。来源、权限和执行结论分别表达。
+- 接近上限回调始终返回 `undefined`，不提高已批准的单次/任务总预算；未知估算保留 `null`。
+- Web 在执行详情展示生命周期及原始快照；旧任务没有扩展时继续正常读取，未知扩展版本单独提示。
+- 不记录登录凭据、账户详情或回调中的宿主机目录。API Key 和设备码身份现已接入，状态、隔离与凭据边界见 [执行身份基线](SDK_EXECUTION_IDENTITIES.md)。
+
+### 剩余实施顺序与完成条件
+
+| 顺序 | 能力 | 完成条件 |
+| --- | --- | --- |
+| 1 | 扫描输入、结果与观察 | 已接入；原生结果见 [结果基线](SDK_NATIVE_RESULTS.md)，全类型 SessionEvent、未提交日志与故障语义见 [操作基线](SDK_OPERATIONS.md)。 |
+| 2 | 原生预检、独立复核 | 已接入，见 [操作基线](SDK_OPERATIONS.md)；共用准入/租约/取消，复核无公开费用回调，未知费用保留且不自动重放。合成验收通过后仍不代表真实复核质量已验收。 |
+| 3 | Git 差异与组件审计 | 已提交 base/head 的冻结、Standard 目标和 HEAD 证据已接入，见 [Git 差异基线](SDK_GIT_DIFF.md)；[组件规划与计划管理](SDK_COMPONENT_PLANS.md) 已接入，包括不可变源码绑定、编辑修订、覆盖检查与人工冻结。[组件审计执行](SDK_COMPONENT_SCANS.md) 已接入，含父任务、组件执行、整数预算预留、部分失败和选择性重新执行。工作区差异仍待接入；规划/匹配费用未知时不能宣称有完整总额控制。 |
+| 4 | ChatGPT/API Key 身份 | API Key、设备码登录、account/logout、冻结任务/Agent/凭据版本及刷新回存已接入，见 [执行身份基线](SDK_EXECUTION_IDENTITIES.md)；回调式 loginChatGPT 仍待设计。验收仅模拟登录。 |
+| 5 | 外部集成与语义去重 | Linear/自定义发布预览及明确提交、幂等和 indeterminate 对账；GitHub 导入保留原始告警与来源；Findings API 与 Go/PostgreSQL 适配；语义匹配证据与现有指纹去重分开。 |
+
+所有能力均纳入纯 Web 产品范围，后台继续 Go Server + Go Agent + Node Scanner。
+Server 负责身份/权限、配置、操作记录与数据库；Agent 负责领取、租约、执行边界和产物；Scanner 是唯一 SDK 适配边界。
+新增操作复用 HTTP、共享产物及 JSONL；必须共用现有并发和容量准入，不能另起无预算、无租约的旁路。
+验收使用合成 SDK、临时数据库和浏览器；真实模型、真实登录、外部发布仍未验收。
+
+0.1.25 的公开类没有 `fix()` 或 `resume()`。插件能力和内部字段不作为稳定 SDK 方法；重试不能标成续扫。
+完整能力集成尚未完成，能力清单的 `planned`/`partial`/`adapter_required` 项均是剩余工作。
+
+### 本次合成验收记录
+
+2026-10-15：6 项 SDK 基线检查、169 项 Go/TS 合同检查、121 项 Scanner 测试、32 项 Web 单元测试及 Agent 全回归通过。Go Server 的输入/结果/故障流水线原有 29 项子场景通过；生命周期持久化及浏览器进度场景在修正定位器和统一测试预算后重跑通过，包含断线恢复、日志下载与 Web 取消。桌面/窄屏截图已检查，记录见 `output/playwright/sdk-lifecycle/verification.json`（本地验收产物，不提交）。42 份历史 Schema、兼容矩阵及迁移文件哈希保持不变。远端 CI 本次尚未执行；真实审计、账号登录、外部发布均为零次。
+
+
+### 扫描输入与知识库增量（2026-10-15）
+
+当前批次完成 subagents、三类指令、原生元数据与 Web 知识文档管理。高级任务使用输入版本 2、ScanInputAssignment v2、Job v4 与描述 v5；现有 HTTP、共享产物和 JSONL 保持不变。迁移 014 追加知识版本、冻结输入及私有父扫描状态，不改写 001–013 或原 SQLite schema。
+
+父扫描是同一快照上新建的独立扫描，有自己的费用预算。SDK 0.1.25 需要原生 workbench 中的父记录，因此 Scanner 在 SDK 关闭后用 SQLite 一致性复制导出最多 8 MiB 的工作台状态，绑定父执行和结果哈希；Server 保存不透明副本，Agent 不新增数据库依赖。只复制 workbench.sqlite3，凭据与 codex-home 保持隔离；不使用内部恢复字段，不承诺续扫。
+
+SDK 0.1.25 的官方 mock 已通过父扫描、知识文档与工作流的实际公开调用验证；其余端到端流程在 SDK 实例边界使用 Fixture。两者均不调用模型、不登录真实账户、不发布外部数据。验收入口与限制见 [扫描输入与知识库基线](SDK_INPUT_KNOWLEDGE.md)。能力清单只提升本批已有证据的四组，其余 planned/partial/adapter_required 继续表示未完成。
+
+
+### 原生结果、导出与诊断增量（2026-10-15）
+
+已接入 SDK 原生 Markdown/SARIF 的状态、受控预览/下载、仓库历史及同源码的 Web 执行关联；SDKCostEstimate 按返回轮次用量冻结，不覆盖费用账本。SDKDiagnostic/SDKDiagnostics 与独立 JSONL 保留结构化警告和观察器错误，既有事件合同保持原值。迁移 015 仅添加派生索引，旧结果和报告读取保留。边界、容量及合成验收见 [本批基线](SDK_NATIVE_RESULTS.md)。
+
+2026-10-16：已核实 SDK 0.1.25 没有跨进程续扫入口。Web 新增过期中断登记、完整提交结果恢复入库与明确确认后的重新执行，保持原执行、费用和历史证据。迁移 017 仅保存恢复来源；既有合同、SDK 锁与七处补丁不变。详情见 [扫描中断恢复](SCAN_RECOVERY.md)。验证只使用本地 Mock / Fixture，业务 Docker 未升级。

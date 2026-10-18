@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/component-plan-document.schema.json",
+  "title": "ComponentPlanDocument",
+  "$ref": "https://axiom.invalid/contracts/v1/component-planning.schema.json#/$defs/ComponentPlanDocument"
+}

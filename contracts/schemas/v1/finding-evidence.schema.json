@@ -1,0 +1,450 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json",
+  "title": "FindingEvidence",
+  "$ref": "#/$defs/FindingEvidence",
+  "$defs": {
+    "EvidenceLocation": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/RelativePath"
+        },
+        "startLine": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "endLine": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "path",
+        "startLine",
+        "endLine"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceVerification": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "runtime",
+            "human"
+          ]
+        },
+        "recordId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "artifactSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "kind",
+        "recordId",
+        "artifactSha256",
+        "rationale"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "finding",
+            "source",
+            "step",
+            "control",
+            "sink",
+            "impact",
+            "root_cause",
+            "validation",
+            "code_evidence",
+            "counter_evidence",
+            "assumption",
+            "limitation"
+          ]
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16384
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "inferred",
+            "observed",
+            "verified",
+            "contradicted",
+            "unknown"
+          ]
+        },
+        "stateReason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "sourcePointer": {
+          "type": "string",
+          "pattern": "^(/([^~]|~[01])*)*$",
+          "maxLength": 2048
+        },
+        "sdkEvidenceId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "location": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceLocation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "code": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 524288
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "explanation": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65536
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sourceCheck": {
+          "type": "string",
+          "enum": [
+            "not_checked",
+            "matched",
+            "mismatch",
+            "unavailable"
+          ]
+        },
+        "sourceFileSha256": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "verification": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceVerification"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "label",
+        "state",
+        "stateReason",
+        "sourcePointer",
+        "sdkEvidenceId",
+        "location",
+        "code",
+        "explanation",
+        "sourceCheck",
+        "sourceFileSha256",
+        "verification"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "verified"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "verification": {
+                "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceVerification"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "kind": {
+                "const": "code_evidence"
+              },
+              "sourceCheck": {
+                "const": "matched"
+              },
+              "sourceFileSha256": {
+                "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+              },
+              "location": {
+                "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceLocation"
+              },
+              "code": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "EvidenceRelation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "supports",
+            "contradicts",
+            "describes_next",
+            "contains",
+            "constrained_by",
+            "references"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "inferred",
+            "unknown"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "sourcePointer": {
+          "type": "string",
+          "pattern": "^(/([^~]|~[01])*)*$",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "to",
+        "kind",
+        "state",
+        "reason",
+        "sourcePointer"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceDiagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        },
+        "sourcePointer": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(/([^~]|~[01])*)*$",
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "sourcePointer"
+      ],
+      "additionalProperties": false
+    },
+    "FindingEvidence": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "findingFingerprint": {
+          "type": "string",
+          "maxLength": 512,
+          "minLength": 1
+        },
+        "sourceContentHash": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.1.25"
+        },
+        "adapterVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "completeness": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "empty"
+          ]
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceNode",
+            "allOf": [
+              {
+                "properties": {
+                  "state": {
+                    "const": "inferred"
+                  },
+                  "sourceCheck": {
+                    "const": "not_checked"
+                  },
+                  "sourceFileSha256": {
+                    "type": "null"
+                  },
+                  "verification": {
+                    "type": "null"
+                  }
+                }
+              }
+            ]
+          },
+          "maxItems": 256
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceRelation"
+          },
+          "maxItems": 1024
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceDiagnostic"
+          },
+          "maxItems": 256
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "findingFingerprint",
+        "sourceContentHash",
+        "sdkVersion",
+        "adapterVersion",
+        "completeness",
+        "nodes",
+        "edges",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

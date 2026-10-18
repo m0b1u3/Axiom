@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "sdkVersion": "0.1.25",
+  "method": "estimateScanCost",
+  "scope": "returned_turn_usage",
+  "observedAt": "2026-10-15T08:00:00Z",
+  "model": "gpt-5.6",
+  "status": "estimated",
+  "reason": null,
+  "estimatedUsd": 0,
+  "inputTokens": 0,
+  "cachedInputTokens": 0,
+  "cacheWriteInputTokens": 0,
+  "outputTokens": 0,
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cached_input_tokens": 0,
+    "future": false
+  },
+  "currency": "USD",
+  "isEstimate": true
+}

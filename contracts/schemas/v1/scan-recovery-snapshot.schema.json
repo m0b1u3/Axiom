@@ -1,0 +1,245 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/scan-recovery-snapshot.schema.json",
+  "title": "ScanRecoverySnapshot",
+  "$ref": "#/$defs/ScanRecoverySnapshot",
+  "$defs": {
+    "RecoveryExecution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "taskId": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/TaskId"
+        },
+        "attempt": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "taskId",
+        "attempt"
+      ]
+    },
+    "RecoveredResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "commitSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "recoveredAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "recoveredBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "previousStatus": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "claimed",
+            "scanning",
+            "cancel_requested",
+            "completed",
+            "partial",
+            "failed",
+            "canceled",
+            "timeout",
+            "abandoned"
+          ]
+        },
+        "previousErrorCode": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "previousErrorMessage": {
+          "type": "string",
+          "maxLength": 32768
+        },
+        "previousCompletion": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionCompletion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previousCost": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/AttemptCost"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "commitSha256",
+        "recoveredAt",
+        "recoveredBy",
+        "previousStatus",
+        "previousErrorCode",
+        "previousErrorMessage",
+        "previousCompletion",
+        "previousCost"
+      ]
+    },
+    "ScanRecoverySnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "execution": {
+          "$ref": "#/$defs/RecoveryExecution"
+        },
+        "observedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "taskStatus": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "claimed",
+            "scanning",
+            "cancel_requested",
+            "completed",
+            "partial",
+            "failed",
+            "canceled",
+            "timeout",
+            "abandoned"
+          ]
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.1.25"
+        },
+        "checkpointResume": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "supported": {
+              "type": "boolean",
+              "const": false
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          "required": [
+            "supported",
+            "reason"
+          ]
+        },
+        "committedResult": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "recoverable",
+                "archived",
+                "missing",
+                "invalid",
+                "blocked",
+                "unsupported"
+              ]
+            },
+            "sha256": {
+              "anyOf": [
+                {
+                  "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          "required": [
+            "state",
+            "sha256",
+            "reason"
+          ]
+        },
+        "restart": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "allowed": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          "required": [
+            "allowed",
+            "reason"
+          ]
+        },
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecoveredResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "interruption": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "allowed": {
+              "type": "boolean"
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          "required": [
+            "allowed",
+            "reason"
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "observedAt",
+        "taskStatus",
+        "sdkVersion",
+        "checkpointResume",
+        "committedResult",
+        "restart",
+        "recovery",
+        "interruption"
+      ]
+    }
+  }
+}

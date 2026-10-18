@@ -26,9 +26,10 @@ async function main(): Promise<void> {
     process.stdout.write(`${JSON.stringify(await describeScanner(), null, 2)}\n`);
     return;
   }
-  let task: ScanTask;
+  if(args['identity-operation']!==undefined){if(Object.keys(args).length!==1)throw new Error('Identity operation cannot be mixed with scans');await (await import('./runtime/sdk-identity.js')).runIdentityOperation(args['identity-operation']);return;}
+ let task: ScanTask;
   if(args.job!==undefined) {
-    const extra=Object.keys(args).filter(key=>!['job','mock','describe'].includes(key));
+    const extra=Object.keys(args).filter(key=>!['job','mock','describe','identity'].includes(key));
     if(extra.length)throw new Error("Scanner job cannot be mixed with legacy scan flags");
     const {loadScannerJob,scanTaskFromJob}=await import("./contract/scanner-job.js");
     task=scanTaskFromJob(await loadScannerJob(args.job));
@@ -89,7 +90,8 @@ async function main(): Promise<void> {
   }
 
   }
-  // Resolve and validate input before loading the SDK or creating its state.
+  if(args['identity']!==undefined){if(args.job===undefined)throw new Error('SDK identity requires a versioned job');await (await import('./runtime/sdk-identity.js')).loadTaskIdentity(args['identity'],task);}
+ // Resolve and validate input before loading the SDK or creating its state.
   const {validateScanTask}=await import("./contract/validate-task.js");
   validateScanTask(task);
   const { CodexSecurityEngine, SCAN_EXIT_CODES } = await import("./engine/codex-security-engine.js");
@@ -103,7 +105,8 @@ async function main(): Promise<void> {
   process.on("SIGTERM", onSignal);
 
   try {
-    const result = await engine.scan(task, controller.signal);
+    const result = task.componentScan ? await (await import('./engine/component-scan.js')).runComponentAudit(task,controller.signal) : task.componentPlanning ? await (await import('./engine/component-planning.js')).runComponentPlanning(task,controller.signal) : task.sdkOperation ? await (await import('./engine/sdk-operation.js')).runSDKOperation(task,controller.signal) : await engine.scan(task, controller.signal);
+    if(task.sdkIdentity&&!controller.signal.aborted)await (await import('./runtime/sdk-identity.js')).persistTaskIdentity(task);
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     if (!task.mock && process.env["AXIOM_FIXTURE_SCORE"] === "1") {
       try {

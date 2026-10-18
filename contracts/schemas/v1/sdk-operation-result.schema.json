@@ -1,0 +1,191 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-operation-result.schema.json",
+  "title": "SDKOperationResult",
+  "$ref": "#/$defs/SDKOperationResult",
+  "$defs": {
+    "SDKOperationResult": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "preflight",
+            "validate"
+          ]
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.1.25"
+        },
+        "startedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "finishedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "cost": {
+          "type": "object",
+          "properties": {
+            "state": {
+              "type": "string",
+              "enum": [
+                "known",
+                "unknown"
+              ]
+            },
+            "estimatedUsd": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            }
+          },
+          "required": [
+            "state",
+            "estimatedUsd",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        "preflight": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/JsonObject"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "disposition": {
+                  "type": "string",
+                  "enum": [
+                    "reportable",
+                    "suppressed",
+                    "not_applicable",
+                    "deferred"
+                  ]
+                },
+                "report": {
+                  "type": "string",
+                  "maxLength": 8388608
+                },
+                "threadId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 512
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "disposition",
+                "report",
+                "threadId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ContractError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "kind",
+        "sdkVersion",
+        "startedAt",
+        "finishedAt",
+        "cost",
+        "preflight",
+        "validation",
+        "error"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "preflight"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "validation": {
+                "type": "null"
+              },
+              "cost": {
+                "properties": {
+                  "state": {
+                    "const": "known"
+                  },
+                  "estimatedUsd": {
+                    "const": 0
+                  }
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "preflight": {
+                "type": "null"
+              },
+              "cost": {
+                "properties": {
+                  "state": {
+                    "const": "unknown"
+                  },
+                  "estimatedUsd": {
+                    "type": "null"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

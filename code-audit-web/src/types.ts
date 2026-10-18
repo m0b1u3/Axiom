@@ -37,6 +37,7 @@ export interface Project {
 }
 
 export interface ScanAttempt {
+  resultRecovery?: import("./contracts").RecoveredResult;
  observationContractVersion?:number;progress?:ProgressSnapshotV2|null;progressDiagnostic?:ContractError;
  queuedAt: string | null; resultAvailable: boolean; findingCount: number;
   taskId: number; attempt: number; agentId: string; status: string;
@@ -44,6 +45,16 @@ export interface ScanAttempt {
 }
 
 export interface ScanTask {
+ sdkIdentity?:import("./contracts").SDKIdentityRef;
+  componentScan?:import("./contracts").ComponentScanRequest;
+  gitTarget?:import("./contracts").GitDiffTarget;
+  sdkOperationKind?:"preflight"|"validate"|"component_normalize"|"component_suggest";
+  componentPlanning?:import("./contracts").ComponentPlanningOperation;
+  sourceSnapshotId?:number;
+  sourceContentHash?:string;
+  sdkOperation?:import("./contracts").SDKOperation;
+  parentExecution?:{taskId:string;attempt:number};
+  scanInput?:import("./contracts").ScanInput;
   maxCostUsd?: number | null;
   workers?: number | null;
   inputContractVersion?: number;
@@ -220,7 +231,7 @@ export interface Progress {
 
 export interface QueueSettings { global: number; perModel: number; perProject: number; revision: number; updatedAt: string; updatedBy: string }
 export interface AgentPresence { agentId: string; slots: number; lastSeen: string; online: boolean; runtimeReportedAt?:string; runtime?:AgentRuntime; inputCapabilities?:InputCapabilities; resultCapabilities?:ResultCapabilities; observationCapabilities?:ObservationCapabilities }
-export interface TaskCompatibility {required:{input:number;result:number;observation:number;budget:boolean};profile:string;reason:string;candidates:{agentId:string;online:boolean;ready:boolean;missing:string[];diagnostic?:ContractError}[]}
+export interface TaskCompatibility {required:{input:number;result:number;observation:number;budget:boolean;scanInput?:boolean;sdkOperation?:boolean};profile:string;reason:string;candidates:{agentId:string;online:boolean;ready:boolean;missing:string[];diagnostic?:ContractError}[]}
 export interface QueueTask { compatibility?:TaskCompatibility; taskId: number; status: string; agentId: string; queuedAt: string; startedAt: string; finishedAt: string; heartbeatAt: string; leaseExpiresAt: string; position: number; reason: string; automaticRetries: number }
 export interface QueueOverview { maxRecoveries?:number; settings: QueueSettings; agents: AgentPresence[]; tasks: QueueTask[]; active: number; pending: number; onlineSlots: number; readySlots?: number; effectiveCapacity: number; serverTime: string }
 export interface AttemptResult {contractVersion?:number;result?:ContractResult|null;completion?:ExecutionCompletion|null;archiveSha256?:string; available: boolean; findings: Finding[]; coverage?: Record<string,unknown>|null }

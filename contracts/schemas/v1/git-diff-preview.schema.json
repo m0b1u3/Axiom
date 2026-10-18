@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/git-diff-preview.schema.json",
+  "title": "GitDiffPreview",
+  "$ref": "#/$defs/GitDiffPreview",
+  "$defs": {
+    "GitDiffFile": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200000
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "added",
+            "deleted",
+            "modified",
+            "renamed",
+            "type_changed"
+          ]
+        },
+        "oldPath": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/RelativePath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "newPath": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/RelativePath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "oldBlob": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "newBlob": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "index",
+        "status",
+        "oldPath",
+        "newPath",
+        "oldBlob",
+        "newBlob"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "added"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "oldPath": {
+                "type": "null"
+              },
+              "oldBlob": {
+                "type": "null"
+              },
+              "newPath": {
+                "type": "string"
+              },
+              "newBlob": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "deleted"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "newPath": {
+                "type": "null"
+              },
+              "newBlob": {
+                "type": "null"
+              },
+              "oldPath": {
+                "type": "string"
+              },
+              "oldBlob": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "enum": [
+                  "modified",
+                  "renamed",
+                  "type_changed"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "oldPath": {
+                "type": "string"
+              },
+              "newPath": {
+                "type": "string"
+              },
+              "oldBlob": {
+                "type": "string"
+              },
+              "newBlob": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "GitDiffPreview": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "snapshotId": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/TaskId"
+        },
+        "contentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "target": {
+          "$ref": "https://axiom.invalid/contracts/v1/git-diff-target.schema.json#/$defs/GitDiffTarget"
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/git-diff-preview.schema.json#/$defs/GitDiffFile"
+          },
+          "maxItems": 50
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "pageSize": {
+          "type": "integer",
+          "const": 50
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200000
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "snapshotId",
+        "contentHash",
+        "target",
+        "files",
+        "page",
+        "pageSize",
+        "total"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

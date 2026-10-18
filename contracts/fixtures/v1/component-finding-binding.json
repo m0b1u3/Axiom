@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "planId": "9",
+  "version": 1,
+  "versionSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "source": {
+    "snapshotId": "7",
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "headCommit": null
+  },
+  "componentIndex": 0,
+  "scanId": "fixture-component-0",
+  "resultArtifact": {
+    "kind": "engine_raw",
+    "relativePath": "raw/codex-security/component-1.json",
+    "sizeBytes": 20,
+    "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  }
+}

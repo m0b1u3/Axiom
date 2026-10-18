@@ -1,8 +1,9 @@
 import {appendFile,mkdir,writeFile,rename} from 'node:fs/promises';
 import path from 'node:path';
-import {validate,normalizeLegacyErrorCode,type ActivityV2,type ContractError,type CostObservation,type CounterUnit,type ExecutionRef,type ProgressSnapshotV2,type ProgressSource,type ScanEventV2,type ScanPhase,type TerminalStatus,type WorkerObservation,type WorkerRef,type WorkerPoolStatus} from '@axiom/contracts';
+import {validate,normalizeLegacyErrorCode,type SDKLifecycle,type ActivityV2,type ContractError,type CostObservation,type CounterUnit,type ExecutionRef,type ProgressSnapshotV2,type ProgressSource,type ScanEventV2,type ScanPhase,type TerminalStatus,type WorkerObservation,type WorkerRef,type WorkerPoolStatus} from '@axiom/contracts';
 import {redactSecrets} from '../security/secret-redactor.js';
 import {SCANNER_LAYOUT} from '../contract/workspace.js';
+import type {SDKDiagnostic,SDKDiagnostics} from '@axiom/contracts';
 
 export interface ObserverProgress {phase:string;phaseReportedAt:string|null;reportedAt:string|null;filesTotal:number|null;completed:number|null;total:number|null;unit:string|null}
 const safe=(s:string,max=32768)=>{const value=redactSecrets(s).slice(0,max);const last=value.charCodeAt(value.length-1);return last>=0xd800&&last<=0xdbff?value.slice(0,-1):value;};
@@ -71,6 +72,7 @@ export class ContractProgressSink {
  cost(input:number|Record<string,unknown>){const v=typeof input==='number'?{estimatedUsd:input}:structuredClone(input);return this.update(async()=>{const cost:CostObservation={estimatedUsd:typeof v.estimatedUsd==='number'&&Number.isFinite(v.estimatedUsd)&&v.estimatedUsd>=0?v.estimatedUsd:null,inputTokens:count(v.inputTokens),outputTokens:count(v.outputTokens),cachedInputTokens:count(v.cachedInputTokens),cacheWriteInputTokens:count(v.cacheWriteInputTokens),currency:'USD',isEstimate:true,observedAt:new Date().toISOString(),source:'engine_callback',...(typeof v.model==='string'&&v.model?{reportedModel:safe(v.model,512)}:{})};this.snapshot.cost=cost;await this.emit('scan.cost',cost,'info','cost estimate updated');});}
  reconnect(attempt:number,maximum:number,details?:{reason:string;retryAfterSeconds?:number}){return this.update(async()=>{const reconnect={attempt,maximum,reason:safe(details?.reason??'unknown',256),...(details?.retryAfterSeconds!==undefined?{retryAfterSeconds:details.retryAfterSeconds}:{})};this.snapshot.reconnect=reconnect;this.snapshot.reconnectAt=new Date().toISOString();await this.emit('scan.reconnect',reconnect,'warn','SDK connection retry');});}
  warning(message:string,code:ContractError['code']='unknown',origin:ContractError['origin']='engine'){return this.update(()=>this.emit('scan.warning',{code,origin,message:safe(message)||'Unreported observer warning'},'warn',message));}
+ sdkDiagnostic(snapshot:SDKDiagnostics,entry:SDKDiagnostic){const value=structuredClone(snapshot),item=structuredClone(entry);validate('SDKDiagnostics',value,this.snapshot.execution);validate('SDKDiagnostic',item,this.snapshot.execution);return this.update(async()=>{this.snapshot.extensions={...this.snapshot.extensions,sdkDiagnostics:value};await this.emit('scan.warning',{code:'unknown',origin:'engine',message:item.message},'warn',item.source==='observer_error'?`观察器 ${item.observer}：${item.message}`:item.message);});}
  error(error:ContractError){const v={...error,message:safe(error.message)||'Unreported execution error'};return this.update(async()=>{this.snapshot.error=v;await this.emit('scan.error',v,'error',v.message);});}
  session(input:{threadId:string;parentThreadId:string|null;worker?:number;event:Record<string,unknown>}){
   const v=structuredClone(input),payload=record(v.event.payload);const lifecycle=v.event.type==='event_msg'&&(payload.type==='task_started'||payload.type==='task_complete');const text=reasoningText(v.event);if(!lifecycle&&!text)return Promise.resolve();const worker:WorkerRef={threadId:v.threadId,parentThreadId:v.parentThreadId,...(v.worker!==undefined?{index:v.worker}:{})};
@@ -89,6 +91,16 @@ export class ContractProgressSink {
  }
  async finish(status:TerminalStatus,error?:{code:string;message:string}){await this.enqueue(async()=>{if(this.terminal)return;await this.phase(status,'scanner',null);let fault:ContractError|undefined;if(error){fault={code:normalizeLegacyErrorCode(error.code).code,origin:'engine',message:safe(error.message)||'Unreported scan error',retryable:false};this.snapshot.error=fault;await this.emit('scan.error',fault,'error',fault.message);}this.snapshot.revision++;this.snapshot.observedAt=new Date().toISOString();await this.flush();await this.emit('scan.finished',{status,...(fault?{error:fault}:{})},status==='failed'||status==='timeout'?'error':'info',`scan ${status}`);this.terminal=true;});}
  notice(message:string){return this.enqueue(()=>this.emit('scan.warning',{code:'unknown',origin:'scanner',message:safe(message)||'Unreported progress persistence error'},'warn',message));}
+ lifecycle(input:SDKLifecycle,message:string,warning:boolean){const value=structuredClone(input);validate('SDKLifecycle',value);return this.update(async()=>{
+  this.snapshot.extensions={...this.snapshot.extensions,sdkLifecycle:value};
+  if(warning)await this.emit('scan.warning',{code:'unknown',origin:'engine',message:safe(message)},'warn',message);
+  else await this.emit('scan.activity',{kind:'message',status:'completed',description:safe(message)},'info',message);
+ });}
+ operationStep(phase:'preflight'|'validation'){return this.update(()=>this.phase(phase,'scanner',null));}
+ componentState(input:import('@axiom/contracts').ComponentScanSnapshot,message:string,index?:number){const value=structuredClone(input);validate('ComponentScanSnapshot',value,this.snapshot.execution);return this.update(async()=>{
+  this.snapshot.extensions={...this.snapshot.extensions,componentScan:value};
+  await this.emit('scan.activity',{kind:'message',status:'running',description:safe(message,512),...(index!==undefined?{id:`component-${index+1}`}:{})},'info',message);
+ });}
  async drain(){await this.writes;}
 }
 function reasoningText(event:Record<string,unknown>):string|null{const p=record(event.payload);if(!((event.type==='response_item'&&p.type==='reasoning')||(event.type==='event_msg'&&typeof p.type==='string'&&p.type.includes('reason'))))return null;const value=p.text??p.delta??p.summary??p.content;if(typeof value==='string')return value;if(Array.isArray(value))return value.map(v=>record(v).text).filter(v=>typeof v==='string').join('\n')||null;return null;}

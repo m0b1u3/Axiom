@@ -1,12 +1,22 @@
 package report_test
 
 import (
+	"axiom/contracts"
+	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 
 	"axiom/code-audit-server/internal/report"
 	"axiom/code-audit-server/internal/store"
 )
+
+func TestArchivedReportWithoutComparison(t *testing.T) {
+	html, err := report.Build(&store.Task{ScanNo: "Fixtures / Mock", Attempt: 1, Status: "partial"}, []store.Finding{{Title: "historical evidence", Severity: "high"}}, nil, nil)
+	if err != nil || !strings.Contains(html, "historical evidence") || !strings.Contains(html, "执行轮次</td><td>1</td>") || strings.Contains(html, "与上次扫描对比（") {
+		t.Fatal("an archived report must render its evidence without a current comparison", err)
+	}
+}
 
 func TestBuild(t *testing.T) {
 	scan := &store.Task{
@@ -67,6 +77,32 @@ func TestBuild(t *testing.T) {
 		if !strings.Contains(html, want) {
 			t.Fatalf("missing %q in report", want)
 		}
+	}
+}
+
+func TestComponentReportPreservesSelectedBatchScope(t *testing.T) {
+	raw, e := os.ReadFile("../../../contracts/fixtures/v1/component-scan-request.json")
+	if e != nil {
+		t.Fatal(e)
+	}
+	var request contracts.ComponentScanRequest
+	if e = json.Unmarshal(raw, &request); e != nil {
+		t.Fatal(e)
+	}
+	request.SelectedIndices = []int64{1}
+	request.PlanVersion.Document.Components[1].Name = "Web <script>"
+	scan := &store.Task{ID: 1, ScanNo: "Fixtures / Mock components", Status: "partial", ComponentScan: &request}
+	html, e := report.Build(scan, nil, nil, &report.Compare{})
+	if e != nil {
+		t.Fatal(e)
+	}
+	for _, want := range []string{"本轮组件范围", "Web &lt;script&gt; · web", "未列出的发现不能视为已修复", "未知费用", string(request.PlanVersion.SHA256)} {
+		if !strings.Contains(html, want) {
+			t.Fatal("component scope lost", want)
+		}
+	}
+	if strings.Contains(html, "API · api") {
+		t.Fatal("unselected component was presented as scanned")
 	}
 }
 

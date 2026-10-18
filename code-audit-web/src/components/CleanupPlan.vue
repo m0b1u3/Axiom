@@ -9,7 +9,7 @@ const props=defineProps<{job:CleanupJob}>();
 const emit=defineEmits<{change:[CleanupJob];completed:[]}>();
 const running=ref(false),error=ref('');let timer:ReturnType<typeof setInterval>|undefined;onUnmounted(()=>{if(timer)clearInterval(timer)});
 const labels={preview:'等待确认',running:'执行未收尾 · 可继续',failed:'未完成 · 可继续',completed:'已完成',canceled:'已放弃 · 剩余数据保留'};
-const reasons:Record<string,string>={unregistered_evidence:'疑似未登记执行证据，保留',unreferenced:'无引用的遗留目录',historical_report:'历史报告',running_task:'运行中任务',unknown_cost:'费用未知的证据',source_reference:'源码仍被任务引用',snapshot_record:'已登记快照',cleanup_in_progress:'已有清理记录',unsafe_entry:'链接或特殊文件',grace_period:'仍在宽限期',inspection_incomplete:'检查未完成',already_absent:'目录已不存在'};
+const reasons:Record<string,string>={unregistered_evidence:'疑似未登记执行证据，保留',unreferenced:'无引用的遗留目录',historical_report:'历史报告',running_task:'运行中任务',sdk_operation_source:'关联 SDK 操作的来源证据',unknown_cost:'费用未知的证据',source_reference:'源码仍被任务引用',snapshot_record:'已登记快照',cleanup_in_progress:'已有清理记录',unsafe_entry:'链接或特殊文件',grace_period:'仍在宽限期',inspection_incomplete:'检查未完成',already_absent:'目录已不存在'};
 
 const eligible=computed(()=>props.job.items.filter(i=>i.state!=='protected'));
 const knownBytes=computed(()=>eligible.value.reduce((sum,i)=>sum+BigInt(i.bytes??0),0n));

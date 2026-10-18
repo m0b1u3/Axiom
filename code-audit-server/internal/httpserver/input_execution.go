@@ -81,6 +81,9 @@ func (s *Server) claimInputExecution(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) inputLease(r *http.Request, t *store.Task, agent string, seconds int) (control.InputLease, error) {
 	v := control.InputLease{LeaseSeconds: seconds}
+	if (t.InputContractVersion == contracts.ScanInputVersion || t.InputContractVersion == contracts.SDKOperationInputVersion) && t.ScanInput == nil {
+		return v, fmt.Errorf("stored scan input v2 is unavailable")
+	}
 	var e error
 	if t.InputContractVersion == 0 {
 		v.Legacy, e = s.legacyLease(r, t, seconds)
@@ -108,6 +111,9 @@ func (s *Server) rejectInputLease(w http.ResponseWriter, r *http.Request, t *sto
 // provider, protocol and credential binding still match the frozen connection.
 // A changed/deleted configuration keeps its original encrypted credential.
 func (s *Server) taskCredential(r *http.Request, t *store.Task) (string, error) {
+	if t.SDKIdentity != nil {
+		return "", nil
+	}
 	encrypted := t.CredentialSnapshotEncrypted
 	if t.ModelSnapshotJSON == "" {
 		if t.ModelConfigID == 0 {

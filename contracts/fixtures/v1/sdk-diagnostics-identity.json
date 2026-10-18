@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "warningCount": 1,
+  "observerErrorCount": 0,
+  "omittedCount": 0,
+  "entries": [
+    {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "42",
+        "attempt": 3
+      },
+      "sequence": 1,
+      "occurredAt": "2026-10-15T08:00:00Z",
+      "source": "sdk_warning",
+      "kind": "target_changed",
+      "observer": null,
+      "message": "合成目标变化警告",
+      "error": null,
+      "details": {
+        "kind": "target_changed"
+      },
+      "truncated": false
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 7,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "source": {
+    "path": "/fixture/source",
+    "snapshotId": "7",
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "output": {
+    "path": "/fixture/output/attempt-2"
+  },
+  "model": {
+    "providerId": "fixture-provider",
+    "connectionType": "openai_compatible",
+    "model": "fixture-model",
+    "baseUrl": "https://fixture.invalid/v1",
+    "wireApi": "responses",
+    "credentialEnv": "FIXTURE_API_KEY",
+    "configurationRevision": "fixture-revision-1"
+  },
+  "policy": {
+    "mode": "standard",
+    "timeBudget": {
+      "scanSeconds": 1800,
+      "finalizationGraceSeconds": 0
+    },
+    "includePaths": [],
+    "focus": [],
+    "validation": {
+      "mode": "default"
+    }
+  },
+  "resultSchemaVersion": 1,
+  "progressSchemaVersion": 2,
+  "eventSchemaVersion": 2,
+  "scanInput": {
+    "schemaVersion": 1,
+    "knowledge": []
+  },
+  "componentPlanning": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "9007199254740993",
+      "attempt": 2
+    },
+    "planId": "9",
+    "revision": 1,
+    "kind": "normalize",
+    "source": {
+      "snapshotId": "7",
+      "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "headCommit": null
+    },
+    "document": {
+      "components": [
+        {
+          "name": "完整源码",
+          "paths": [
+            "."
+          ]
+        }
+      ]
+    },
+    "acknowledgeUnknownCost": false
+  }
+}

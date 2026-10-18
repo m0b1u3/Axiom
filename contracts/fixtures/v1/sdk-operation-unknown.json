@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "kind": "fix",
+  "origin": {
+    "taskId": "20",
+    "attempt": 1
+  },
+  "findingId": "30",
+  "finding": {
+    "title": "合成漏洞",
+    "evidence": "Fixtures / Mock only"
+  },
+  "acknowledgeUnknownCost": true
+}

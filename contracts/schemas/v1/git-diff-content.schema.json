@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/git-diff-content.schema.json",
+  "title": "GitDiffContent",
+  "$ref": "#/$defs/GitDiffContent",
+  "$defs": {
+    "GitDiffContent": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "snapshotId": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/TaskId"
+        },
+        "contentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "target": {
+          "$ref": "https://axiom.invalid/contracts/v1/git-diff-target.schema.json#/$defs/GitDiffTarget"
+        },
+        "file": {
+          "$ref": "https://axiom.invalid/contracts/v1/git-diff-preview.schema.json#/$defs/GitDiffFile"
+        },
+        "patch": {
+          "type": "string",
+          "maxLength": 262144
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "snapshotId",
+        "contentHash",
+        "target",
+        "file",
+        "patch",
+        "truncated",
+        "reason"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "truncated": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reason": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

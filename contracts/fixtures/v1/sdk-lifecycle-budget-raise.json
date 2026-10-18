@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-15T00:00:00Z",
+  "authentication": {
+    "method": "stored_credentials",
+    "credentialType": "chatgpt",
+    "verified": false
+  },
+  "trustedAccess": "not_granted",
+  "outputReady": true,
+  "outputArchived": false,
+  "scanStarted": true,
+  "budgetApproaching": {
+    "maxCostUsd": 2,
+    "estimatedUsd": 0,
+    "action": "raise_limit",
+    "observedAt": "2026-10-15T00:00:00Z"
+  }
+}

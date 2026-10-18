@@ -3,6 +3,9 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Plus, ArrowRight, FolderGit2, RefreshCw, ScanLine } from "lucide-vue-next";
 import { api } from "../api";
+import { useAuth } from "../composables/auth";
+import { progressView } from "../utils/scan-progress";
+import { phaseLabel } from "../utils/scan-log";
 import type { Dashboard, Project, ScanTask } from "../types";
 import PageHeader from "../components/PageHeader.vue";
 import Button from "../components/ui/Button.vue";
@@ -10,12 +13,14 @@ import StatusBadge from "../components/StatusBadge.vue";
 import Loading from "../components/ui/Loading.vue";
 import { relativeTime, absoluteTime, durationBetween } from "../utils/time";
 const router=useRouter();
+const { canOperate } = useAuth();
 const data=ref<Dashboard|null>(null), projects=ref<Project[]>([]), scans=ref<ScanTask[]>([]);
 const refreshing=ref(false);
 const loading=ref(true), error=ref(""), refreshed=ref("");let timer:number|undefined;let disposed=false;let inFlight=false;
 async function load(manual=false):Promise<void>{
+ if(inFlight)return;
  if(manual)refreshing.value=true;
- if(inFlight)return;inFlight=true;
+ inFlight=true;
  try{const [d,p,s]=await Promise.all([api.dashboard(),api.listProjects(),api.listScans()]);if(disposed)return;data.value=d;projects.value=p;scans.value=s;error.value="";refreshed.value=new Date().toISOString();}
  catch(e){if(!disposed)error.value=(e as Error).message;}finally{if(!disposed){loading.value=false;refreshing.value=false;}inFlight=false;}
 }
@@ -25,14 +30,14 @@ const recentProjects=computed(()=>projects.value.slice().sort((a,b)=>b.id-a.id).
 const levels=[{key:'critical',label:'Critical'},{key:'high',label:'High'},{key:'medium',label:'Medium'},{key:'low',label:'Low'},{key:'info',label:'Info'}] as const;
 const total=computed(()=>levels.reduce((n,l)=>n+(data.value?.stats[l.key]||0),0));
 function scanFor(p:Project):ScanTask|undefined{return scans.value.filter(s=>s.projectId===p.id).sort((a,b)=>b.id-a.id)[0];}
-function activity(s:ScanTask):string{try{const p=JSON.parse(s.progressJson||'{}');return p.activity||p.phase||s.currentStage||'';}catch{return s.currentStage||'';}}
+function activity(s:ScanTask):string{const p=progressView(s.progress,s.progressJson);return p?.activity || phaseLabel(p?.rawPhase || p?.phase || s.currentStage || 'unknown');}
 function progress(s:ScanTask):number|null{try{const p=JSON.parse(s.progressJson||'{}');if(p.filesTotal>0&&p.progressSource==='verified_coverage'&&typeof p.filesCompleted==='number'&&p.filesCompleted>0)return Math.min(100,Math.round(p.filesCompleted/p.filesTotal*100));}catch{}return null;}
 function openScan(s:ScanTask):void{void router.push({name:'scan-detail',params:{id:s.id}});}
 onMounted(()=>{void load();timer=window.setInterval(()=>{if(!document.hidden)void load();},10000);});onUnmounted(()=>{disposed=true;if(timer)clearInterval(timer);});
 </script>
 <template>
  <div class="dashboard">
-  <PageHeader title="安全工作台" description="关注正在执行的任务，以及需要研判的风险。"><Button variant="ghost" size="icon" :loading="loading||refreshing" aria-label="刷新工作台" title="刷新工作台" @click="load(true)"><RefreshCw :size="14"/></Button><Button @click="router.push({name:'new-scan'})"><Plus :size="14"/>新建扫描</Button></PageHeader>
+  <PageHeader title="安全工作台" description="关注正在执行的任务，以及需要研判的风险。"><Button variant="ghost" size="icon" :loading="loading||refreshing" aria-label="刷新工作台" title="刷新工作台" @click="load(true)"><RefreshCw :size="14"/></Button><Button v-if="canOperate" @click="router.push({name:'new-scan'})"><Plus :size="14"/>新建扫描</Button></PageHeader>
   <div v-if="error" class="request-error" role="alert"><span>工作台数据加载失败：{{error}}</span><Button variant="outline" size="sm" @click="load(true)">重试</Button></div>
   <Loading v-if="loading&&!data" text="正在加载工作台…"/>
   <template v-if="data">
@@ -40,7 +45,7 @@ onMounted(()=>{void load();timer=window.setInterval(()=>{if(!document.hidden)voi
    <div class="dashboard-grid"><div class="dashboard-main">
     <section class="pane queue"><header class="section-head"><h2>扫描队列 <small>{{active.length}} 个正在执行</small></h2><router-link class="section-link" to="/scans">全部扫描 <ArrowRight :size="13"/></router-link></header>
      <article v-for="s in queue" :key="s.id" class="queue-row"><div class="queue-title"><span><FolderGit2 :size="15"/><button @click="openScan(s)">{{s.projectName||s.scanNo}}</button><StatusBadge :status="s.status"/></span><span class="mono scan-no">{{s.scanNo}}</span></div><div class="queue-meta"><span>{{s.scanMode==='quick'?'快速扫描':s.scanMode==='deep'?'深度扫描':'标准扫描'}}</span><span class="model-name" :title="s.model">{{s.model||'未指定模型'}}</span><span :title="absoluteTime(s.createdAt)">{{relativeTime(s.createdAt)}}</span></div><template v-if="active.includes(s)"><div v-if="progress(s)!==null" class="progress-track" role="progressbar" aria-label="已处理文件进度" :aria-valuenow="progress(s)??0" aria-valuemin="0" aria-valuemax="100"><i :style="{width:progress(s)+'%'}"/></div><p class="current-activity">{{activity(s)||'等待扫描器输出执行状态…'}}</p></template><div v-else class="queue-foot"><span>{{s.findingCount}} 项发现 <span class="dot-sep">·</span> 耗时 {{durationBetween(s.startedAt,s.finishedAt)}}</span><Button variant="link" size="sm" @click="openScan(s)">检查发现 <ArrowRight :size="13"/></Button></div><p v-if="s.errorMessage" class="scan-error">{{s.errorMessage}}</p></article>
-     <div v-if="!queue.length" class="empty-state"><p class="empty-title">还没有扫描任务</p><p class="empty-hint">上传代码快照后，即可开始第一次安全审计。</p><Button variant="link" size="sm" @click="router.push('/scans/new')">新建扫描</Button></div>
+     <div v-if="!queue.length" class="empty-state"><p class="empty-title">还没有扫描任务</p><p class="empty-hint">上传代码快照后，即可开始第一次安全审计。</p><Button v-if="canOperate" variant="link" size="sm" @click="router.push('/scans/new')">新建扫描</Button></div>
     </section>
     <section class="pane projects-pane"><header class="section-head"><h2>审计项目</h2><router-link class="section-link" to="/projects">全部项目 <ArrowRight :size="13"/></router-link></header><div class="table-scroll"><table v-if="recentProjects.length" class="project-table"><thead><tr><th>项目</th><th>代码快照</th><th>最近扫描</th><th></th></tr></thead><tbody><tr v-for="p in recentProjects" :key="p.id"><td><router-link :to="'/projects/'+p.id" class="project-name"><span class="project-symbol"><FolderGit2 :size="15"/></span><span>{{p.name}}<small>{{p.scanCount}} 次扫描</small></span></router-link></td><td>{{p.snapshotCount}}</td><td><StatusBadge v-if="scanFor(p)" :status="scanFor(p)!.status"/><span v-else class="muted">尚未扫描</span></td><td><Button variant="ghost" size="iconSm" :aria-label="'查看项目 '+p.name" @click="router.push('/projects/'+p.id)"><ArrowRight :size="13"/></Button></td></tr></tbody></table><div v-else class="empty-state"><p class="empty-title">还没有项目</p><router-link class="section-link" to="/projects">创建项目，组织代码资产</router-link></div></div></section>
    </div><aside class="dashboard-aside"><section class="pane"><header class="section-head"><h2>发现的风险</h2><small>{{total}} 项发现</small></header><div class="risk-section"><p class="section-hint">按扫描结果严重度分布</p><div v-if="total" class="severity-bar" aria-hidden="true"><i v-for="l in levels" :key="l.key" :style="{flex:data.stats[l.key],background:'var(--severity-'+l.key+')'}"/></div><router-link v-for="l in levels" :key="l.key" :to="{path:'/findings',query:{severity:l.key}}" class="risk-row"><span><i :style="{background:'var(--severity-'+l.key+')'}"/>{{l.label}}</span><span class="mono">{{data.stats[l.key]}}</span></router-link></div><div class="risk-section risk-action"><ScanLine :size="16"/><h3>从发现到证据</h3><p>检查漏洞的代码位置、分析依据和验证状态，再记录研判结论。</p><router-link class="section-link" to="/findings">进入漏洞列表 <ArrowRight :size="13"/></router-link></div></section><section class="pane engine-pane"><header class="section-head"><h2>最近使用的引擎</h2></header><div v-if="data.engine" class="risk-section"><span class="engine-provider">{{data.engine.provider}}</span><p class="engine-model">{{data.engine.model}}</p><dl><dt>累计扫描</dt><dd>{{data.engine.scanCount}} 次</dd><dt>最近耗时</dt><dd>{{Math.round(data.engine.durationSec)}} 秒</dd></dl><router-link class="section-link" to="/settings/model-configs">管理模型配置 <ArrowRight :size="13"/></router-link></div><div v-else class="empty-state"><p class="empty-hint">完成扫描后显示引擎信息。</p><router-link class="section-link" to="/settings/model-configs">配置模型</router-link></div></section></aside></div><footer class="updated-at">最近更新 {{absoluteTime(refreshed)}} <span>数据来自当前工作空间</span></footer>

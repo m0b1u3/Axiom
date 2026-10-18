@@ -4,21 +4,24 @@ import { api } from '../api';
 import type { Progress, ScanLogEvent } from '../types';
 import { activityEntry, isImportant, localLogTime, mergeLogEvents, phaseLabel, progressEntries, fileProgressLabel, phaseProgressLabel } from '../utils/scan-log';
 import type {ContractError} from '../contracts';
+import {sdkLifecycleView,authenticationMethods,trustedAccessStates} from '../utils/sdk-lifecycle';
 import {progressSources} from '../utils/scan-progress';
 import {workerLabel,workerStates} from '../utils/scan-log';
 import Button from './ui/Button.vue';
 import Input from './ui/Input.vue';
-const props=defineProps<{scanId:number;attempt?:number;running:boolean;status:string;progress:Progress|null;diagnostic?:ContractError}>();
+import SDKDiagnostics from './SDKDiagnostics.vue';
+const props=defineProps<{scanId:number;attempt?:number;running:boolean;status:string;progress:Progress|null;operationKind?:string;diagnostic?:ContractError}>();
 const events=shallowRef<ScanLogEvent[]>([]), total=ref(0),error=ref(''),loading=ref(false),follow=ref(true),query=ref(''),filter=ref('important'),box=ref<HTMLElement|null>(null);
 const invalidRecords=ref(0),journalFormat=ref(''),progressRawOpen=ref(false),rawOpen=ref<Record<string,boolean>>({});
 function eventKey(e:ScanLogEvent){return e.event?`${e.event.execution.taskId}:${e.event.execution.attempt}:${e.event.sequence}`:`legacy:${e.n}`;}
 function setRaw(e:ScanLogEvent,event:Event){rawOpen.value[eventKey(e)]=(event.currentTarget as HTMLDetailsElement).open;}
 let cursor=0,timer:ReturnType<typeof setTimeout>|undefined,disposed=false,queued=false;
-const entries=computed(()=>progressEntries(events.value,props.progress?.progressReportedAt));
+const entries=computed(()=>progressEntries(events.value,props.progress?.progressReportedAt).map(e=>props.operationKind?{...e,summary:e.summary.replaceAll('扫描完成','操作完成').replaceAll('扫描失败','操作失败'),label:e.label==='扫描器结束'?'操作结束':e.label}:e));
 const recoveries=computed(()=>entries.value.filter(e=>e.recovered).length);
 const failures=computed(()=>entries.value.filter(e=>e.failed||e.warning).length);
 const visible=computed(()=>entries.value.filter(e=>(filter.value==='all'||filter.value==='issues'?(filter.value==='all'||e.failed||e.warning||e.recovered):isImportant(e))&&e.message.toLowerCase().includes(query.value.toLowerCase().trim())));
 const options=[{value:'important',label:'重要进展'},{value:'all',label:'全部记录'},{value:'issues',label:'异常'}];
+const lifecycle=computed(()=>sdkLifecycleView(props.progress?.snapshot?.extensions?.sdkLifecycle));
 const current=computed(()=>props.progress?.snapshot?.activity?{label:props.progress.snapshot.activity.status==='failed'?'最近调用失败':props.progress.snapshot.activity.kind==='reasoning'?'最近推理记录':'最近上报动作',summary:props.progress.snapshot.activity.description}:props.progress?.activity?activityEntry({n:0,timestamp:'',level:'info',kind:'activity',message:props.progress.activity}):null);
 async function scrollLatest(){await nextTick();if(follow.value&&box.value)box.value.scrollTop=box.value.scrollHeight;}
 function onScroll(){const el=box.value;if(el)follow.value=el.scrollHeight-el.scrollTop-el.clientHeight<32;}
@@ -38,7 +41,7 @@ onMounted(()=>void pull());onUnmounted(()=>{disposed=true;clearTimeout(timer);})
 </script>
 <template>
 <section class="activity-panel" aria-label="扫描活动与日志">
- <header class="activity-header"><div><strong>{{running?'扫描活动':'扫描日志'}}</strong><span class="phase">{{running?phaseLabel(progress?.phase||'')+(progress?.rawPhase?` · ${progress.rawPhase}`:''):phaseLabel(status)}}</span><span v-if="progress?.snapshot || progress?.filesTotal" class="subtle">{{fileProgressLabel(progress)}}</span></div><span v-if="failures||recoveries" class="subtle"><span v-if="failures" class="issue-count">{{failures}} 条待关注异常</span><span v-if="recoveries"> · {{recoveries}} 条已恢复</span></span></header>
+ <header class="activity-header"><div><strong>{{operationKind?'SDK 操作日志':running?'扫描活动':'扫描日志'}}</strong><span class="phase">{{running?phaseLabel(progress?.phase||'')+(progress?.rawPhase?` · ${progress.rawPhase}`:''):operationKind&&status==='completed'?'操作完成':phaseLabel(status)}}</span><span v-if="!operationKind&&(progress?.snapshot || progress?.filesTotal)" class="subtle">{{fileProgressLabel(progress)}}</span></div><span v-if="failures||recoveries" class="subtle"><span v-if="failures" class="issue-count">{{failures}} 条待关注异常</span><span v-if="recoveries"> · {{recoveries}} 条已恢复</span></span></header>
  <p v-if="phaseProgressLabel(progress)" class="current-action">阶段进度：{{phaseProgressLabel(progress)}}</p>
  <dl v-if="progress?.deep || progress?.worker || progress?.reconnect" class="execution-observations">
   <div v-if="progress.deep"><dt>独立审查</dt><dd>已完成 {{progress.deep.completed??'—'}} 次 · {{running?'活跃':'最后观测活跃'}} {{progress.deep.active??'—'}} 个 · 最多 {{progress.deep.maximum??'—'}} 次<span>发现次数不代表文件覆盖率</span></dd></div>
@@ -48,8 +51,16 @@ onMounted(()=>void pull());onUnmounted(()=>{disposed=true;clearTimeout(timer);})
  </dl>
  <dl v-if="progress?.snapshot" class="execution-observations">
   <div><dt>观察来源</dt><dd>{{progressSources[progress.snapshot.source]}} · {{localLogTime(progress.snapshot.observedAt)}} · 修订 {{progress.snapshot.revision}}<span v-if="!running">最后归档快照</span><span v-else>观察时间不代表当前仍在执行该动作</span></dd></div>
-  <div><dt>估算费用</dt><dd>{{progress.snapshot.cost?.estimatedUsd==null?'尚未上报':progress.snapshot.cost.estimatedUsd>0&&progress.snapshot.cost.estimatedUsd<0.0001?'< $0.0001':`$${progress.snapshot.cost.estimatedUsd.toFixed(4)}`}} · 输入 {{progress.snapshot.cost?.inputTokens??'—'}} / 输出 {{progress.snapshot.cost?.outputTokens??'—'}} Token<span v-if="progress.snapshot.cost?.reportedModel">{{progress.snapshot.cost.reportedModel}}</span><span>以 SDK 上报的累计估算为准</span></dd></div>
+  <div v-if="!operationKind"><dt>估算费用</dt><dd>{{progress.snapshot.cost?.estimatedUsd==null?'尚未上报':progress.snapshot.cost.estimatedUsd>0&&progress.snapshot.cost.estimatedUsd<0.0001?'< $0.0001':`$${progress.snapshot.cost.estimatedUsd.toFixed(4)}`}} · 输入 {{progress.snapshot.cost?.inputTokens??'—'}} / 输出 {{progress.snapshot.cost?.outputTokens??'—'}} Token<span v-if="progress.snapshot.cost?.reportedModel">{{progress.snapshot.cost.reportedModel}}</span><span>以 SDK 上报的累计估算为准</span></dd></div>
  </dl>
+ <dl v-if="lifecycle.value" class="execution-observations" aria-label="SDK 生命周期">
+  <div><dt>认证来源</dt><dd>{{lifecycle.value.authentication?authenticationMethods[lifecycle.value.authentication.method]:'尚未上报'}}<span v-if="lifecycle.value.authentication">来源已识别，访问权限尚未验证</span></dd></div>
+  <div><dt>Trusted Access</dt><dd>{{lifecycle.value.trustedAccess===null?'尚未上报':trustedAccessStates[lifecycle.value.trustedAccess]}}<span>与认证来源分别记录</span></dd></div>
+  <div><dt>扫描生命周期</dt><dd>{{lifecycle.value.scanStarted?'已收到开始回调':'尚未收到开始回调'}} · {{lifecycle.value.outputReady?'产物目录已就绪':'产物目录尚未上报'}}<span v-if="lifecycle.value.outputArchived">原输出已归档</span></dd></div>
+  <div v-if="lifecycle.value.budgetApproaching"><dt>预算提醒</dt><dd>接近本次上限 ${{lifecycle.value.budgetApproaching.maxCostUsd}} · 保持已批准额度<span>未自动增加预算 · {{localLogTime(lifecycle.value.budgetApproaching.observedAt)}}</span></dd></div>
+ </dl>
+ <SDKDiagnostics v-if="running&&progress?.snapshot?.extensions?.sdkDiagnostics" :value="progress.snapshot.extensions.sdkDiagnostics" :execution="progress.snapshot.execution" class="live-sdk-diagnostics"/>
+ <div v-if="lifecycle.invalid" class="log-error" role="alert">SDK 生命周期记录的格式不受支持；其他进度与原始快照仍可查看。</div>
  <div v-if="diagnostic" class="log-error" role="alert">进度接收异常 · {{diagnostic.code}} · {{diagnostic.origin}}：{{diagnostic.message}}</div>
  <div v-if="progress?.snapshot?.error" class="log-error">最近扫描错误 · {{progress.snapshot.error.code}} · {{progress.snapshot.error.origin}}：{{progress.snapshot.error.message}}<span class="subtle"> · 执行结论以任务状态为准</span></div>
  <section v-if="progress?.snapshot?.workers.length" class="worker-observations" aria-label="Worker 活动">
@@ -74,6 +85,7 @@ onMounted(()=>void pull());onUnmounted(()=>{disposed=true;clearTimeout(timer);})
 </section>
 </template>
 <style scoped>
+.live-sdk-diagnostics{margin-inline:var(--space-4)}
 .progress-raw{padding:0 var(--space-4) var(--space-3);font-size:var(--font-size-xs);color:var(--text-secondary)}.progress-raw summary{cursor:pointer}.progress-raw pre{max-height:calc(var(--height-table-row) * 7);overflow:auto}
 .worker-observations{padding:0 var(--space-4) var(--space-3)}.worker-observations h3{margin:0 0 var(--space-2);font-size:var(--font-size-xs);font-weight:var(--font-weight-medium)}.worker-observations h3 span{color:var(--text-tertiary);font-weight:var(--font-weight-normal);margin-left:var(--space-3)}.worker-observations ul{list-style:none;margin:0;padding:0;max-height:calc(var(--height-table-row) * 7);overflow:auto}.worker-observations li{border-top:1px solid var(--border-subtle);padding:var(--space-2) 0;font-size:var(--font-size-xs)}.worker-heading{display:flex;align-items:baseline;gap:var(--space-3);flex-wrap:wrap}.worker-heading strong{font-family:var(--font-mono);font-weight:var(--font-weight-medium);overflow-wrap:anywhere}.worker-heading span,.worker-heading time{color:var(--text-tertiary)}.worker-heading time{margin-left:auto}.worker-observations p{margin:var(--space-1) 0 0;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text-secondary)}.worker-observations .worker-failed{color:var(--state-danger)}.event-raw{margin-top:var(--space-2)}
 

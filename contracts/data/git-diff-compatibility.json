@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "inputVersion": 4,
+  "jobVersion": 6,
+  "descriptionVersion": 7,
+  "controlAPI": 4,
+  "objectFormat": "sha1",
+  "mode": "standard",
+  "evidenceRevision": "head",
+  "pageSize": 50,
+  "patchMaxBytes": 262144
+}

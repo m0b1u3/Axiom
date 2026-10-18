@@ -1,0 +1,241 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v6/scanner-description.schema.json",
+  "title": "ScannerDescriptionV6",
+  "$ref": "#/$defs/ScannerDescriptionV6",
+  "$defs": {
+    "ContractVersionsV6": {
+      "type": "object",
+      "properties": {
+        "assignment": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/SchemaVersion"
+          },
+          "uniqueItems": true
+        },
+        "job": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "uniqueItems": true
+        },
+        "progress": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "uniqueItems": true
+        },
+        "event": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "uniqueItems": true
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/SchemaVersion"
+          },
+          "uniqueItems": true
+        },
+        "completion": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/SchemaVersion"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "assignment",
+        "job",
+        "progress",
+        "event",
+        "result",
+        "completion"
+      ],
+      "additionalProperties": false
+    },
+    "RuntimeFormatsV6": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "string",
+          "enum": [
+            "scanner_job"
+          ]
+        },
+        "events": {
+          "type": "string",
+          "const": "scan_event"
+        },
+        "result": {
+          "type": "string",
+          "const": "scan_result"
+        },
+        "versions": {
+          "$ref": "#/$defs/ContractVersionsV6"
+        }
+      },
+      "required": [
+        "input",
+        "events",
+        "result",
+        "versions"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "versions": {
+              "properties": {
+                "assignment": {
+                  "const": [
+                    1
+                  ]
+                },
+                "job": {
+                  "const": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5
+                  ]
+                },
+                "progress": {
+                  "const": [
+                    2
+                  ]
+                },
+                "event": {
+                  "const": [
+                    2
+                  ]
+                },
+                "result": {
+                  "const": [
+                    1
+                  ]
+                },
+                "completion": {
+                  "const": [
+                    1
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ScannerDescriptionV6": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 6
+        },
+        "name": {
+          "type": "string",
+          "const": "axiom-scanner"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baselineVersions": {
+          "$ref": "#/$defs/ContractVersionsV6"
+        },
+        "runtime": {
+          "$ref": "#/$defs/RuntimeFormatsV6"
+        },
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "describe": {
+              "type": "boolean",
+              "const": true
+            },
+            "jobFile": {
+              "type": "boolean",
+              "const": true
+            },
+            "structuredEvents": {
+              "type": "boolean",
+              "const": true
+            },
+            "versionedResults": {
+              "type": "boolean",
+              "const": true
+            },
+            "maxCostUsd": {
+              "type": "boolean",
+              "const": true
+            },
+            "atomicResultCommit": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": [
+            "describe",
+            "jobFile",
+            "structuredEvents",
+            "versionedResults",
+            "maxCostUsd",
+            "atomicResultCommit"
+          ],
+          "additionalProperties": false
+        },
+        "configuredSdk": {
+          "type": "object",
+          "properties": {
+            "package": {
+              "type": "string",
+              "const": "@openai/codex-security"
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "package",
+            "version"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "name",
+        "version",
+        "baselineVersions",
+        "runtime",
+        "capabilities",
+        "configuredSdk"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

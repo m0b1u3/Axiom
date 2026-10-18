@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-diagnostic.schema.json",
+  "title": "SDKDiagnostic",
+  "$ref": "#/$defs/SDKDiagnostic",
+  "$defs": {
+    "SDKDiagnostic": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "sdk_warning",
+            "observer_error"
+          ]
+        },
+        "kind": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "observer": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                "code": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 256
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "message": {
+                  "type": "string",
+                  "maxLength": 8192
+                }
+              },
+              "required": [
+                "name",
+                "code",
+                "message"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "details": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/JsonObject"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "occurredAt",
+        "source",
+        "kind",
+        "observer",
+        "message",
+        "error",
+        "details",
+        "truncated",
+        "sequence"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

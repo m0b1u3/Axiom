@@ -2,7 +2,7 @@
 import type {AgentPresence,TaskCompatibility} from '../types';
 import {absoluteTime} from '../utils/time';
 const props=defineProps<{agents:AgentPresence[];candidates?:TaskCompatibility['candidates']}>();
-const labels:Record<string,string>={input:'模型与范围输入',budget:'费用预算',result:'完整结果',observation:'进度与事件',control_api:'控制接口',matrix:'配套组件矩阵',scanner_preflight:'Scanner 预检',task_contract_unsupported:'任务版本'};
+const labels:Record<string,string>={git_diff:'冻结 Git 提交差异',sdk_operation:'SDK 独立操作',scan_input:'高级输入与知识文档',input:'模型与范围输入',budget:'费用预算',result:'完整结果',observation:'进度与事件',control_api:'控制接口',matrix:'配套组件矩阵',scanner_preflight:'Scanner 预检',task_contract_unsupported:'任务版本'};
 function candidate(id:string){return props.candidates?.find(c=>c.agentId===id)}
 function state(a:AgentPresence){if(!a.online)return '离线';if(a.runtime?.state==='blocked')return '预检被阻止';if(candidate(a.agentId)?.ready===false)return '能力不匹配';return '在线'}
 function missing(id:string){return candidate(id)?.missing.map(k=>labels[k]??k).join('、')||'—'}

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from "vue";
-import { LayoutDashboard, FolderGit2, ScanLine, ShieldAlert, Archive, Cpu, Settings, Sun, Moon, ChevronRight, KeyRound, LogOut, Search, Menu, X, ArrowUpRight } from "lucide-vue-next";
+import { computed, ref, watch, nextTick, onMounted, onUnmounted } from "vue";
+import { LayoutDashboard, FolderTree, FolderGit2, ScanLine, ShieldAlert, Archive, Cpu, Settings, Sun, Moon, ChevronRight, KeyRound, LogOut, Search, Menu, X, ArrowUpRight } from "lucide-vue-next";
 import { useRoute, useRouter } from "vue-router";
-import { api, clearToken } from "../api";
+import { api, clearToken, type SnapshotInfo } from "../api";
 import type { Project, FindingSummary, ScanTask } from "../types";
 import BrandMark from "./BrandMark.vue";
 import DropdownMenu from "./ui/DropdownMenu.vue";
@@ -13,17 +13,23 @@ import { useTheme } from "../composables/theme";
 import { useAuth } from '../composables/auth';
 import Button from './ui/Button.vue';
 const route = useRoute(), router = useRouter();
+const workspaceKey = computed(() => ['settings','assets','findings','project-detail','knowledge'].includes(String(route.name)) ? route.path : route.fullPath);
 const { isDark, toggleTheme } = useTheme();
 const {user: identity, roleLabel, refresh: refreshIdentity, error: identityError, loading: identityLoading} = useAuth();
 const user = computed(() => identity.value?.username ?? '身份未确认');
 const logoutError = ref(''), loggingOut = ref(false);
 const mobileOpen = ref(false), passwordOpen = ref(false), searchOpen = ref(false), search = ref("");
+const sidebar = ref<HTMLElement | null>(null), menuToggle = ref<HTMLButtonElement | null>(null);
+const narrow = ref(window.innerWidth <= 760);
+function resizeNavigation(): void { narrow.value = window.innerWidth <= 760; if (!narrow.value) mobileOpen.value = false; }
+watch(mobileOpen, async open => { await nextTick(); if (open) sidebar.value?.querySelector<HTMLElement>('a,button')?.focus(); else if (narrow.value) menuToggle.value?.focus(); });
 const searchLoading = ref(false), searchError = ref("");
-const projects = ref<Project[]>([]), findings = ref<FindingSummary[]>([]), scans = ref<ScanTask[]>([]);
+const projects = ref<Project[]>([]), findings = ref<FindingSummary[]>([]), scans = ref<ScanTask[]>([]), assets = ref<SnapshotInfo[]>([]);
+let searchTimer:ReturnType<typeof setTimeout> | undefined;
 let searchGeneration = 0;
 const groups = [
  { label: "工作区", items: [{to:"/",label:"概览",icon:LayoutDashboard},{to:"/projects",label:"项目",icon:FolderGit2},{to:"/scans",label:"扫描任务",icon:ScanLine}] },
- { label:"安全",items:[{to:"/findings",label:"漏洞",icon:ShieldAlert},{to:"/assets",label:"资产",icon:Archive}] },
+ { label:"安全",items:[{to:"/findings",label:"漏洞",icon:ShieldAlert},{to:"/assets",label:"资产",icon:Archive},{to:"/component-plans",label:"组件计划",icon:FolderTree},{to:"/knowledge",label:"知识文档",icon:Archive}] },
  { label:"管理",items:[{to:"/settings/model-configs",label:"模型配置",icon:Cpu},{to:"/settings",label:"系统设置",icon:Settings}] },
 ];
 const allNav = groups.flatMap(g => g.items);
@@ -31,22 +37,33 @@ function isActive(to:string):boolean { const matches = (t:string) => t==='/'?rou
 const searchResults = computed(() => {
  const q=search.value.trim().toLowerCase();
  return [
-  ...allNav.map(n=>({label:n.label,detail:"页面",to:n.to})),
-  ...projects.value.map(p=>({label:p.name,detail:"项目",to:`/projects/${p.id}`})),
+  ...[...allNav.map(n=>({label:n.label,detail:"页面",to:n.to})),...projects.value.map(p=>({label:p.name,detail:"项目",to:`/projects/${p.id}`}))].filter(r=>!q||(r.label+' '+r.detail).toLowerCase().includes(q)),
   ...scans.value.map(s=>({label:s.scanNo,detail:`扫描 · ${s.projectName||s.model}`,to:`/scans/${s.id}`})),
   ...findings.value.map(f=>({label:f.title,detail:`漏洞 · ${f.filePath}`,to:`/scans/${f.scanId}?finding=${f.id}`})),
- ].filter(r=>!q||(r.label+' '+r.detail).toLowerCase().includes(q)).slice(0,20);
+  ...assets.value.map(s=>({label:s.originalFilename,detail:`代码快照 · #${s.id}`,to:`/assets?q=${encodeURIComponent(s.archiveSha256)}`})),
+ ].slice(0,20);
 });
-async function openSearch():Promise<void> {
- searchOpen.value=true;search.value="";searchLoading.value=true;searchError.value="";const gen=++searchGeneration;
- const results=await Promise.allSettled([api.listProjects(),api.listScans(),api.listFindingsPool({})]);
+async function loadSearch():Promise<void> {
+ searchLoading.value=true;searchError.value="";const gen=++searchGeneration;
+ const q=search.value.trim();
+ const results=await Promise.allSettled([api.listProjects(),api.scanPage(1,q,''),api.findingPage({q,pageSize:10}),api.snapshotPage({q,pageSize:10})]);
  if(gen!==searchGeneration)return;
- if(results[0].status==='fulfilled')projects.value=results[0].value;
- if(results[1].status==='fulfilled')scans.value=results[1].value;
- if(results[2].status==='fulfilled')findings.value=results[2].value;
+ projects.value=results[0].status==='fulfilled'?results[0].value:[];
+ scans.value=results[1].status==='fulfilled'?results[1].value.items:[];
+ findings.value=results[2].status==='fulfilled'?results[2].value.items:[];
+ assets.value=results[3].status==='fulfilled'?results[3].value.items:[];
  if(results.some(r=>r.status==='rejected'))searchError.value="部分搜索数据未能加载，仍可使用页面导航。";
  searchLoading.value=false;
 }
+async function openSearch():Promise<void> {
+ searchOpen.value=true;search.value='';clearTimeout(searchTimer);await loadSearch();
+}
+watch(search,()=>{
+ if(!searchOpen.value)return;
+ searchGeneration++;searchLoading.value=true;clearTimeout(searchTimer);
+ searchTimer=setTimeout(()=>void loadSearch(),250);
+});
+watch(searchOpen,open=>{if(!open){searchGeneration++;clearTimeout(searchTimer);}});
 function navigate(to:string):void {searchOpen.value=false;mobileOpen.value=false;void router.push(to);}
 async function logout():Promise<void> {
  if(loggingOut.value)return;
@@ -57,23 +74,32 @@ async function logout():Promise<void> {
 }
 function onUserMenu(key:string):void {if(key==='password')passwordOpen.value=true;else if(key==='logout')void logout();}
 const userMenu=[{key:"password",label:"修改密码",icon:KeyRound},{key:"logout",label:"退出登录",icon:LogOut}];
-function shortcuts(e:KeyboardEvent):void {if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();void openSearch();}if(e.key==='Escape')mobileOpen.value=false;}
+function shortcuts(e:KeyboardEvent):void {
+ if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();void openSearch();}
+ if(e.key==='Escape')mobileOpen.value=false;
+ if(mobileOpen.value && e.key==='Tab' && !searchOpen.value && !passwordOpen.value){
+  const controls = [...(sidebar.value?.querySelectorAll<HTMLElement>('a[href],button:not([disabled])') ?? [])].filter(el=>el.offsetParent!==null);
+  const first=controls[0], last=controls.at(-1);
+  if(e.shiftKey && document.activeElement===first){e.preventDefault();last?.focus();}
+  else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first?.focus();}
+ }
+}
 watch(()=>route.fullPath,()=>{mobileOpen.value=false;});
-onMounted(()=>{window.addEventListener('keydown',shortcuts);void refreshIdentity();});
-onUnmounted(()=>{searchGeneration++;window.removeEventListener('keydown',shortcuts);});
+onMounted(()=>{window.addEventListener('keydown',shortcuts);window.addEventListener('resize',resizeNavigation);void refreshIdentity();});
+onUnmounted(()=>{searchGeneration++;clearTimeout(searchTimer);window.removeEventListener('keydown',shortcuts);window.removeEventListener('resize',resizeNavigation);});
 </script>
 <template>
  <div class="shell">
   <a class="skip-link" href="#main-content">跳至主要内容</a>
   <button v-if="mobileOpen" class="nav-backdrop" aria-label="关闭导航" @click="mobileOpen=false" />
-  <aside class="sidebar" :class="{'mobile-open':mobileOpen}">
+  <aside ref="sidebar" id="application-navigation" class="sidebar" :class="{'mobile-open':mobileOpen}" :inert="narrow && !mobileOpen" :aria-hidden="narrow && !mobileOpen ? true : undefined" aria-label="应用导航">
    <router-link to="/" class="brand" aria-label="Axiom 首页"><BrandMark /></router-link>
    <nav aria-label="主要导航"><section v-for="group in groups" :key="group.label" class="nav-group"><div class="group-label">{{group.label}}</div><router-link v-for="item in group.items" :key="item.to" :to="item.to" class="nav-item" :class="{active:isActive(item.to)}" :aria-current="isActive(item.to)?'page':undefined"><component :is="item.icon" :size="16" :stroke-width="1.6"/><span>{{item.label}}</span></router-link></section></nav>
    <div class="bottom"><DropdownMenu :items="userMenu" @select="onUserMenu"><button class="account" aria-label="账户菜单"><span class="avatar">{{user.slice(0,1).toUpperCase()}}</span><span class="user-meta"><b>{{user}}</b><small>{{roleLabel}}</small></span><ChevronRight :size="14"/></button></DropdownMenu><button class="theme-button" @click="toggleTheme" :aria-label="isDark?'切换浅色模式':'切换深色模式'"><Sun v-if="isDark" :size="16"/><Moon v-else :size="16"/><span>{{isDark?'浅色模式':'深色模式'}}</span><span class="theme-track" :class="{on:isDark}"/></button></div>
   </aside>
-  <div class="workspace"><header class="workspace-topbar"><div class="breadcrumb"><button class="mobile-menu" @click="mobileOpen=!mobileOpen" :aria-expanded="mobileOpen" aria-label="切换导航"><X v-if="mobileOpen" :size="18"/><Menu v-else :size="18"/></button><span class="workspace-label">工作空间</span><span class="slash">/</span><strong>{{route.meta.title||'概览'}}</strong></div><div class="header-actions"><button class="search-trigger" @click="openSearch" aria-label="搜索项目、扫描和漏洞"><Search :size="14"/><span>搜索项目、扫描、漏洞…</span><kbd>⌘ K</kbd></button><span class="header-avatar" aria-hidden="true">{{user.slice(0,1).toUpperCase()}}</span></div></header><main id="main-content" class="content" tabindex="-1"><div v-if="logoutError" class="request-error" role="alert"><span>{{logoutError}}</span><Button variant="outline" size="sm" :loading="loggingOut" @click="logout">重试退出</Button></div><router-view v-if="identity" :key="route.fullPath" /><p v-else-if="identityLoading" role="status">正在确认登录身份…</p><div v-else class="request-error" role="alert"><span>无法确认登录身份：{{identityError || '请重新登录'}}</span><Button variant="outline" size="sm" @click="refreshIdentity">重试</Button></div></main></div>
+  <div class="workspace" :inert="narrow && mobileOpen"><header class="workspace-topbar"><div class="breadcrumb"><button ref="menuToggle" class="mobile-menu" aria-controls="application-navigation" @click="mobileOpen=!mobileOpen" :aria-expanded="mobileOpen" aria-label="切换导航"><X v-if="mobileOpen" :size="18"/><Menu v-else :size="18"/></button><span class="workspace-label">工作空间</span><span class="slash">/</span><strong>{{route.meta.title||'概览'}}</strong></div><div class="header-actions"><button class="search-trigger" @click="openSearch" aria-label="搜索项目、扫描和漏洞"><Search :size="14"/><span>搜索项目、扫描、漏洞…</span><kbd>⌘ K</kbd></button><span class="header-avatar" aria-hidden="true">{{user.slice(0,1).toUpperCase()}}</span></div></header><main id="main-content" class="content" tabindex="-1"><div v-if="logoutError" class="request-error" role="alert"><span>{{logoutError}}</span><Button variant="outline" size="sm" :loading="loggingOut" @click="logout">重试退出</Button></div><router-view v-if="identity" :key="workspaceKey" /><p v-else-if="identityLoading" role="status">正在确认登录身份…</p><div v-else class="request-error" role="alert"><span>无法确认登录身份：{{identityError || '请重新登录'}}</span><Button variant="outline" size="sm" @click="refreshIdentity">重试</Button></div></main></div>
   <ChangePasswordDialog v-model:open="passwordOpen"/>
-  <Dialog v-model:open="searchOpen" title="搜索工作空间" description="查找项目、扫描记录和漏洞，或前往功能页面。" width="560px"><Input v-model="search" placeholder="输入名称、扫描编号或文件路径" aria-label="搜索工作空间"/><p v-if="searchLoading" class="search-status" role="status">正在加载搜索数据…</p><p v-if="searchError" class="search-status" role="alert">{{searchError}}</p><div class="search-results"><button v-for="(result,i) in searchResults" :key="result.to+'-'+i" class="search-result" @click="navigate(result.to)"><span>{{result.label}}<small>{{result.detail}}</small></span><ArrowUpRight :size="14"/></button><p v-if="!searchResults.length&&!searchLoading" class="search-status">没有匹配结果，请尝试其他关键词。</p></div></Dialog>
+  <Dialog v-model:open="searchOpen" title="搜索工作空间" description="查找项目、扫描记录和漏洞，或前往功能页面。" width="560px"><Input v-model="search" placeholder="输入名称、扫描编号或文件路径" aria-label="搜索工作空间"/><p v-if="searchLoading" class="search-status" role="status">正在加载搜索数据…</p><p v-if="searchError" class="search-status" role="alert">{{searchError}}</p><p v-if="search.trim()" class="search-status">显示部分匹配。<button @click="navigate('/findings?q='+encodeURIComponent(search.trim()))">查看全部漏洞</button> · <button @click="navigate('/assets?q='+encodeURIComponent(search.trim()))">查看全部资产</button></p><div class="search-results"><button v-for="(result,i) in searchResults" :key="result.to+'-'+i" class="search-result" @click="navigate(result.to)"><span>{{result.label}}<small>{{result.detail}}</small></span><ArrowUpRight :size="14"/></button><p v-if="!searchResults.length&&!searchLoading" class="search-status">没有匹配结果，请尝试其他关键词。</p></div></Dialog>
  </div>
 </template>
 <style scoped>

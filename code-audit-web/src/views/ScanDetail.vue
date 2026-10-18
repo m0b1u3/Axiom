@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import SDKIdentityBinding from "../components/SDKIdentityBinding.vue";
+import SDKSessionEvents from "../components/SDKSessionEvents.vue";
+import SDKOperations from "../components/SDKOperations.vue";
+import SDKValidationAction from "../components/SDKValidationAction.vue";
+const sdkOperationRevision=ref(0);
 import ResourceCleanupDialog from "../components/ResourceCleanupDialog.vue";
 import ExecutionBudget from "../components/ExecutionBudget.vue";
 import type {TaskBudgetSnapshot} from "../contracts";
@@ -6,13 +11,19 @@ import { useAuth } from "../composables/auth";
 const { canOperate, canAdmin } = useAuth();
 import {progressView} from '../utils/scan-progress';
 import ExploitabilityReview from "../components/ExploitabilityReview.vue";
-import { computed, onMounted, onUnmounted, ref, shallowRef, shallowReactive, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, shallowReactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import FindingEvidenceGraph from '../components/FindingEvidenceGraph.vue';
 import { RotateCcw, Download, FileText, FileDown, Trash2, X, ChevronRight, Search } from "lucide-vue-next";
 import { api } from "../api";
 import type { QueueOverview, Finding, Progress, ScanCompare, ScanAttempt, ScanLogEvent, ScanTask } from "../types";
+import ComponentExecutions from '../components/ComponentExecutions.vue';
+import {componentBinding} from '../utils/component-scans';
+import GitDiffPreview from '../components/GitDiffPreview.vue';
+import ExecutionScanInput from "../components/ExecutionScanInput.vue";
 import ExecutionResult from "../components/ExecutionResult.vue";
 import ExecutionHistory from "../components/ExecutionHistory.vue";
+import ExecutionRecovery from "../components/ExecutionRecovery.vue";
 import ScanCoverage from "../components/ScanCoverage.vue";
 import ScanActivity from "../components/ScanActivity.vue";
 import StatusBadge from "../components/StatusBadge.vue";
@@ -41,6 +52,10 @@ const findings = shallowRef<Finding[]>([]);
 const progress = shallowRef<Progress | null>(null);
 const findLoading = ref(false);
 const loadError = ref("");
+const findingsError = ref("");
+const compareError = ref("");
+const actionError = ref("");
+const statusBusy = ref(false);
 const exporting = ref(false);
 const exportingPdf = ref(false);
 const compare = shallowRef<ScanCompare | null>(null);
@@ -51,17 +66,22 @@ const selected = shallowRef<Finding | null>(null);
 let timer: number | undefined;
 
 const logEpoch = ref(0);
-const attempts = ref<ScanAttempt[]>([]);
+const attempts = shallowRef<ScanAttempt[]>([]);
+const recoveryPanel=ref<InstanceType<typeof ExecutionRecovery>|null>(null);
 const attemptError = ref("");
-const selectedAttempt = ref("current");
+const attemptsReady=ref(false);
+function requestedAttempt(){const value=String(route.query.attempt??'');return /^[1-9][0-9]*$/.test(value)&&Number.isSafeInteger(Number(value))?value:'current';}
+const selectedAttempt = ref(requestedAttempt());
+watch(()=>route.query.attempt,()=>{selectedAttempt.value=requestedAttempt();});
 const historicalAttempt = computed(() => attempts.value.find(a => String(a.attempt) === selectedAttempt.value));
+const unavailableAttempt=computed(()=>selectedAttempt.value!=='current'&&!historicalAttempt.value);
 const attemptOptions = computed(() => [
   {value:"current",label:task.value?.status === "pending" ? "当前任务 · 等待领取" : `当前执行${task.value?.attempt ? ` · 第 ${task.value.attempt} 次` : " · 等待领取"}`},
   ...attempts.value.map(a => ({value:String(a.attempt),label:`第 ${a.attempt} 次 · ${absoluteTime(a.startedAt)}`})),
 ]);
 async function loadAttempts() {
  const generation = loadGeneration;
- try { const result = await api.scanAttempts(id); if (disposed || generation !== loadGeneration) return; attempts.value = result; attemptError.value=""; }
+ try { const result = await api.scanAttempts(id); if (disposed || generation !== loadGeneration) return; attempts.value = result; attemptsReady.value=true; attemptError.value=""; }
  catch(e) { if (!disposed && generation === loadGeneration) attemptError.value=(e as Error).message; }
 }
 
@@ -261,7 +281,10 @@ function proOf(f: Finding): RAny | null {
   return robj(f.normalized?f.normalized.provenance:rawObj(f)?.["provenance"]);
 }
 function extOf(f: Finding): RAny | null {
-  return robj(f.normalized?f.normalized.extensions:rawObj(f)?.["extensions"]);
+  const extensions=robj(f.normalized?f.normalized.extensions:rawObj(f)?.["extensions"]);
+  if(!extensions)return null;
+  const sdk=Object.fromEntries(Object.entries(extensions).filter(([key])=>!['axiomEvidence','axiomEvidenceUnavailable'].includes(key)));
+  return Object.keys(sdk).length?sdk:null;
 }
 function ruleIdOf(f: Finding): string {
   return f.normalized?f.normalized.ruleId??"":rstr(rawObj(f)?.["ruleId"]);
@@ -332,9 +355,12 @@ async function downloadBlob(blob: Blob, filename: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 async function exportReport(): Promise<void> {
+  if(unavailableAttempt.value){message.error('所选执行尚不可用，请读取执行记录后再导出报告');return}
+  const attempt=historicalAttempt.value?.attempt;
+  const filename=`report-${id}${attempt?'-attempt-'+attempt:''}.html`;
   exporting.value = true;
   try {
-    await downloadBlob(await api.exportReport(id), `report-${id}.html`);
+    await downloadBlob(await api.exportReport(id,attempt),filename);
   } catch (error) {
     message.error((error as Error).message);
   } finally {
@@ -342,9 +368,12 @@ async function exportReport(): Promise<void> {
   }
 }
 async function exportReportPdf(): Promise<void> {
+  if(unavailableAttempt.value){message.error('所选执行尚不可用，请读取执行记录后再导出报告');return}
+  const attempt=historicalAttempt.value?.attempt;
+  const filename=`report-${id}${attempt?'-attempt-'+attempt:''}.pdf`;
   exportingPdf.value = true;
   try {
-    await downloadBlob(await api.exportReportPdf(id), `report-${id}.pdf`);
+    await downloadBlob(await api.exportReportPdf(id,attempt),filename);
   } catch (error) {
     message.error((error as Error).message);
   } finally {
@@ -360,7 +389,7 @@ async function load(): Promise<void> {
   if (loadBusy || mutationBusy || disposed) return;
   loadBusy = true;
   const generation = loadGeneration;
-  if (!Number.isFinite(id)) { loadBusy = false; return; }
+  if (!Number.isSafeInteger(id) || id < 1) { loadError.value = "扫描编号无效，请从扫描任务列表重新打开。"; loadBusy = false; return; }
   try {
     const previousAttempt = task.value?.attempt;
     const previousStatus = task.value?.status;
@@ -375,7 +404,8 @@ async function load(): Promise<void> {
     if (["completed", "partial", "failed", "canceled", "timeout"].includes(task.value.status)) {
       if (timer) window.clearInterval(timer);
       timer = undefined;
-      if (findings.value.length === 0) await loadFindings();
+    } else if (!timer) {
+      timer = window.setInterval(() => void load(),3000);
     }
   } catch (error) {
     if (!disposed && generation === loadGeneration) loadError.value = (error as Error).message;
@@ -383,13 +413,21 @@ async function load(): Promise<void> {
 }
 const focusFindingId = Number(route.query.finding ?? 0);
 let focusedOnce = false;
+let findingsGeneration=0;
+watch([()=>selectedAttempt.value,()=>task.value?.attempt,()=>task.value?.status,()=>historicalAttempt.value?.status],()=>{
+  findingsGeneration++;findings.value=[];selected.value=null;compare.value=null;compareError.value='';findLoading.value=false;findingsError.value='';
+  if(task.value && !unavailableAttempt.value && (historicalAttempt.value || ["completed","partial","failed","canceled","timeout"].includes(task.value.status)))void loadFindings();
+});
 
 async function loadFindings(): Promise<void> {
   const generation = loadGeneration;
+  const request=++findingsGeneration;
   findLoading.value = true;
+  findingsError.value = "";
   try {
-    const result = await api.listFindings(id);
-    if (disposed || generation !== loadGeneration) return;
+    const historical=historicalAttempt.value;
+    const result = historical ? (await api.attemptResult(id,historical.attempt)).findings.map((f,index)=>({...f,id:-(index+1),status:'archived'})) : await api.listFindings(id);
+    if (disposed || generation !== loadGeneration || request!==findingsGeneration) return;
     findings.value = (result??[]).map(row=>shallowReactive(row));
     if (!selected.value && !focusedOnce && findings.value.length) selected.value = findings.value[0];
     // 池页跳转直达：自动打开指定 finding 的 Inspector
@@ -401,20 +439,22 @@ async function loadFindings(): Promise<void> {
       }
     }
   } catch (error) {
-    message.error((error as Error).message);
+    if (!disposed && generation === loadGeneration && request===findingsGeneration) findingsError.value = `漏洞读取失败：${(error as Error).message}`;
   } finally {
-    findLoading.value = false;
+    if(request===findingsGeneration)findLoading.value = false;
   }
-  if (!disposed && generation === loadGeneration) void loadCompare();
+  if (!disposed && generation === loadGeneration && request===findingsGeneration && !historicalAttempt.value) void loadCompare();
 }
 async function loadCompare(): Promise<void> {
   const generation = loadGeneration;
+  const selection=selectedAttempt.value;
   try {
     const result = await api.compareScan(id);
-    if (disposed || generation !== loadGeneration) return;
+    if (disposed || generation !== loadGeneration || selection!==selectedAttempt.value) return;
     compare.value = result;
-  } catch {
-    if (!disposed && generation === loadGeneration) compare.value = null;
+    compareError.value = "";
+  } catch (error) {
+    if (!disposed && generation === loadGeneration && selection===selectedAttempt.value) { compare.value = null; compareError.value = `扫描对比暂不可用：${(error as Error).message}`; }
   }
 }
 
@@ -436,50 +476,66 @@ async function cancelScan(): Promise<void> {
   if (mutationBusy) return;
   try {
     mutationBusy = true;
+    actionError.value = "";
     loadGeneration++;
     task.value = await api.cancelScan(id);
     loadGeneration++;
     message.success("已请求取消，等待 Agent 停止扫描");
   } catch (error) {
-    message.error((error as Error).message);
+    actionError.value = `取消请求未完成：${(error as Error).message}`;
   } finally { mutationBusy = false; loadGeneration++; if (!disposed) { void loadAttempts(); void load(); } }
 }
 async function retryScan(): Promise<void> {
-  if (mutationBusy) return;
-  try {
-    mutationBusy = true;
-    loadGeneration++;
-    task.value = await api.retryScan(id);
-    loadGeneration++;
-    selectedAttempt.value='current';
-    findings.value = [];
-    progress.value = null;
-    compare.value = null;
-    selected.value = null;
-    logEpoch.value++;
-    message.success("已重新排队");
-    if (!timer) timer = window.setInterval(() => void load(), 3000);
-    void load();
-  } catch (error) {
-    message.error((error as Error).message);
-  } finally { mutationBusy = false; loadGeneration++; if (!disposed) { void loadAttempts(); void load(); } }
+  if (!mutationBusy) await recoveryPanel.value?.requestRestart();
+}
+function onRecoveryChanged(next:ScanTask,action:'restore_result'|'restart'|'interrupt_expired'):void {
+  loadGeneration++;
+  task.value=next;
+  selectedAttempt.value='current';
+  findings.value=[];findingsError.value='';compareError.value='';
+  progress.value=null;compare.value=null;selected.value=null;logEpoch.value++;
+  sdkOperationRevision.value++;
+  message.success(action==='restore_result'?'已恢复原执行结果，未调用模型':action==='restart'?'已确认重新执行并排队':'已登记执行中断，未启动新扫描');
+  if (!timer) timer=window.setInterval(()=>void load(),3000);
+  void loadAttempts();void load();
 }
 
 async function onStatusChange(row: Finding, value: string): Promise<void> {
+  if (!canOperate.value || historicalAttempt.value || statusBusy.value) return;
+  statusBusy.value = true;
+  actionError.value = "";
   try {
     await api.setFindingStatus(row.id, value);
     row.status = value;
     message.success(`已标记 ${FINDING_STATUS[value] ?? value}`);
   } catch (error) {
-    message.error((error as Error).message);
-  }
+    actionError.value = `漏洞处理状态未保存：${(error as Error).message}`;
+  } finally { statusBusy.value = false; }
+}
+
+function closeFinding(): void {
+  const findingId = selected.value?.id; selected.value = null;
+  void nextTick(() => document.querySelector<HTMLElement>(`[data-finding-id="${findingId}"]`)?.focus());
+}
+function onFindingKey(event: KeyboardEvent, index: number): void {
+  if (event.target !== event.currentTarget || event.ctrlKey || event.metaKey || event.altKey) return;
+  const positions: Record<string, number> = {ArrowDown:index+1,j:index+1,ArrowUp:index-1,k:index-1,Home:0,End:filtered.value.length-1};
+  if (!(event.key in positions)) return;
+  event.preventDefault();
+  const row = filtered.value[Math.max(0,Math.min(filtered.value.length-1,positions[event.key]!))];
+  if (row) { selected.value = row; void nextTick(() => document.querySelector<HTMLElement>(`[data-finding-id="${row.id}"]`)?.focus()); }
+}
+function inspectorShortcut(event: KeyboardEvent): void {
+  if (event.key === 'Escape' && selected.value && !document.querySelector('[role="dialog"],[role="listbox"]')) closeFinding();
 }
 
 onMounted(() => {
+  window.addEventListener('keydown', inspectorShortcut);
   void load();
   timer = window.setInterval(() => void load(), 3000);
 });
 onUnmounted(() => {
+  window.removeEventListener('keydown', inspectorShortcut);
   disposed = true;
   loadGeneration++;
   if (timer) window.clearInterval(timer);
@@ -524,40 +580,47 @@ function sourceName(t: ScanTask): string {
       </div>
       <div class="exec-actions">
         <Button v-if="canOperate && canCancel" variant="outline" @click="cancelScan"><X :size="14" />取消</Button>
-        <Button v-if="canOperate && canRetry" :disabled="budget?.accountingVersion===1 && !budget.retryAllowed" variant="secondary" @click="retryScan"><RotateCcw :size="14" />重新扫描</Button>
-        <DropdownMenu :items="exportItems" @select="onExportSelect">
+        <Button v-if="canOperate && canRetry && !task.sdkOperation && !task.componentPlanning && !task.componentScan" :disabled="budget?.accountingVersion===1 && !budget.retryAllowed" variant="secondary" @click="retryScan"><RotateCcw :size="14" />重新执行</Button>
+        <DropdownMenu v-if="!task.sdkOperation && !task.componentPlanning && !unavailableAttempt" :items="exportItems" @select="onExportSelect">
           <Button variant="secondary" :loading="exporting || exportingPdf"><Download :size="14" />导出</Button>
         </DropdownMenu>
-        <Button v-if="canAdmin && canRetry" variant="destructive" @click="deleteScan"><Trash2 :size="14" />删除</Button>
+        <Button v-if="canAdmin && canRetry && !task.componentPlanning" variant="destructive" @click="deleteScan"><Trash2 :size="14" />删除</Button>
       </div>
     </div>
 
     <div v-if="queueError" class="request-error" role="alert">调度状态暂不可用：{{queueError}}<Button variant="ghost" size="sm" @click="load">重新加载</Button></div>
-    <ExecutionBudget :scan-id="id" :status="task.status" :attempt="task.attempt" :progress-revision="task.progress?.revision" @snapshot="budget=$event" @select-attempt="selectedAttempt=String($event)" />
+    <SDKIdentityBinding v-if="task.sdkIdentity" :identity="task.sdkIdentity"/>
+    <p v-if="actionError" class="request-error" role="alert">{{actionError}}。当前任务和历史结果已保留，可重试原操作。</p>
+    <p v-if="task.sdkOperation" class="deep-policy-summary">{{task.sdkOperation.kind==='validate'?'SDK 独立复核 · 完整源码快照 · 费用未知，不支持费用上限，不能自动重跑':'SDK 原生预检 · 只检查本地输入与配置，不启动模型'}} <RouterLink v-if="task.sdkOperation.origin" :to="'/scans/'+task.sdkOperation.origin.taskId+'?attempt='+task.sdkOperation.origin.attempt">来源执行 #{{task.sdkOperation.origin.taskId}} / {{task.sdkOperation.origin.attempt}}</RouterLink></p>
+    <p v-else-if="task.componentPlanning" class="deep-policy-summary">{{task.componentPlanning.kind==='normalize'?'组件计划本地校验 · 不调用模型':'组件划分建议 · 费用未知'}} · <RouterLink :to="'/component-plans/'+task.componentPlanning.planId">返回组件计划</RouterLink></p>
+    <SDKOperations v-else-if="task.inputContractVersion && task.sourceSnapshotId && !task.componentScan" :task="task" :revision="sdkOperationRevision"/>
+    <ExecutionBudget v-if="task.sdkOperation?.kind!=='preflight'" :limits-unsupported="!!task.sdkOperation && !task.componentPlanning" :scan-id="id" :status="task.status" :attempt="task.attempt" :progress-revision="task.progress?.revision" @snapshot="budget=$event" @select-attempt="selectedAttempt=String($event)" />
     <p v-if="task.maxCostUsd!=null && (!budget || budget.accountingVersion===0)" class="deep-policy-summary">本次扫描的估算费用预算：{{task.maxCostUsd}} USD · 依据引擎估算，供应商实际账单可能不同。</p>
     <p v-if="task.scanMode==='deep'" class="deep-policy-summary">发现时限 {{task.timeoutMinutes}} 分钟 · 汇总宽限最多 10 分钟 · 最多发现 {{task.deepMaxDiscoveryRuns||'SDK 默认'}} 次 · 连续无新增 {{task.deepStopAfterNoNew||'SDK 默认'}} 次后停止 · worker {{task.workers??'SDK 默认'}}</p>
     <ExecutionHistory :task="task" :attempts="attempts" :selected-attempt="selectedAttempt" :overview="queueOverview" @select="selectedAttempt=$event" />
+    <ComponentExecutions v-if="task.componentScan" :task="task" :attempt="historicalAttempt?.attempt" :can-operate="canOperate" :budget="budget" @changed="load" @select-attempt="selectedAttempt=String($event)"/>
+    <ExecutionRecovery v-if="!task.sdkOperation && !task.componentPlanning" ref="recoveryPanel" :task="task" :can-operate="canOperate" :budget-revision="budget?.revision" @changed="onRecoveryChanged" />
     <!-- 摘要指标带 -->
-    <div class="f-ribbon">
+    <div v-if="!task.sdkOperation && !task.componentPlanning" class="f-ribbon">
       <div class="f-cell">
-        <span class="f-tag">当前任务检出</span>
-        <span class="f-val mono">{{ findings.length }}</span>
+        <span class="f-tag">{{historicalAttempt?'所选执行检出':'当前任务检出'}}</span>
+        <span class="f-val mono">{{ historicalAttempt?.findingCount ?? task.findingCount }}</span>
       </div>
       <div class="f-cell">
         <span class="f-tag">Critical</span>
-        <span class="f-val mono" :class="{ 'text-danger': severityCounts.critical > 0 }">{{ severityCounts.critical }}</span>
+        <span class="f-val mono" :class="{ 'text-danger': severityCounts.critical > 0 }">{{ findingsError || findLoading ? '—' : severityCounts.critical }}</span>
       </div>
       <div class="f-cell">
         <span class="f-tag">High</span>
-        <span class="f-val mono text-high">{{ severityCounts.high }}</span>
+        <span class="f-val mono text-high">{{ findingsError || findLoading ? '—' : severityCounts.high }}</span>
       </div>
       <div class="f-cell">
         <span class="f-tag">Medium</span>
-        <span class="f-val mono text-med">{{ severityCounts.medium }}</span>
+        <span class="f-val mono text-med">{{ findingsError || findLoading ? '—' : severityCounts.medium }}</span>
       </div>
       <div class="f-cell">
         <span class="f-tag">Low / Info</span>
-        <span class="f-val mono text-low">{{ severityCounts.low + severityCounts.info }}</span>
+        <span class="f-val mono text-low">{{ findingsError || findLoading ? '—' : severityCounts.low + severityCounts.info }}</span>
       </div>
     </div>
 
@@ -567,12 +630,16 @@ function sourceName(t: ScanTask): string {
       <span v-if="historicalAttempt" class="text-xs text-muted-foreground">历史日志 · {{historicalAttempt.agentId}}</span>
       <span v-if="attemptError" role="alert" class="text-xs text-destructive">执行记录读取失败 <Button size="sm" variant="ghost" @click="loadAttempts">重试</Button></span>
     </div>
+    <p v-if="unavailableAttempt" role="status" class="text-xs text-muted-foreground">{{attemptsReady?`未找到指定的第 ${selectedAttempt} 次执行，请选择可用记录。`:'正在读取请求的历史执行…'}}</p>
     <details v-if="task?.validationMode==='exploitability'" class="validation-policy"><summary>本次启用独立可利用性验证</summary><p>仅源码分析；不运行项目、不发送网络请求。重试沿用本次要求。</p><p style="white-space:pre-wrap;overflow-wrap:anywhere">用户提供的业务背景（待核实）：{{task.businessContext||'未提供'}}</p></details>
-      <ScanCoverage :scan-id="id" :attempt="historicalAttempt?.attempt ?? task.attempt" :status="historicalAttempt?.status ?? task.status" :diagnostic="historicalAttempt ? historicalAttempt.progressDiagnostic : task.progressDiagnostic" />
-    <ExecutionResult :scan-id="id" :attempt="historicalAttempt?.attempt ?? task.attempt" :status="historicalAttempt?.status ?? task.status" :diagnostic="historicalAttempt ? historicalAttempt.progressDiagnostic : task.progressDiagnostic" />
-    <ScanActivity :key="`${id}-${logEpoch}-${selectedAttempt}-${task.attempt}`" :scan-id="id" :attempt="historicalAttempt?.attempt ?? (task.status==='pending' ? undefined : task.attempt)" :running="isRunning && (!historicalAttempt || historicalAttempt.attempt===task.attempt)" :status="historicalAttempt?.status ?? task.status" :diagnostic="historicalAttempt ? historicalAttempt.progressDiagnostic : task.progressDiagnostic" :progress="historicalAttempt ? progressView(historicalAttempt.progress,historicalAttempt.progressJson) : progress" />
+      <ScanCoverage v-if="!unavailableAttempt && !task.sdkOperation && !task.componentPlanning" :scan-id="id" :attempt="historicalAttempt?.attempt ?? task.attempt" :status="historicalAttempt?.status ?? task.status" :diagnostic="historicalAttempt ? historicalAttempt.progressDiagnostic : task.progressDiagnostic" />
+    <GitDiffPreview v-if="task.gitTarget && task.sourceSnapshotId" :snapshot-id="task.sourceSnapshotId" :source-hash="task.sourceContentHash" :target="task.gitTarget"/>
+    <ExecutionScanInput :source-hash="task.sourceContentHash" :source-snapshot-id="task.sourceSnapshotId" :operation="task.sdkOperation" :input="task.sdkOperation?.kind==='validate'?undefined:task.scanInput" :parent-execution="task.parentExecution"/>
+    <ExecutionResult :operation-kind="task.componentPlanning ? 'component_'+task.componentPlanning.kind : task.sdkOperation?.kind" v-if="!unavailableAttempt" :scan-id="id" :attempt="historicalAttempt?.attempt ?? task.attempt" :status="historicalAttempt?.status ?? task.status" :diagnostic="historicalAttempt ? historicalAttempt.progressDiagnostic : task.progressDiagnostic" />
+    <ScanActivity :operation-kind="task.componentPlanning ? 'component_'+task.componentPlanning.kind : task.sdkOperation?.kind" v-if="!unavailableAttempt" :key="`${id}-${logEpoch}-${selectedAttempt}-${task.attempt}`" :scan-id="id" :attempt="historicalAttempt?.attempt ?? (task.status==='pending' ? undefined : task.attempt)" :running="isRunning && (!historicalAttempt || historicalAttempt.attempt===task.attempt)" :status="historicalAttempt?.status ?? task.status" :diagnostic="historicalAttempt ? historicalAttempt.progressDiagnostic : task.progressDiagnostic" :progress="historicalAttempt ? progressView(historicalAttempt.progress,historicalAttempt.progressJson) : progress" />
 
-    <div class="split" :class="{ 'inspector-open': selected }">
+    <SDKSessionEvents v-if="isRunning && task.attempt>0 && !task.sdkOperation && !task.componentPlanning && !historicalAttempt" :scan-id="id" :attempt="task.attempt"/>
+    <div v-if="!unavailableAttempt && !task.sdkOperation && !task.componentPlanning" class="split" :class="{ 'inspector-open': selected }">
       <!-- PrimaryDataSurface：findings grid -->
       <div class="surface pane">
         <div class="toolbar">
@@ -590,10 +657,12 @@ function sourceName(t: ScanTask): string {
           </div>
           <div class="search-wrap">
             <Search :size="13" class="search-ico" />
-            <Input v-model="search" class="search" placeholder="搜索漏洞 / 文件 / CWE…" />
+            <Input v-model="search" class="search" aria-label="搜索当前扫描漏洞" placeholder="搜索漏洞 / 文件 / CWE…" />
           </div>
         </div>
 
+        <p v-if="historicalAttempt" class="text-xs text-muted-foreground">第 {{historicalAttempt.attempt}} 次执行的原始发现 · 只读；不代表当前人工处置状态。</p>
+        <div v-if="findingsError" class="request-error" role="alert"><span>{{findingsError}}</span><Button variant="outline" size="sm" @click="loadFindings">重新读取漏洞</Button></div>
         <Loading :visible="findLoading">
           <div class="grid-head">
             <span class="col-sev">严重度</span>
@@ -605,9 +674,11 @@ function sourceName(t: ScanTask): string {
             <div
               v-for="f in filtered"
               :key="f.id"
+              :data-finding-id="f.id"
               class="grid-row row-hover"
               :class="{ selected: selected?.id === f.id }"
               role="button" tabindex="0" :aria-pressed="selected?.id === f.id"
+              @keydown="onFindingKey($event,filtered.indexOf(f))"
               @keydown.enter="selected = f" @keydown.space.prevent="selected = f"
               @click="selected = f"
             >
@@ -619,10 +690,10 @@ function sourceName(t: ScanTask): string {
                 <span class="mono cwe">{{ f.cwe?.join(", ") }}<template v-if="f.confidence !== null"> · 置信 {{ Math.round(f.confidence * 100) }}%</template></span>
               </span>
               <span class="col-loc mono">{{ f.filePath }}{{ f.startLine ? ":" + f.startLine : "" }}</span>
-              <span class="col-state" :class="f.status">{{ findingStatusLabel(f.status) }}</span>
+              <span class="col-state" :class="f.status">{{ historicalAttempt?'历史原始发现':findingStatusLabel(f.status) }}</span>
             </div>
           </template>
-          <div v-else-if="!findLoading" class="empty-state">
+          <div v-else-if="!findLoading && !findingsError" class="empty-state">
             <p class="empty-title">{{ findings.length ? "没有匹配的漏洞" : "暂无漏洞" }}</p>
             <p class="empty-hint">扫描完成后漏洞按指纹聚合在此处。</p>
           </div>
@@ -631,6 +702,7 @@ function sourceName(t: ScanTask): string {
         <!-- 扫描信息 & 对比：Inspector 打开时收进主面底部 -->
 
 
+        <div v-if="compareError" class="request-error" role="alert"><span>{{compareError}}</span><Button variant="ghost" size="sm" @click="loadCompare">重新读取对比</Button></div>
         <details v-if="compare && compare.previousScanId" class="compare">
           <summary class="compare-head">
             <span>与上次扫描对比（#{{ compare.previousScanId }}）</span>
@@ -663,9 +735,10 @@ function sourceName(t: ScanTask): string {
             <span v-if="sevOf(selected).score" class="mono insp-score">
               {{ sevOf(selected).scoringSystem }} {{ sevOf(selected).score }}
             </span>
-            <Button variant="ghost" size="iconSm" class="insp-close-btn" aria-label="关闭漏洞证据" @click="selected = null"><X :size="14" :stroke-width="1.7" /></Button>
+            <Button variant="ghost" size="iconSm" class="insp-close-btn" aria-label="关闭漏洞证据" @click="closeFinding"><X :size="14" :stroke-width="1.7" /></Button>
           </div>
           <h2 class="insp-title">{{ selected.title }}</h2>
+          <SDKValidationAction v-if="terminal && !task.sdkOperation && !task.componentPlanning && !historicalAttempt" :scan-id="id" :attempt="task.attempt" :finding-id="selected.id" @created="sdkOperationRevision++"/>
           <div class="insp-meta mono">
             <span>{{ selected.cwe?.join(", ") }}</span>
             <span v-if="confOf(selected).level">置信 {{ confOf(selected).level }}</span>
@@ -675,6 +748,7 @@ function sourceName(t: ScanTask): string {
 
         <div class="insp-body">
           <p class="inference-note">以下为扫描分析结果；模型置信度不等同于独立复现验证。</p>
+          <FindingEvidenceGraph :scan-id="id" :attempt="historicalAttempt?.attempt ?? task.attempt" :fingerprint="selected.fingerprint" :git-target="task.gitTarget" :source-hash="task.sourceContentHash"/>
           <div v-if="confOf(selected).rationale" class="insp-section">
             <div class="section-label">置信度依据</div>
             <p class="insp-text">{{ confOf(selected).rationale }}</p>
@@ -747,6 +821,7 @@ function sourceName(t: ScanTask): string {
             </div>
           </div>
 
+          <section v-if="componentBinding(selected.normalized?.extensions?.axiomComponent)" class="insp-section"><div class="section-label">组件证据绑定</div><p class="insp-text">组件 {{componentBinding(selected.normalized?.extensions?.axiomComponent)!.componentIndex+1}} · 冻结计划 v{{componentBinding(selected.normalized?.extensions?.axiomComponent)!.version}}</p><RouterLink :to="'/component-plans/'+componentBinding(selected.normalized?.extensions?.axiomComponent)!.planId">查看来源计划</RouterLink><details><summary>查看执行、源码与原始结果摘要</summary><pre class="ev-code">{{JSON.stringify(componentBinding(selected.normalized?.extensions?.axiomComponent),null,2)}}</pre></details></section>
           <ExploitabilityReview v-if="task?.validationMode==='exploitability'" :validation="selected.normalized?selected.normalized.validation:rawObj(selected)?.validation" />
           <template v-if="valOf(selected)">
             <div class="insp-section">
@@ -803,8 +878,11 @@ function sourceName(t: ScanTask): string {
         <!-- Inspector Actions -->
         <div class="insp-foot">
           <span class="section-label" style="margin: 0">标记状态</span>
-          <span v-if="!canOperate">{{FINDING_STATUS[selected.status || 'open'] || selected.status}} · 只读</span>
+          <span v-if="historicalAttempt">历史原始发现 · 只读</span>
+          <span v-else-if="!canOperate">{{FINDING_STATUS[selected.status || 'open'] || selected.status}} · 只读</span>
           <Select v-else
+            aria-label="漏洞处理状态"
+            :disabled="statusBusy"
             :model-value="selected.status || 'open'"
             :options="statusOptions"
             class="w-40"
@@ -819,6 +897,7 @@ function sourceName(t: ScanTask): string {
 </template>
 
 <style scoped>
+
 .deep-policy-summary{font-size:var(--font-size-xs);color:var(--text-tertiary);line-height:var(--line-height-body);margin:0 0 var(--space-4);overflow-wrap:anywhere}
 /* WorkspaceHeader */
 .exec-head {

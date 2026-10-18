@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "planId": "9",
+  "revision": 1,
+  "kind": "normalize",
+  "source": {
+    "snapshotId": "7",
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "headCommit": null
+  },
+  "document": null,
+  "acknowledgeUnknownCost": false
+}

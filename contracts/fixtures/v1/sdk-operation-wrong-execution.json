@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "kind": "preflight",
+  "origin": {
+    "taskId": "20",
+    "attempt": 1
+  },
+  "findingId": null,
+  "finding": null,
+  "acknowledgeUnknownCost": false
+}

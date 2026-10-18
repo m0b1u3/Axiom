@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-identities.schema.json",
+  "title": "SDKIdentitySnapshot",
+  "$ref": "#/$defs/SDKIdentitySnapshot",
+  "$defs": {
+    "SDKIdentityRef": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,15}$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "agentId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "api_key",
+            "chatgpt"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "agentId",
+        "generation",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "SDKDeviceInstructions": {
+      "type": "object",
+      "properties": {
+        "verificationUrl": {
+          "type": "string",
+          "enum": [
+            "https://auth.openai.com/codex/device"
+          ]
+        },
+        "userCode": {
+          "type": "string",
+          "pattern": "^[A-Z0-9-]{4,32}$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "verificationUrl",
+        "userCode",
+        "expiresAt"
+      ],
+      "additionalProperties": false
+    },
+    "SDKIdentitySnapshot": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "identity": {
+          "$ref": "https://axiom.invalid/contracts/v1/sdk-identities.schema.json#/$defs/SDKIdentityRef"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "unconfigured",
+            "authenticating",
+            "authenticated",
+            "signed_out",
+            "revoked",
+            "unknown"
+          ]
+        },
+        "authenticated": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "checkedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "cleanupPending": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "identity",
+        "state",
+        "authenticated",
+        "checkedAt",
+        "createdAt",
+        "updatedAt",
+        "cleanupPending"
+      ],
+      "additionalProperties": false
+    },
+    "SDKIdentityOperation": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,15}$"
+        },
+        "identity": {
+          "$ref": "https://axiom.invalid/contracts/v1/sdk-identities.schema.json#/$defs/SDKIdentityRef"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "login_api_key",
+            "login_device_code",
+            "account",
+            "logout"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "queued",
+            "running",
+            "waiting",
+            "completed",
+            "failed",
+            "canceled",
+            "expired"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "deadline": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "instructions": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/sdk-identities.schema.json#/$defs/SDKDeviceInstructions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "id",
+        "identity",
+        "action",
+        "status",
+        "createdAt",
+        "updatedAt",
+        "deadline",
+        "instructions",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "SDKIdentityClaim": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "operation": {
+          "$ref": "https://axiom.invalid/contracts/v1/sdk-identities.schema.json#/$defs/SDKIdentityOperation"
+        },
+        "leaseToken": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "apiKey": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "leaseSeconds": {
+          "type": "integer",
+          "minimum": 10,
+          "maximum": 3600
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "operation",
+        "leaseToken",
+        "leaseSeconds"
+      ],
+      "additionalProperties": false
+    },
+    "SDKIdentityReport": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "operationId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,15}$"
+        },
+        "identityId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,15}$"
+        },
+        "agentId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "leaseToken": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "running",
+            "waiting",
+            "completed",
+            "failed",
+            "canceled"
+          ]
+        },
+        "authenticated": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "instructions": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/sdk-identities.schema.json#/$defs/SDKDeviceInstructions"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "operationId",
+        "identityId",
+        "agentId",
+        "generation",
+        "leaseToken",
+        "sequence",
+        "status",
+        "authenticated",
+        "instructions",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "SDKTaskIdentity": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "identity": {
+          "$ref": "https://axiom.invalid/contracts/v1/sdk-identities.schema.json#/$defs/SDKIdentityRef"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "identity"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

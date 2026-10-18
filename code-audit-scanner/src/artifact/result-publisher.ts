@@ -1,11 +1,14 @@
+import {gitEvidenceBinding,assertGitSDKResult} from '../runtime/git-target.js';
 import {createHash,randomUUID} from 'node:crypto';
 import {createReadStream} from 'node:fs';
-import {mkdir,open,readFile,readdir,rename,rm} from 'node:fs/promises';
+import {mkdir,open,readFile,readdir,rename,rm,lstat} from 'node:fs/promises';
 import path from 'node:path';
 import {COMPATIBILITY,normalizeLegacyErrorCode,validate,type ArtifactRef,type ContractError,type Finding,type JsonObject,type JsonValue,type ResultCommit,type ScanResult} from '@axiom/contracts';
 import type {ScanTask} from '../contract/scan-task.js';
 import type {ScanResult as LegacyResult} from '../contract/scan-result.js';
 import type {Finding as LegacyFinding} from '../contract/finding.js';
+import {buildSDKNativeResult} from './sdk-native-result.js';
+import {findingEvidenceJSON} from '../converter/finding-evidence.js';
 
 export const RESULT_FILE='normalized/result.json';
 export const COMMIT_FILE='normalized/result.commit.json';
@@ -19,13 +22,17 @@ export function contractResult(task:ScanTask,legacy:LegacyResult,artifacts:Artif
     schemaVersion:1,execution:{taskId:String(task.taskId),attempt:task.executionAttempt},status:legacy.status,
     startedAt:legacy.startedAt,finishedAt:legacy.finishedAt,
     engine:{name:legacy.engine.name,version:legacy.engine.version||null,pluginVersion:legacy.engine.pluginVersion??null,patchRevision},
-    model:task.resolvedModel,findings:legacy.findings.map(contractFinding),
+    model:task.resolvedModel,findings:legacy.findings.map(f=>contractFinding(f,task)),
     coverage:{completeness:legacy.coverage?.completeness??'unknown',details:jsonObject(legacy.coverage??{})},artifacts,
     cost:legacy.cost?{estimatedUsd:legacy.cost.estimatedUsd??null,inputTokens:legacy.cost.inputTokens??null,outputTokens:legacy.cost.outputTokens??null,currency:'USD',isEstimate:true}:null,
     extensions:{...(legacy.sdkRaw?{sdk:jsonObject(legacy.sdkRaw)}:{}),...(legacy.lastObservedCost?{lastObservedCost:jsonObject(legacy.lastObservedCost)}:{}),adapter:{format:'codex-security-sdk',version:1,source:legacy.sdkRawSource??'unavailable'}},
   };
   if(legacy.error)result.error=contractError(legacy.error.code,legacy.error.message);
   else if(['failed','canceled','timeout'].includes(result.status))result.error=contractError(result.status==='failed'?'unknown':result.status,'SDK returned '+result.status);
+  // Enrichment is optional even before the first core-contract validation.
+  if(task.sdkIdentity)result.extensions={...result.extensions,sdkIdentity:jsonObject(task.sdkIdentity)};
+ const git=gitEvidenceBinding(task);if(git){if(!task.sdkOperation&&(["completed","partial"].includes(result.status)||result.findings.length>0))assertGitSDKResult(task,legacy.sdkRaw);result.extensions={...result.extensions,gitDiff:jsonObject(git)};}
+  if(Buffer.byteLength(JSON.stringify(result))>COMPATIBILITY.limits.documentBytes-65536){for(const f of result.findings){if(f.extensions?.axiomEvidence){delete f.extensions.axiomEvidence;f.extensions.axiomEvidenceUnavailable='图谱投影超过结果容量；完整原始证据仍可读取。';}}}
   validate('ScanResult',result,result.execution);
   return result;
 }
@@ -40,7 +47,7 @@ function jsonObject(value:unknown):JsonObject {
   return JSON.parse(JSON.stringify(value)) as JsonObject;
 }
 
-function contractFinding(f:LegacyFinding):Finding {
+function contractFinding(f:LegacyFinding,task:ScanTask):Finding {
   const {confidence,confidenceRationale,extensions,...fields}=f;
   const out={...fields} as Finding;
   const native=f.raw as {confidence?:{level?:string;rationale?:string;value?:number}}|undefined;
@@ -51,12 +58,38 @@ function contractFinding(f:LegacyFinding):Finding {
     out.confidence={level,rationale:c?.rationale??confidenceRationale??null,...(typeof c?.value==='number'?{value:c.value}:{})};
   }
   if(extensions && typeof extensions==='object' && !Array.isArray(extensions))out.extensions=jsonObject(extensions);
+  const git=gitEvidenceBinding(task);if(git)out.extensions={...out.extensions,axiomGitTarget:jsonObject(git)};
+  try{out.extensions={...out.extensions,axiomEvidence:findingEvidenceJSON(out,task)};}
+  catch{out.extensions={...out.extensions,axiomEvidenceUnavailable:'证据图谱映射不受支持；完整 SDK 对象仍保留。'};}
   return out;
 }
 
 export async function publishResult(task:ScanTask,legacy:LegacyResult):Promise<ScanResult> {
   const result=contractResult(task,legacy,await artifactReferences(task.outputPath,legacy.rawArtifactDir),await installedPatchRevision());
-  const bytes=Buffer.from(JSON.stringify(result)+'\n');
+  if(legacy.sdkSession){const summary={...legacy.sdkSession,journal:result.artifacts.find(a=>a.relativePath==='logs/sdk-session-events.jsonl')??null};if(summary.persistedCount&&!summary.journal){summary.state='incomplete';summary.reason='已记录的会话日志未随本次结果归档，完整性无法确认。';}validate('SDKSessionSummary',summary,result.execution);result.extensions={...result.extensions,sdkSession:jsonObject(summary)};}
+  if(legacy.sdkOperation){validate('SDKOperationResult',legacy.sdkOperation,result.execution);result.extensions={...result.extensions,sdkOperation:jsonObject(legacy.sdkOperation)};}
+  if(legacy.componentScan){validate('ComponentScanResult',legacy.componentScan,result.execution);result.extensions={...result.extensions,componentScan:jsonObject(legacy.componentScan)};}
+  if(legacy.componentPlanning){validate('ComponentPlanningResult',legacy.componentPlanning,result.execution);result.extensions={...result.extensions,componentPlanning:jsonObject(legacy.componentPlanning)};}
+  const native=await buildSDKNativeResult(task,legacy,result.artifacts);
+  const budget=COMPATIBILITY.limits.documentBytes-65536;
+  // Optional evidence projections must never crowd out the source report.
+  if(Buffer.byteLength(JSON.stringify(result))>budget){for(const f of result.findings){if(f.extensions?.axiomEvidence){delete f.extensions.axiomEvidence;f.extensions.axiomEvidenceUnavailable='图谱投影超过结果容量；完整原始证据仍可读取。';}}}
+  const baseBytes=Buffer.byteLength(JSON.stringify(result)+'\n');
+  const serialize=()=>{if(!legacy.sdkOperation&&!legacy.componentPlanning&&!legacy.componentScan)result.extensions={...result.extensions,sdkNative:jsonObject(native)};return Buffer.from(JSON.stringify(result)+'\n');};
+  let bytes=serialize();
+  // The original SDK JSON is the evidence. Optional display projections may
+  // not turn an otherwise valid full result into an oversized failed scan.
+  if(bytes.length>budget&&native.repositoryHistory.records.length){
+    native.repositoryHistory={state:'invalid',records:[],reason:'结构化历史超过结果展示容量；完整原生历史仍保留在 SDK JSON。'};bytes=serialize();
+  }
+  if(bytes.length>budget&&native.usageEstimate.usage!==null){
+    native.usageEstimate.usage=null;native.usageEstimate.reason='补充用量依据超过展示容量；完整原始用量仍保留在 SDK JSON。';bytes=serialize();
+  }
+  while(bytes.length>budget&&native.diagnostics.entries.length){native.diagnostics.entries.shift();native.diagnostics.omittedCount++;bytes=serialize();}
+  if(bytes.length>budget&&baseBytes<=budget){
+    delete result.extensions!.sdkNative;bytes=Buffer.from(JSON.stringify(result)+'\n');
+    process.stderr.write('scan-warning optional SDK display metadata exceeds result capacity; full SDK JSON retained\n');
+  }
   // Reserve space for the completion envelope. Oversized data stays on disk as
   // SDK artifacts and fails explicitly; no field is silently truncated.
   if(bytes.length>COMPATIBILITY.limits.documentBytes-65536)throw new InvalidSDKResultError('Full scan result exceeds the completion document size limit');
@@ -97,7 +130,17 @@ async function artifactReferences(output:string,rawRelative:string):Promise<Arti
       refs.push({kind,relativePath:next,sizeBytes:size,sha256:hash.digest('hex')});
     }
   }
-  await visit(rawRelative);return refs.sort((a,b)=>a.relativePath.localeCompare(b.relativePath,'en'));
+  await visit(rawRelative);
+  for(const journal of ['logs/sdk-diagnostics.jsonl','logs/sdk-session-events.jsonl']){
+  const info=await lstat(path.join(output,journal)).catch(()=>null);
+  if(info){
+    if(!info.isFile()||info.isSymbolicLink()){if(journal==='logs/sdk-session-events.jsonl'){process.stderr.write('scan-warning session journal not archived: not a regular file\n');continue;}throw new Error('SDK diagnostic journal must be a regular file');}
+    const hash=createHash('sha256');let size=0;
+    for await(const part of createReadStream(path.join(output,journal))){size+=part.length;hash.update(part);}
+    refs.push({kind:'engine_raw',relativePath:journal,sizeBytes:size,sha256:hash.digest('hex')});
+  }
+  }
+  return refs.sort((a,b)=>a.relativePath.localeCompare(b.relativePath,'en'));
 }
 
 let patchRevision:Promise<string|null>|undefined;

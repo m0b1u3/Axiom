@@ -17,6 +17,7 @@ import (
 var ErrUnauthorized = errors.New("agent authentication rejected")
 
 type Client struct {
+	SDKIdentityVersion      int
 	URL, Token              string
 	HTTP                    *http.Client
 	InputCapabilities       *contracts.InputCapabilities

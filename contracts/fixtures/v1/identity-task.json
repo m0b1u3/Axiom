@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 1
+  },
+  "identity": {
+    "id": "81",
+    "name": "Fixtures / Mock identity",
+    "agentId": "fixture-input-agent",
+    "generation": 2,
+    "kind": "chatgpt"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "planId": "9",
+  "version": 1,
+  "versionSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+  "source": {
+    "snapshotId": "7",
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "headCommit": null
+  },
+  "phase": "finished",
+  "observedAt": "2026-10-17T01:00:00Z",
+  "grantMicros": 3,
+  "reservedMicros": 0,
+  "observedMicros": 250000,
+  "components": [
+    {
+      "index": 0,
+      "status": "completed",
+      "allocatedMicros": 2000001,
+      "observedMicros": 125000,
+      "finalMicros": 125000,
+      "findingCount": 0,
+      "scanId": "fixture-component-0",
+      "resultArtifact": {
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/component-1.json",
+        "sizeBytes": 20,
+        "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "error": null,
+      "phase": "reporting",
+      "activity": "Fixtures / Mock"
+    },
+    {
+      "index": 1,
+      "status": "completed",
+      "allocatedMicros": 2000000,
+      "observedMicros": 125000,
+      "finalMicros": 125000,
+      "findingCount": 0,
+      "scanId": "fixture-component-1",
+      "resultArtifact": {
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/component-2.json",
+        "sizeBytes": 20,
+        "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "error": null,
+      "phase": "reporting",
+      "activity": "Fixtures / Mock"
+    }
+  ],
+  "matching": {
+    "status": "completed",
+    "costState": "unknown",
+    "reason": "Fixture matching fees unavailable",
+    "native": {
+      "confirmedGroups": 0,
+      "uncertainPairs": 1
+    }
+  }
+}

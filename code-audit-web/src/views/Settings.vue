@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import SDKIdentities from "../components/SDKIdentities.vue";
 import StorageMaintenance from "../components/StorageMaintenance.vue";
 import ExecutionSettings from "../components/ExecutionSettings.vue";
 import { ref } from "vue";
+import { useRoute, useRouter } from 'vue-router';
 import { useTheme } from "../composables/theme";
 import { Sun, Moon } from "lucide-vue-next";
 import PageHeader from "../components/PageHeader.vue";
@@ -18,8 +20,12 @@ import '../styles/security.css';
 const {user, roleLabel, canAdmin} = useAuth();
 const { isDark, setTheme } = useTheme();
 const passwordOpen = ref(false);
-const activeSection = ref(new URLSearchParams(window.location.search).get('section')==='storage'?'storage':'execution');
-const sections = computed(() => [{ id: 'execution', label: '扫描调度' }, {id:'storage',label:'存储与清理'}, { id: 'account', label: '账户与外观' }, ...(canAdmin.value ? [{id: 'users', label: '账户管理'}, {id: 'operations', label: '操作记录'}] : []), { id: 'about', label: '关于系统' }]);
+const sections = computed(() => [{id:'sdk-identities',label:'SDK 执行身份'}, { id: 'execution', label: '扫描调度' }, {id:'storage',label:'存储与清理'}, { id: 'account', label: '账户与外观' }, ...(canAdmin.value ? [{id: 'users', label: '账户管理'}, {id: 'operations', label: '操作记录'}] : []), { id: 'about', label: '关于系统' }]);
+const route = useRoute(), router = useRouter();
+const activeSection = computed({
+  get: () => sections.value.some(section => section.id === route.query.section) ? String(route.query.section) : 'execution',
+  set: section => { void router.replace({query: {...route.query, section}}); },
+});
 </script>
 
 <template>
@@ -27,6 +33,7 @@ const sections = computed(() => [{ id: 'execution', label: '扫描调度' }, {id
     <PageHeader title="系统设置" description="账户与运行环境" />
     <nav class="settings-nav" aria-label="设置分类"><button v-for="section in sections" :key="section.id" type="button" :aria-current="activeSection === section.id ? 'page' : undefined" @click="activeSection = section.id">{{ section.label }}</button></nav>
     <div class="settings-wrap">
+      <SDKIdentities v-if="activeSection==='sdk-identities'"/>
       <ExecutionSettings v-show="activeSection === 'execution'" />
       <StorageMaintenance v-if="activeSection === 'storage'" />
       <div v-if="activeSection === 'account'" class="section">

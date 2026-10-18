@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/evidence-graph.schema.json",
+  "title": "EvidenceGraph",
+  "$ref": "#/$defs/EvidenceGraph",
+  "$defs": {
+    "EvidenceGraph": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "findingFingerprint": {
+          "type": "string",
+          "maxLength": 512,
+          "minLength": 1
+        },
+        "sourceContentHash": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "archiveSha256": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "projectorVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "origin": {
+          "type": "string",
+          "enum": [
+            "native_evidence",
+            "legacy_projection"
+          ]
+        },
+        "completeness": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial",
+            "empty"
+          ]
+        },
+        "sourceFinding": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/JsonValue"
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceNode"
+          },
+          "maxItems": 256
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceRelation"
+          },
+          "maxItems": 1024
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/finding-evidence.schema.json#/$defs/EvidenceDiagnostic"
+          },
+          "maxItems": 256
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "findingFingerprint",
+        "sourceContentHash",
+        "archiveSha256",
+        "projectorVersion",
+        "origin",
+        "completeness",
+        "sourceFinding",
+        "nodes",
+        "edges",
+        "diagnostics"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

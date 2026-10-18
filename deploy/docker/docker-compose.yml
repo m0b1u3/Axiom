@@ -19,9 +19,13 @@ services:
     restart: unless-stopped
 
   server:
+    image: ${AXIOM_IMAGE_PREFIX:-axiom-local}/server:${AXIOM_RELEASE:-local}
+    platform: linux/amd64
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.server
+      args:
+        AXIOM_BUILD_VERSION: ${AXIOM_RELEASE:-local}
     container_name: axiom-server
     depends_on:
       postgres:
@@ -42,15 +46,20 @@ services:
       AXIOM_MAX_ACTIVE_SCANS: ${AXIOM_MAX_ACTIVE_SCANS:-2}
       AXIOM_MAX_MODEL_SCANS: ${AXIOM_MAX_MODEL_SCANS:-2}
       AXIOM_MAX_PROJECT_SCANS: ${AXIOM_MAX_PROJECT_SCANS:-2}
+      AXIOM_MAX_RECOVERIES: ${AXIOM_MAX_RECOVERIES:-0}
     volumes:
       - axiom-data:/app/data
     command: ["/bin/sh", "-c", "exec /opt/axiom/bin/axiom-server"]
     restart: unless-stopped
 
   agent:
+    image: ${AXIOM_IMAGE_PREFIX:-axiom-local}/agent:${AXIOM_RELEASE:-local}
+    platform: linux/amd64
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.agent
+      args:
+        AXIOM_BUILD_VERSION: ${AXIOM_RELEASE:-local}
     container_name: axiom-agent
     depends_on:
       - server
@@ -72,9 +81,13 @@ services:
     restart: unless-stopped
 
   web:
+    image: ${AXIOM_IMAGE_PREFIX:-axiom-local}/web:${AXIOM_WEB_RELEASE:-${AXIOM_RELEASE:-local}}
+    platform: linux/amd64
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.web
+      args:
+        AXIOM_BUILD_VERSION: ${AXIOM_WEB_RELEASE:-${AXIOM_RELEASE:-local}}
     container_name: axiom-web
     depends_on:
       - server

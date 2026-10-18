@@ -44,6 +44,14 @@ func assertProgressPipeline(t *testing.T, s *store.Store, url, token string, tas
 	if len(disk.Workers) != 2 || disk.Workers[0].Status != "failed" || disk.Workers[1].Status != "waiting" || disk.Error == nil || disk.Error.Code != "rate_limit" {
 		t.Fatal("structured worker state missing", disk.Workers)
 	}
+	lifecycleRaw, err := json.Marshal(disk.Extensions.Value["sdkLifecycle"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifecycle, err := contracts.DecodeSDKLifecycle(lifecycleRaw, nil)
+	if err != nil || lifecycle.Authentication == nil || lifecycle.Authentication.Verified || lifecycle.TrustedAccess == nil || *lifecycle.TrustedAccess != "not_granted" || !lifecycle.ScanStarted || !lifecycle.OutputReady || lifecycle.BudgetApproaching == nil || lifecycle.BudgetApproaching.Action != "retain_limit" {
+		t.Fatal("SDK lifecycle did not survive Agent and Server persistence", err, lifecycle)
+	}
 	status, body := getJSON(t, url+fmt.Sprintf("/api/v1/scans/%d", task.ID), token)
 	if status != 200 {
 		t.Fatal(status, string(body))

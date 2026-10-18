@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/scan-input.schema.json",
+  "title": "ScanInput",
+  "$ref": "#/$defs/ScanInput",
+  "$defs": {
+    "KnowledgeDocument": {
+      "type": "object",
+      "properties": {
+        "versionId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,18}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[^\u0000]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 65536,
+          "pattern": "^[^\u0000]+$"
+        }
+      },
+      "required": [
+        "versionId",
+        "title",
+        "sha256",
+        "content"
+      ],
+      "additionalProperties": false
+    },
+    "ScanInput": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "subagents": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "scanPrompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16000,
+          "pattern": "^[^\u0000]+$"
+        },
+        "validationPrompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16000,
+          "pattern": "^[^\u0000]+$"
+        },
+        "postScanPrompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16000,
+          "pattern": "^[^\u0000]+$"
+        },
+        "workflowId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "safetyIdentifier": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+        },
+        "parentScanId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[^\u0000]+$"
+        },
+        "expectedPluginVersion": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$"
+        },
+        "failureSeverity": {
+          "type": "string",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "informational"
+          ]
+        },
+        "knowledge": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/KnowledgeDocument"
+          },
+          "maxItems": 8
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "knowledge"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

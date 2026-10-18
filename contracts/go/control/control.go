@@ -49,6 +49,7 @@ type ContractLease struct {
 	ResultContractVersion int `json:"resultContractVersion"`
 }
 type ObservationClaimRequest struct {
+	SDKIdentityVersion int `json:"sdkIdentityVersion,omitempty"`
 	ContractClaimRequest
 	ObservationCapabilities contracts.ObservationCapabilities `json:"observationCapabilities"`
 }
@@ -57,6 +58,13 @@ type ObservationPresence struct {
 	Slots int `json:"slots"`
 }
 type ObservationLease struct {
+	SDKIdentity          *contracts.SDKTaskIdentity            `json:"sdkIdentity,omitempty"`
+	ComponentScan        *contracts.ComponentScanRequest       `json:"componentScan,omitempty"`
+	ComponentPlanning    *contracts.ComponentPlanningOperation `json:"componentPlanning,omitempty"`
+	GitDiff              *contracts.GitDiffAssignment          `json:"gitDiff,omitempty"`
+	SDKOperation         *contracts.SDKOperation               `json:"sdkOperation,omitempty"`
+	InputContractVersion int                                   `json:"inputContractVersion,omitempty"`
+	ScanInput            *contracts.ScanInputAssignment        `json:"scanInput,omitempty"`
 	ContractLease
 	ObservationContractVersion int `json:"observationContractVersion"`
 }

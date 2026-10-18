@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,16 +27,26 @@ type Store struct {
 }
 
 type Task struct {
-	BudgetAccounting    bool     `json:"-"`
-	MaxTotalCostUSD     *float64 `json:"-"`
-	ExecutionMaxCostUSD *float64 `json:"-"`
-	ID                  int64    `json:"id"`
-	ScanNo              string   `json:"scanNo"`
-	SourcePath          string   `json:"sourcePath"`
-	Provider            string   `json:"provider"`
-	Model               string   `json:"model"`
-	BaseURL             string   `json:"baseUrl"`
-	ScanMode            string   `json:"scanMode"`
+	SDKIdentity         *contracts.SDKIdentityRef             `json:"sdkIdentity,omitempty"`
+	ComponentScan       *contracts.ComponentScanRequest       `json:"componentScan,omitempty"`
+	ComponentPlanning   *contracts.ComponentPlanningOperation `json:"componentPlanning,omitempty"`
+	GitTarget           *contracts.GitDiffTarget              `json:"gitTarget,omitempty"`
+	SDKOperationKind    string                                `json:"sdkOperationKind,omitempty"`
+	SDKOperation        *contracts.SDKOperation               `json:"sdkOperation,omitempty"`
+	SDKOperationOrigin  int64                                 `json:"-"`
+	ParentExecution     *contracts.ExecutionRef               `json:"parentExecution,omitempty"`
+	ParentState         *contracts.SDKParentState             `json:"-"`
+	ScanInput           *contracts.ScanInput                  `json:"scanInput,omitempty"`
+	BudgetAccounting    bool                                  `json:"-"`
+	MaxTotalCostUSD     *float64                              `json:"-"`
+	ExecutionMaxCostUSD *float64                              `json:"-"`
+	ID                  int64                                 `json:"id"`
+	ScanNo              string                                `json:"scanNo"`
+	SourcePath          string                                `json:"sourcePath"`
+	Provider            string                                `json:"provider"`
+	Model               string                                `json:"model"`
+	BaseURL             string                                `json:"baseUrl"`
+	ScanMode            string                                `json:"scanMode"`
 	// 路径子集扫描白名单（JSON 数组字符串，空串 = 全量）。
 	IncludePaths                string                        `json:"includePaths"`
 	ScanFocus                   string                        `json:"scanFocus"`
@@ -108,6 +119,7 @@ var FindingStatuses = map[string]bool{
 }
 
 type ModelConfigRow struct {
+	SDKIdentityOnly bool   `json:"sdkIdentityOnly,omitempty"`
 	ID              int64  `json:"id"`
 	Name            string `json:"name"`
 	Provider        string `json:"provider"`
@@ -260,6 +272,7 @@ func defaultIfEmpty(v, fallback string) string {
 }
 
 type SnapshotRow struct {
+	GitDiff          bool   `json:"gitDiff,omitempty"`
 	ID               int64  `json:"id"`
 	OriginalFilename string `json:"originalFilename"`
 	ArchiveSha256    string `json:"archiveSha256"`
@@ -302,6 +315,29 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	if _, err := db.Exec(budgetSQL); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(knowledgeSQL); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(componentPlansSQL); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(gitDiffSQL); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(componentScansSQL); err != nil {
+		return nil, err
+	}
+	if _, err := db.Exec(sdkOperationsSQL); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(nativeResultSQL); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -446,7 +482,7 @@ func (s *Store) InsertPending(ctx context.Context, t Task) (int64, error) {
 	}
 	var total *int64
 	if t.BudgetAccounting {
-		if t.InputContractVersion != 1 || t.ResultContractVersion != 1 || t.ObservationContractVersion != 1 {
+		if (t.InputContractVersion != 1 && t.InputContractVersion != contracts.ScanInputVersion && t.InputContractVersion != contracts.SDKOperationInputVersion && t.InputContractVersion != contracts.GitDiffInputVersion && t.InputContractVersion != contracts.ComponentPlanningInputVersion && t.InputContractVersion != contracts.ComponentScanInputVersion) || t.ResultContractVersion != 1 || t.ObservationContractVersion != 1 {
 			return 0, ErrBudgetPolicy
 		}
 		if t.MaxTotalCostUSD != nil {
@@ -464,6 +500,52 @@ func (s *Store) InsertPending(ctx context.Context, t Task) (int64, error) {
 		return 0, err
 	}
 	defer tx.Rollback()
+	if t.SDKIdentity != nil {
+		if !s.IsPostgres() {
+			return 0, ErrSDKIdentity
+		}
+		if _, e := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(740919)`); e != nil {
+			return 0, e
+		}
+	}
+	if t.SDKOperation != nil && t.SDKOperationOrigin > 0 {
+		var attempt, snapshot int64
+		var status, model, sourceHash, sourcePath string
+		query := `SELECT attempt,status,COALESCE(model_snapshot_json,''),source_content_hash,source_path,source_snapshot_id FROM scan_tasks WHERE id=?`
+		if s.db.postgres {
+			query += ` FOR UPDATE`
+		}
+		if e := tx.QueryRowContext(ctx, query, t.SDKOperationOrigin).Scan(&attempt, &status, &model, &sourceHash, &sourcePath, &snapshot); e != nil {
+			return 0, e
+		}
+		if model != t.ModelSnapshotJSON || sourceHash != t.SourceContentHash || sourcePath != t.SourcePath || snapshot != t.SourceSnapshotID {
+			return 0, errors.New("SDK 操作必须使用来源冻结的源码与模型")
+		}
+		if t.SDKOperation.Kind == contracts.SDKOperationKindValidate {
+			if t.SDKOperation.Origin == nil || t.SDKOperation.Origin.TaskID != contracts.TaskID(fmt.Sprint(t.SDKOperationOrigin)) || t.SDKOperation.Origin.Attempt != attempt || !IsTerminalStatus(status) {
+				return 0, errors.New("来源执行已变化，请刷新后重新选择漏洞")
+			}
+			var n int
+			if e := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM findings WHERE id=? AND scan_id=?`, *t.SDKOperation.FindingID, t.SDKOperationOrigin).Scan(&n); e != nil || n != 1 {
+				return 0, errors.New("来源漏洞已变化")
+			}
+		} else if t.ScanInput != nil {
+			var original string
+			e := tx.QueryRowContext(ctx, `SELECT document_json FROM task_scan_inputs WHERE task_id=?`, t.SDKOperationOrigin).Scan(&original)
+			if e != nil && !errors.Is(e, sql.ErrNoRows) {
+				return 0, e
+			}
+			if original == "" && !sameJSON(t.ScanInput, contracts.ScanInput{SchemaVersion: 1, Knowledge: []contracts.KnowledgeDocument{}}) {
+				return 0, errors.New("来源没有此扫描输入，不能在预检中新增参数")
+			}
+			if original != "" {
+				old, e := contracts.DecodeScanInput([]byte(original), nil)
+				if e != nil || !sameJSON(old, t.ScanInput) {
+					return 0, errors.New("预检必须使用来源执行冻结的知识文档与配置")
+				}
+			}
+		}
+	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	var id int64
 	err = tx.QueryRowContext(ctx, `
@@ -484,6 +566,53 @@ INSERT INTO scan_tasks (
 	if t.BudgetAccounting {
 		if _, err = tx.ExecContext(ctx, `INSERT INTO task_budgets(task_id,total_micros) VALUES(?,?)`, id, total); err != nil {
 			return 0, err
+		}
+	}
+	if t.ScanInput != nil {
+		if e := s.verifyOperationKnowledge(ctx, tx, t); e != nil {
+			return 0, e
+		}
+		raw, e := contracts.EncodeJSON(t.ScanInput)
+		if e != nil {
+			return 0, e
+		}
+		if _, e = tx.ExecContext(ctx, `INSERT INTO task_scan_inputs(task_id,document_json) VALUES(?,?)`, id, string(raw)); e != nil {
+			return 0, e
+		}
+	}
+	if t.ParentState != nil {
+		raw, e := contracts.EncodeJSON(t.ParentState)
+		if e != nil {
+			return 0, e
+		}
+		if _, e = tx.ExecContext(ctx, `INSERT INTO task_parent_states(task_id,parent_task_id,parent_attempt,document_json) VALUES(?,?,?,?)`, id, string(t.ParentState.Execution.TaskID), t.ParentState.Execution.Attempt, string(raw)); e != nil {
+			return 0, e
+		}
+	}
+	if e := s.saveTaskIdentity(ctx, tx, t, id); e != nil {
+		return 0, e
+	}
+	if e := s.saveComponentScan(ctx, tx, t, id); e != nil {
+		return 0, e
+	}
+	if e := s.saveComponentOperation(ctx, tx, t, id); e != nil {
+		return 0, e
+	}
+	if e := s.saveGitTarget(ctx, tx, t, id); e != nil {
+		return 0, e
+	}
+	if t.SDKOperation != nil {
+		operation := *t.SDKOperation
+		operation.Execution = contracts.ExecutionRef{TaskID: contracts.TaskID(fmt.Sprint(id)), Attempt: 1}
+		raw, e := contracts.EncodeJSON(operation)
+		if e != nil {
+			return 0, e
+		}
+		if _, e = contracts.DecodeSDKOperation(raw, &operation.Execution); e != nil {
+			return 0, e
+		}
+		if _, e = tx.ExecContext(ctx, `INSERT INTO sdk_operations(task_id,origin_task_id,kind,document_json) VALUES(?,?,?,?)`, id, nullIfEmptyZero(t.SDKOperationOrigin), operation.Kind, string(raw)); e != nil {
+			return 0, e
 		}
 	}
 	return id, tx.Commit()
@@ -595,6 +724,13 @@ func (s *Store) DeleteScan(ctx context.Context, id int64) error {
 	if err := tx.QueryRowContext(ctx, query, id).Scan(&status); err != nil {
 		return err
 	}
+	var linked int
+	if err = tx.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM sdk_operations WHERE origin_task_id=?)+(SELECT COUNT(*) FROM component_operations WHERE task_id=?)`, id, id).Scan(&linked); err != nil {
+		return err
+	}
+	if linked > 0 {
+		return ErrStorageProtected
+	}
 	var unknown int
 	if err = tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM task_cost_attempts WHERE task_id=? AND state<>'complete'`, id).Scan(&unknown); err != nil {
 		return err
@@ -637,6 +773,25 @@ WHERE id = ? AND status IN ('pending','claimed','scanning')`, now, id)
 
 // Retry 只允许终态任务回到 pending，并清掉上次扫描的 findings（计数已归零）。
 func (s *Store) Retry(ctx context.Context, id int64) (bool, error) {
+	return s.retryExecution(ctx, id, nil, "")
+}
+
+// RetryExecution fences the Web confirmation to the exact observed attempt.
+// Retry remains available for older clients with its historical semantics.
+func (s *Store) RetryExecution(ctx context.Context, id int64, expected int, status string) (bool, error) {
+	return s.retryExecution(ctx, id, &expected, status)
+}
+
+func (s *Store) retryExecution(ctx context.Context, id int64, expected *int, status string) (bool, error) {
+	return s.retryComponentExecution(ctx, id, expected, status, nil)
+}
+func (s *Store) RetryComponents(ctx context.Context, id int64, attempt int, status string, indices []int64) (bool, error) {
+	if len(indices) == 0 {
+		return false, ErrComponentInvalid
+	}
+	return s.retryComponentExecution(ctx, id, &attempt, status, indices)
+}
+func (s *Store) retryComponentExecution(ctx context.Context, id int64, expected *int, status string, indices []int64) (bool, error) {
 	release, e := s.storageGate(ctx, false)
 	if e != nil {
 		return false, e
@@ -653,6 +808,38 @@ func (s *Store) Retry(ctx context.Context, id int64) (bool, error) {
 		if err = tx.QueryRowContext(ctx, `SELECT id FROM scan_tasks WHERE id=? FOR UPDATE`, id).Scan(&lock); err != nil {
 			return false, err
 		}
+	}
+	if expected != nil {
+		var currentAttempt int
+		var currentStatus string
+		if err = tx.QueryRowContext(ctx, `SELECT attempt,status FROM scan_tasks WHERE id=?`, id).Scan(&currentAttempt, &currentStatus); err != nil {
+			return false, err
+		}
+		if currentAttempt != *expected || currentStatus != status {
+			return false, ErrRecoveryConflict
+		}
+	}
+	var componentRequest string
+	ce := tx.QueryRowContext(ctx, `SELECT document_json FROM component_scans WHERE task_id=?`, id).Scan(&componentRequest)
+	if ce != nil && !errors.Is(ce, sql.ErrNoRows) {
+		return false, ce
+	}
+	if ce == nil {
+		if indices == nil || expected == nil {
+			return false, errors.New("请在 Web 的组件执行中选择失败或未完成组件重新执行")
+		}
+		if e := s.prepareComponentRetry(ctx, tx, id, *expected, indices, componentRequest); e != nil {
+			return false, e
+		}
+	} else if indices != nil {
+		return false, ErrComponentInvalid
+	}
+	var operationCount int
+	if err = tx.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM sdk_operations WHERE task_id=?)+(SELECT COUNT(*) FROM component_operations WHERE task_id=?)`, id, id).Scan(&operationCount); err != nil {
+		return false, err
+	}
+	if operationCount > 0 {
+		return false, errors.New("请在 Web 新建 SDK 操作；独立复核需要重新确认未知费用")
 	}
 	if _, err = s.checkBudgetAdmission(ctx, tx, id); err != nil {
 		return false, err
@@ -768,6 +955,36 @@ WHERE t.id = ?`, id)
 	); err != nil {
 		return nil, err
 	}
+	input, e := s.TaskScanInput(ctx, id)
+	if e != nil {
+		return nil, e
+	}
+	t.ScanInput = input
+	t.GitTarget, e = s.TaskGitTarget(ctx, id)
+	if e != nil {
+		return nil, e
+	}
+	if e := s.loadTaskIdentity(ctx, &t); e != nil {
+		return nil, e
+	}
+	if e := s.loadComponentScan(ctx, &t); e != nil {
+		return nil, e
+	}
+	if e := s.loadComponentOperation(ctx, &t); e != nil {
+		return nil, e
+	}
+	if e := s.loadSDKOperation(ctx, &t); e != nil {
+		return nil, e
+	}
+	var parentID string
+	var parentAttempt int64
+	e = s.db.QueryRowContext(ctx, `SELECT parent_task_id,parent_attempt FROM task_parent_states WHERE task_id=?`, id).Scan(&parentID, &parentAttempt)
+	if e != nil && !errors.Is(e, sql.ErrNoRows) {
+		return nil, e
+	}
+	if e == nil {
+		t.ParentExecution = &contracts.ExecutionRef{TaskID: contracts.TaskID(parentID), Attempt: parentAttempt}
+	}
 	return &t, nil
 }
 
@@ -846,7 +1063,7 @@ func (s *Store) ListProjects(ctx context.Context) ([]Project, error) {
 	rows, err := s.db.QueryContext(ctx, `
 SELECT p.id, p.name, COALESCE(p.created_by,0),
        (SELECT COUNT(*) FROM source_snapshots ss WHERE ss.project_id = p.id),
-       (SELECT COUNT(*) FROM scan_tasks st WHERE st.project_id = p.id),
+       (SELECT COUNT(*) FROM scan_tasks st WHERE st.project_id = p.id AND NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=st.id)),
        p.created_at
 FROM projects p ORDER BY p.id`)
 	if err != nil {
@@ -897,7 +1114,7 @@ SELECT t.id, t.scan_no, t.source_path, t.provider, t.model, COALESCE(t.base_url,
        t.timeout_minutes, t.deep_max_discovery_runs, t.deep_stop_after_no_new, t.validation_mode, t.business_context, t.status, COALESCE(t.current_stage,''), COALESCE(t.progress_json,''), COALESCE(t.agent_id,''),
        COALESCE(t.error_code,''), COALESCE(t.error_message,''), t.finding_count, COALESCE(t.output_path,''),
        COALESCE(t.source_snapshot_id,0), COALESCE(t.model_config_id,0), COALESCE(t.project_id,0), COALESCE(p.name,''),
-       t.created_at, COALESCE(t.started_at,''), COALESCE(t.finished_at,''), t.attempt, t.max_cost_usd, t.workers, t.input_contract_version, t.result_contract_version, t.observation_contract_version, t.progress_diagnostic_json, t.source_content_hash, COALESCE(t.model_snapshot_json,''), COALESCE(t.policy_snapshot_json,''), COALESCE(t.credential_snapshot_encrypted,'')
+       t.created_at, COALESCE(t.started_at,''), COALESCE(t.finished_at,''), t.attempt, t.max_cost_usd, t.workers, t.input_contract_version, t.result_contract_version, t.observation_contract_version, t.progress_diagnostic_json, t.source_content_hash, COALESCE(t.model_snapshot_json,''), COALESCE(t.policy_snapshot_json,''), COALESCE(t.credential_snapshot_encrypted,''),COALESCE((SELECT kind FROM sdk_operations op WHERE op.task_id=t.id),(SELECT 'component_'||kind FROM component_operations op WHERE op.task_id=t.id),'')
 FROM scan_tasks t LEFT JOIN projects p ON p.id = t.project_id`
 	if limit > 0 {
 		query = strings.ReplaceAll(query, "COALESCE(t.progress_json,'')", "''")
@@ -935,7 +1152,7 @@ FROM scan_tasks t LEFT JOIN projects p ON p.id = t.project_id`
 			&t.ID, &t.ScanNo, &t.SourcePath, &t.Provider, &t.Model, &t.BaseURL, &t.ScanMode,
 			&t.IncludePaths, &t.ScanFocus, &t.TimeoutMinutes, &t.DeepMaxDiscoveryRuns, &t.DeepStopAfterNoNew, &t.ValidationMode, &t.BusinessContext, &t.Status, &t.CurrentStage, &t.ProgressJSON, &t.AgentID,
 			&t.ErrorCode, &t.ErrorMessage, &t.FindingCount, &t.OutputPath, &t.SourceSnapshotID,
-			&t.ModelConfigID, &t.ProjectID, &t.ProjectName, &t.CreatedAt, &t.StartedAt, &t.FinishedAt, &t.Attempt, &t.MaxCostUSD, &t.Workers, &t.InputContractVersion, &t.ResultContractVersion, &t.ObservationContractVersion, &t.ProgressDiagnosticJSON, &t.SourceContentHash, &t.ModelSnapshotJSON, &t.PolicySnapshotJSON, &t.CredentialSnapshotEncrypted,
+			&t.ModelConfigID, &t.ProjectID, &t.ProjectName, &t.CreatedAt, &t.StartedAt, &t.FinishedAt, &t.Attempt, &t.MaxCostUSD, &t.Workers, &t.InputContractVersion, &t.ResultContractVersion, &t.ObservationContractVersion, &t.ProgressDiagnosticJSON, &t.SourceContentHash, &t.ModelSnapshotJSON, &t.PolicySnapshotJSON, &t.CredentialSnapshotEncrypted, &t.SDKOperationKind,
 		); err != nil {
 			return nil, err
 		}
@@ -1012,6 +1229,7 @@ type FindingSummary struct {
 }
 
 type FindingFilter struct {
+	ProjectID        *int64
 	Severity         string
 	Status           string
 	Query            string
@@ -1020,93 +1238,12 @@ type FindingFilter struct {
 }
 
 func (s *Store) ListFindingSummaries(ctx context.Context, f FindingFilter) ([]FindingSummary, error) {
-	rows, err := s.db.QueryContext(ctx, `
-SELECT
-  l.id, l.scan_id, l.fingerprint, l.title, l.severity, COALESCE(l.category,''),
-  COALESCE(l.cwe,''), COALESCE(l.file_path,''), l.start_line, l.end_line, l.description,
-  COALESCE(
-    (SELECT f2.status FROM findings f2
-     WHERE f2.fingerprint = l.fingerprint AND f2.status <> 'open'
-     ORDER BY f2.id DESC LIMIT 1),
-    COALESCE(l.status,'open')),
-  COALESCE(l.raw,''),
-  fs.scan_id, fs.created_at, ls.created_at,
-  COALESCE(ls.source_snapshot_id,0), COALESCE(ls.source_path,'')
-FROM findings l
-JOIN scan_tasks ls ON ls.id = l.scan_id
-JOIN (
-  SELECT f.fingerprint, MAX(f.id) AS mid
-  FROM findings f JOIN scan_tasks t ON t.id = f.scan_id
-  WHERE t.status IN ('completed','partial')
-  GROUP BY f.fingerprint
-) mm ON mm.mid = l.id
-JOIN (
-  SELECT f.fingerprint, f.scan_id, f.created_at
-  FROM findings f
-  JOIN (SELECT fingerprint, MIN(id) AS mn FROM findings GROUP BY fingerprint) g
-    ON g.fingerprint = f.fingerprint AND g.mn = f.id
-) fs ON fs.fingerprint = l.fingerprint
-WHERE ls.status IN ('completed','partial')
-ORDER BY
-  CASE l.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END,
-  l.id DESC
-LIMIT 300`)
+	where, args := s.findingConditions(f)
+	rows, err := s.db.QueryContext(ctx, findingCatalog+"SELECT "+findingSelection+" FROM catalog WHERE "+where+" ORDER BY "+severityOrder+",id DESC LIMIT 300", args...)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var out []FindingSummary
-	for rows.Next() {
-		var sum FindingSummary
-		var cwe, rawStr, sourcePath string
-		var start, end sql.NullInt64
-		var conf sql.NullFloat64
-		var snapID int64
-		if err := rows.Scan(
-			&sum.ID, &sum.ScanID, &sum.Fingerprint, &sum.Title, &sum.Severity, &sum.Category, &cwe,
-			&sum.FilePath, &start, &end, &sum.Description, &sum.Status, &rawStr,
-			&sum.FirstSeenScanID, &sum.FirstSeenAt, &sum.LastSeenAt, &snapID, &sourcePath,
-		); err != nil {
-			return nil, err
-		}
-		_ = conf
-		sum.CWE = CWEList(cwe)
-		if start.Valid {
-			v := int(start.Int64)
-			sum.StartLine = &v
-		}
-		if end.Valid {
-			v := int(end.Int64)
-			sum.EndLine = &v
-		}
-		if rawStr != "" {
-			sum.Raw = json.RawMessage(rawStr)
-		}
-		// 来源过滤（快照 id 或路径前缀）
-		if f.SourceSnapshotID > 0 && snapID != f.SourceSnapshotID {
-			continue
-		}
-		if f.SourcePath != "" && !strings.Contains(sourcePath, f.SourcePath) {
-			continue
-		}
-		if f.Severity != "" && sum.Severity != f.Severity {
-			continue
-		}
-		if f.Status != "" && sum.Status != f.Status {
-			continue
-		}
-		if f.Query != "" {
-			q := strings.ToLower(f.Query)
-			if !strings.Contains(strings.ToLower(sum.Title), q) &&
-				!strings.Contains(strings.ToLower(sum.FilePath), q) &&
-				!strings.Contains(strings.ToLower(sum.Category), q) &&
-				!strings.Contains(strings.ToLower(sum.Fingerprint), q) {
-				continue
-			}
-		}
-		out = append(out, sum)
-	}
-	return out, rows.Err()
+	return readFindingSummaries(rows)
 }
 
 // SetFindingStatus 更新单条 finding 状态。仅允许约定状态集。
@@ -1132,7 +1269,7 @@ SELECT id, scan_no, source_path, provider, model, COALESCE(base_url,''), scan_mo
        COALESCE(error_code,''), COALESCE(error_message,''), finding_count, COALESCE(output_path,''),
        COALESCE(source_snapshot_id,0), COALESCE(model_config_id,0), created_at, COALESCE(started_at,''), COALESCE(finished_at,'')
 FROM scan_tasks
-WHERE id < ? AND source_snapshot_id = ?
+WHERE NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id) AND NOT EXISTS(SELECT 1 FROM component_operations op WHERE op.task_id=scan_tasks.id) AND NOT EXISTS(SELECT 1 FROM component_scans cs WHERE cs.task_id=scan_tasks.id) AND id < ? AND source_snapshot_id = ?
   AND status IN ('completed','partial')
 ORDER BY id DESC LIMIT 1`, afterID, snapshotID)
 	} else {
@@ -1142,7 +1279,7 @@ SELECT id, scan_no, source_path, provider, model, COALESCE(base_url,''), scan_mo
        COALESCE(error_code,''), COALESCE(error_message,''), finding_count, COALESCE(output_path,''),
        COALESCE(source_snapshot_id,0), COALESCE(model_config_id,0), created_at, COALESCE(started_at,''), COALESCE(finished_at,'')
 FROM scan_tasks
-WHERE id < ? AND source_path = ?
+WHERE NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id) AND NOT EXISTS(SELECT 1 FROM component_operations op WHERE op.task_id=scan_tasks.id) AND NOT EXISTS(SELECT 1 FROM component_scans cs WHERE cs.task_id=scan_tasks.id) AND id < ? AND source_path = ?
   AND status IN ('completed','partial')
 ORDER BY id DESC LIMIT 1`, afterID, sourcePath)
 	}
@@ -1190,12 +1327,12 @@ ON CONFLICT(archive_sha256) DO NOTHING RETURNING id`,
 	return s.GetSnapshot(ctx, id)
 }
 
-const snapshotCols = `id, original_filename, archive_sha256, content_hash, snapshot_path, file_count, total_size, COALESCE(project_id,0), created_at`
+const snapshotCols = `id, original_filename, archive_sha256, content_hash, snapshot_path, file_count, total_size, COALESCE(project_id,0), created_at,EXISTS(SELECT 1 FROM git_snapshots g WHERE g.snapshot_id=source_snapshots.id)`
 
 func (s *Store) scanSnapshot(row interface{ Scan(...any) error }, snap *SnapshotRow) error {
 	return row.Scan(
 		&snap.ID, &snap.OriginalFilename, &snap.ArchiveSha256, &snap.ContentHash,
-		&snap.SnapshotPath, &snap.FileCount, &snap.TotalSize, &snap.ProjectID, &snap.CreatedAt)
+		&snap.SnapshotPath, &snap.FileCount, &snap.TotalSize, &snap.ProjectID, &snap.CreatedAt, &snap.GitDiff)
 }
 
 func (s *Store) GetSnapshotByArchiveSha256(ctx context.Context, sha string) (*SnapshotRow, error) {
@@ -1220,41 +1357,21 @@ FROM source_snapshots WHERE id = ?`, id)
 	return &snap, nil
 }
 
-// ListSnapshots 全量或按项目过滤，附带每个快照的扫描次数。
+// ListSnapshots preserves the bounded legacy array API. Paged consumers use ListSnapshotsPage.
 func (s *Store) ListSnapshots(ctx context.Context, limit int, projectID int64) ([]SnapshotRow, error) {
 	if limit <= 0 || limit > 500 {
 		limit = 50
 	}
-	query := `
-SELECT ss.id, ss.original_filename, ss.archive_sha256, ss.content_hash, ss.snapshot_path,
-       ss.file_count, ss.total_size, COALESCE(ss.project_id,0),
-       (SELECT COUNT(*) FROM scan_tasks st WHERE st.source_snapshot_id = ss.id),
-       ss.created_at
-FROM source_snapshots ss`
-	args := []any{}
+	f := SnapshotFilter{}
 	if projectID > 0 {
-		query += ` WHERE ss.project_id = ?`
-		args = append(args, projectID)
+		f.ProjectID = &projectID
 	}
-	query += ` ORDER BY ss.id DESC LIMIT ?`
-	args = append(args, limit)
-	rows, err := s.db.QueryContext(ctx, query, args...)
+	where, args := s.snapshotConditions(f)
+	rows, err := s.db.QueryContext(ctx, snapshotCatalog+"SELECT "+snapshotSelection+" FROM catalog WHERE "+where+" ORDER BY id DESC LIMIT ?", append(args, limit)...)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	var out []SnapshotRow
-	for rows.Next() {
-		var snap SnapshotRow
-		if err := rows.Scan(
-			&snap.ID, &snap.OriginalFilename, &snap.ArchiveSha256, &snap.ContentHash,
-			&snap.SnapshotPath, &snap.FileCount, &snap.TotalSize, &snap.ProjectID,
-			&snap.ScanCount, &snap.CreatedAt); err != nil {
-			return nil, err
-		}
-		out = append(out, snap)
-	}
-	return out, rows.Err()
+	return readSnapshots(rows)
 }
 
 // DeleteSnapshot 删除快照记录；仍有扫描引用时拒绝（产物链不断）。
@@ -1327,17 +1444,17 @@ func (s *Store) DashboardStats(ctx context.Context) (*DashboardStats, error) {
 	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM projects`).Scan(&stats.Projects); err != nil {
 		return nil, err
 	}
-	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM scan_tasks`).Scan(&stats.Scans); err != nil {
+	if err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM scan_tasks WHERE NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id) AND NOT EXISTS(SELECT 1 FROM component_operations op WHERE op.task_id=scan_tasks.id)`).Scan(&stats.Scans); err != nil {
 		return nil, err
 	}
 	if err := s.db.QueryRowContext(ctx, `
 SELECT COUNT(*) FROM scan_tasks
-WHERE status IN ('pending','claimed','scanning','cancel_requested')`).Scan(&stats.Running); err != nil {
+WHERE NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id) AND NOT EXISTS(SELECT 1 FROM component_operations op WHERE op.task_id=scan_tasks.id) AND status IN ('pending','claimed','scanning','cancel_requested')`).Scan(&stats.Running); err != nil {
 		return nil, err
 	}
 	if err := s.db.QueryRowContext(ctx, `
 SELECT COUNT(*) FROM scan_tasks
-WHERE status IN ('failed','canceled','timeout')`).Scan(&stats.Failed); err != nil {
+WHERE NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id) AND NOT EXISTS(SELECT 1 FROM component_operations op WHERE op.task_id=scan_tasks.id) AND status IN ('failed','canceled','timeout')`).Scan(&stats.Failed); err != nil {
 		return nil, err
 	}
 	rows, err := s.db.QueryContext(ctx, `
@@ -1389,7 +1506,7 @@ SELECT
   COUNT(*),
   COALESCE(SUM(CASE WHEN status IN ('completed','partial') THEN 1 ELSE 0 END), 0)
 FROM scan_tasks
-WHERE status IN ('completed','partial','failed','canceled','timeout')`).Scan(&totalTerminal, &success); err != nil {
+WHERE NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id) AND NOT EXISTS(SELECT 1 FROM component_operations op WHERE op.task_id=scan_tasks.id) AND status IN ('completed','partial','failed','canceled','timeout')`).Scan(&totalTerminal, &success); err != nil {
 		return nil, err
 	}
 	if totalTerminal > 0 {
@@ -1399,7 +1516,7 @@ WHERE status IN ('completed','partial','failed','canceled','timeout')`).Scan(&to
 	if err := s.db.QueryRowContext(ctx, `
 SELECT AVG(`+s.elapsedSQL()+`)
 FROM scan_tasks
-WHERE status IN ('completed','partial')
+WHERE NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id) AND NOT EXISTS(SELECT 1 FROM component_operations op WHERE op.task_id=scan_tasks.id) AND status IN ('completed','partial')
   AND started_at IS NOT NULL AND finished_at IS NOT NULL`).Scan(&avgSec); err != nil {
 		return nil, err
 	}

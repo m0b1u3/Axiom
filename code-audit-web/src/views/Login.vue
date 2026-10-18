@@ -19,8 +19,8 @@ const form = reactive({ username: "admin", password: "" });
 const auth = useAuth();
 
 async function submit(): Promise<void> {
-  if (!form.username || !form.password) {
-    message.warning("请输入用户名和密码");
+  if (!form.username.trim() || !form.password) {
+    errorMessage.value = "请输入用户名和密码。";
     return;
   }
   if (loading.value) return;

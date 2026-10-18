@@ -1,0 +1,126 @@
+{
+  "plan": {
+    "schemaVersion": 1,
+    "id": "9",
+    "title": "计划合同",
+    "source": {
+      "snapshotId": "7",
+      "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "headCommit": null
+    },
+    "revision": 1,
+    "document": {
+      "components": [
+        {
+          "name": "完整源码",
+          "paths": [
+            "."
+          ]
+        }
+      ]
+    },
+    "origin": "manual",
+    "createdAt": "2026-10-17T00:00:00Z",
+    "updatedAt": "2026-10-17T00:00:00Z"
+  },
+  "operationTaskId": "9007199254740993",
+  "operationStatus": "completed",
+  "operation": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "9007199254740993",
+      "attempt": 2
+    },
+    "planId": "9",
+    "revision": 1,
+    "kind": "normalize",
+    "source": {
+      "snapshotId": "7",
+      "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "headCommit": null
+    },
+    "document": {
+      "components": [
+        {
+          "name": "完整源码",
+          "paths": [
+            "."
+          ]
+        }
+      ]
+    },
+    "acknowledgeUnknownCost": false
+  },
+  "operationError": null,
+  "result": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "9007199254740993",
+      "attempt": 2
+    },
+    "operation": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      },
+      "planId": "9",
+      "revision": 2,
+      "kind": "normalize",
+      "source": {
+        "snapshotId": "7",
+        "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "headCommit": null
+      },
+      "document": {
+        "components": [
+          {
+            "name": "完整源码",
+            "paths": [
+              "."
+            ]
+          }
+        ]
+      },
+      "acknowledgeUnknownCost": false
+    },
+    "sdkVersion": "0.1.25",
+    "document": {
+      "components": [
+        {
+          "name": "完整源码",
+          "paths": [
+            "."
+          ]
+        }
+      ]
+    },
+    "coverage": {
+      "inventoryHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "fileCount": 3,
+      "coveredFileCount": 3,
+      "uncoveredPaths": [],
+      "overlapCount": 0,
+      "overlaps": [],
+      "emptyComponents": [],
+      "duplicateNames": [],
+      "valid": true
+    },
+    "cost": {
+      "state": "known",
+      "estimatedUsd": 0
+    },
+    "native": {
+      "components": [
+        {
+          "name": "完整源码",
+          "paths": [
+            "."
+          ]
+        }
+      ]
+    },
+    "error": null
+  },
+  "resultSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+}

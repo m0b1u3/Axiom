@@ -1,3 +1,4 @@
+import {validate} from "@axiom/contracts";
 import type { ScanTask } from "./scan-task.js";
 import { normalizeFocuses } from "./scan-prompt.js";
 import path from "node:path";
@@ -34,6 +35,9 @@ export function validateScanTask(task: ScanTask): void {
   if (task.validationMode !== undefined && !["default","exploitability"].includes(task.validationMode)) throw new Error("Unsupported validation mode");
   if (task.validationMode === "exploitability" && task.scanMode !== "standard") throw new Error("Independent exploitability validation requires standard mode");
   if (task.businessContext !== undefined && (typeof task.businessContext !== "string" || [...task.businessContext].length > 4000 || task.businessContext.includes("\0") || (task.businessContext.trim() !== "" && task.validationMode !== "exploitability"))) throw new Error("Invalid business context");
+  if(task.gitTarget){validate("GitDiffTarget",task.gitTarget);if(task.scanMode!=="standard"||task.includePaths?.length||!task.sourceContentHash||!task.sourceSnapshotId)throw new Error("Git diff requires frozen source identity and Standard mode");}
+  if(task.componentScan){validate('ComponentScanRequest',task.componentScan,{taskId:String(task.taskId),attempt:task.executionAttempt??1});if(task.componentPlanning||task.sdkOperation||task.gitTarget||task.scanMode!=='standard'||task.includePaths?.length||task.scanFocus?.length||task.scanInput?.knowledge.length||task.parentState||task.maxCostUsd===undefined||task.workers!==undefined||task.componentScan.planVersion.source.contentHash!==task.sourceContentHash||task.componentScan.planVersion.source.snapshotId!==task.sourceSnapshotId)throw new Error('组件审计须使用冻结计划和预算，不能混合其他目标或操作');}
+  if(task.componentPlanning){validate('ComponentPlanningOperation',task.componentPlanning,{taskId:String(task.taskId),attempt:task.executionAttempt??1});if(task.sdkOperation||task.gitTarget||task.scanMode!=='standard'||task.includePaths?.length||task.scanInput?.knowledge.length||task.parentState||task.maxCostUsd!==undefined)throw new Error('组件规划不得混合扫描目标、预算或其他 SDK 操作');}
   validateIncludePaths(task.includePaths);
   if (task.scanFocus !== undefined) normalizeFocuses(task.scanFocus);
   assertNoSecretOnTask(task);
@@ -74,7 +78,18 @@ export function normalizeIncludePath(p: string): string {
 }
 
 export function assertNoSecretOnTask(task: ScanTask): void {
-  const json = JSON.stringify(task).toLowerCase();
+  // Finding JSON is evidence, never a credential source. Validate its envelope
+  // before excluding only that data field from configuration-secret checks.
+  const {sdkOperation,componentPlanning,sdkIdentity,...configuration}=task;
+ if(sdkIdentity)validate("SDKTaskIdentity",sdkIdentity,{taskId:String(task.taskId),attempt:task.executionAttempt??1});
+  if(componentPlanning)validate('ComponentPlanningOperation',componentPlanning,{taskId:String(task.taskId),attempt:task.executionAttempt??1});
+  let checked:unknown=configuration;
+  if(sdkOperation){
+    validate('SDKOperation',sdkOperation,{taskId:String(task.taskId),attempt:task.executionAttempt??1});
+    const {finding,...operationMetadata}=sdkOperation;
+    checked={...configuration,sdkOperation:operationMetadata};
+  }
+  const json = JSON.stringify(checked).toLowerCase();
   for (const needle of SECRET_FIELD_NAMES) {
     if (json.includes(`"${needle}"`)) {
       throw new Error(`ScanTask must not carry secret field matching ${needle}`);

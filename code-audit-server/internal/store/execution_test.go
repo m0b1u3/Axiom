@@ -25,7 +25,7 @@ func pgStore(t *testing.T) *Store {
 		t.Fatal(e)
 	}
 	t.Cleanup(func() { s.Close() })
-	_, e = s.db.ExecContext(context.Background(), "TRUNCATE storage_cleanup_jobs,storage_settings,auth_sessions,login_limits,operation_audits,execution_settings,execution_setting_changes,execution_agents,scan_attempts,findings,scan_tasks,source_snapshots,model_configs,projects,users RESTART IDENTITY CASCADE")
+	_, e = s.db.ExecContext(context.Background(), "TRUNCATE knowledge_versions,knowledge_documents,storage_cleanup_jobs,storage_settings,auth_sessions,login_limits,operation_audits,execution_settings,execution_setting_changes,execution_agents,scan_attempts,findings,scan_tasks,source_snapshots,model_configs,projects,users RESTART IDENTITY CASCADE")
 	if e != nil {
 		t.Fatal(e)
 	}

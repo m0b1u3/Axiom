@@ -3,6 +3,7 @@ package report
 import (
 	"bytes"
 	"html/template"
+	"strings"
 	"time"
 
 	"axiom/code-audit-server/internal/store"
@@ -24,15 +25,19 @@ type Compare struct {
 }
 
 type Model struct {
-	Scan        *store.Task
-	Snapshot    *store.SnapshotRow
-	Compare     *Compare
-	Findings    []store.Finding
-	Counts      SeverityCounts
-	GeneratedAt string
+	ComponentScope []string
+	Scan           *store.Task
+	Snapshot       *store.SnapshotRow
+	Compare        *Compare
+	Findings       []store.Finding
+	Counts         SeverityCounts
+	GeneratedAt    string
 }
 
 func Build(scan *store.Task, findings []store.Finding, snap *store.SnapshotRow, cmp *Compare) (string, error) {
+	if cmp == nil {
+		cmp = &Compare{}
+	}
 	m := Model{
 		Scan:        scan,
 		Snapshot:    snap,
@@ -40,6 +45,16 @@ func Build(scan *store.Task, findings []store.Finding, snap *store.SnapshotRow, 
 		Findings:    findings,
 		Counts:      tally(findings),
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+	}
+	if scan.ComponentScan != nil {
+		for _, i := range scan.ComponentScan.SelectedIndices {
+			c := scan.ComponentScan.PlanVersion.Document.Components[i]
+			paths := []string{}
+			for _, p := range c.Paths {
+				paths = append(paths, string(p))
+			}
+			m.ComponentScope = append(m.ComponentScope, c.Name+" · "+strings.Join(paths, ", "))
+		}
 	}
 	var buf bytes.Buffer
 	if err := templateText.Execute(&buf, m); err != nil {
@@ -125,6 +140,8 @@ code { background: #f5f7fa; padding: 1px 4px; border-radius: 3px; }
     <tr><td>引擎</td><td>codex-security</td></tr>
     <tr><td>模型</td><td>{{.Scan.Provider}} / {{.Scan.Model}}</td></tr>
     <tr><td>扫描模式</td><td>{{.Scan.ScanMode}}</td></tr>
+    <tr><td>执行轮次</td><td>{{.Scan.Attempt}}</td></tr>
+    {{if .Scan.ComponentScan}}<tr><td>组件计划 / 版本</td><td>#{{.Scan.ComponentScan.PlanVersion.PlanID}} / v{{.Scan.ComponentScan.PlanVersion.Version}}</td></tr><tr><td>冻结版本 SHA-256</td><td><code>{{.Scan.ComponentScan.PlanVersion.SHA256}}</code></td></tr><tr><td>本轮组件范围</td><td>{{range .ComponentScope}}<div>{{.}}</div>{{end}}</td></tr><tr><td>范围与费用说明</td><td>此报告只包含本次执行选中的组件。历史已完成组件保留在原执行中；未列出的发现不能视为已修复，不能推定全历史漏洞已去重。原生跨组件匹配可能产生未知费用，不受组件扫描预算上限限制。</td></tr>{{end}}
     <tr><td>任务状态</td><td>{{.Scan.Status}}</td></tr>
     <tr><td>创建时间</td><td>{{.Scan.CreatedAt}}</td></tr>
     <tr><td>开始时间</td><td>{{.Scan.StartedAt}}</td></tr>

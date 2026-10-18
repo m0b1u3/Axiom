@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "sequence": 1,
+  "occurredAt": "2026-10-15T08:00:00Z",
+  "source": "observer_error",
+  "kind": "observer_failed",
+  "observer": "onProgress",
+  "message": "合成目标变化警告",
+  "error": {
+    "name": "Error",
+    "code": null,
+    "message": "合成观察器失败"
+  },
+  "details": {
+    "kind": "target_changed"
+  },
+  "truncated": false
+}

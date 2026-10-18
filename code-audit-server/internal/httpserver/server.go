@@ -43,6 +43,13 @@ type Server struct {
 
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/v1/sdk-identities", s.withAuth(s.listSDKIdentities))
+	mux.HandleFunc("POST /api/v1/sdk-identities", s.withAuth(s.createSDKIdentity))
+	mux.HandleFunc("GET /api/v1/sdk-identities/{id}/operations", s.withAuth(s.sdkIdentityOperations))
+	mux.HandleFunc("POST /api/v1/sdk-identities/{id}/operations", s.withAuth(s.startSDKIdentityOperation))
+	mux.HandleFunc("POST /api/v1/sdk-identity-operations/{id}/cancel", s.withAuth(s.cancelSDKIdentityOperation))
+	mux.HandleFunc("POST /api/internal/sdk-identities/claim", s.agentOnly(s.claimSDKIdentity))
+	mux.HandleFunc("POST /api/internal/sdk-identities/report", s.agentOnly(s.reportSDKIdentity))
 	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("GET /api/v1/storage", s.withAuth(s.readStorage))
 	mux.HandleFunc("PUT /api/v1/storage/policy", s.withAuth(s.updateStorage))
@@ -67,11 +74,29 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/settings/execution", s.withAuth(s.queueSettings))
 	mux.HandleFunc("PUT /api/v1/settings/execution", s.withAuth(s.saveQueueSettings))
 	mux.HandleFunc("GET /api/v1/scans/{id}/coverage", s.withAuth(s.scanCoverage))
+	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/sdk-sessions", s.withAuth(s.sdkSessions))
 	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/result", s.withAuth(s.attemptResult))
+	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/evidence-graph", s.withAuth(s.findingEvidenceGraph))
 	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/artifacts", s.withAuth(s.resultArtifact))
+	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/sdk-cost-estimate", s.withAuth(s.sdkCostEstimate))
+	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/sdk-history-links", s.withAuth(s.sdkHistoryLinks))
 	mux.HandleFunc("POST /api/internal/executions/claim", s.agentOnly(s.claimExecution))
 	mux.HandleFunc("POST /api/internal/executions/heartbeat", s.agentOnly(s.heartbeatExecution))
 	mux.HandleFunc("POST /api/internal/executions/complete", s.agentOnly(s.completeExecution))
+	mux.HandleFunc("GET /api/v1/component-plans", s.withAuth(s.listComponentPlans))
+	mux.HandleFunc("POST /api/v1/component-plans", s.withAuth(s.createComponentPlan))
+	mux.HandleFunc("GET /api/v1/component-plans/{id}", s.withAuth(s.componentPlan))
+	mux.HandleFunc("PUT /api/v1/component-plans/{id}", s.withAuth(s.updateComponentPlan))
+	mux.HandleFunc("POST /api/v1/component-plans/{id}/scans", s.withAuth(s.createComponentScan))
+	mux.HandleFunc("GET /api/v1/scans/{id}/component-executions", s.withAuth(s.componentExecutions))
+	mux.HandleFunc("POST /api/v1/scans/{id}/component-executions/retry", s.withAuth(s.retryComponentScan))
+	mux.HandleFunc("POST /api/v1/component-plans/{id}/operations", s.withAuth(s.createComponentOperation))
+	mux.HandleFunc("POST /api/v1/component-plans/{id}/apply-suggestion", s.withAuth(s.applyComponentSuggestion))
+	mux.HandleFunc("POST /api/v1/component-plans/{id}/freeze", s.withAuth(s.freezeComponentPlan))
+	mux.HandleFunc("GET /api/v1/component-plans/{id}/versions", s.withAuth(s.componentVersions))
+	mux.HandleFunc("GET /api/v1/component-plans/{id}/versions/{version}", s.withAuth(s.componentVersion))
+	mux.HandleFunc("POST /api/v1/scans/{id}/sdk-operations", s.withAuth(s.createSDKOperation))
+	mux.HandleFunc("GET /api/v1/scans/{id}/sdk-operations", s.withAuth(s.listSDKOperations))
 	mux.HandleFunc("GET /api/v1/scans/{id}/attempts", s.withAuth(s.scanAttempts))
 	mux.HandleFunc("POST /api/v1/auth/login", s.login)
 	mux.HandleFunc("GET /api/v1/auth/me", s.withAuth(s.me))
@@ -90,6 +115,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/v1/scans", s.withAuth(s.createScan))
 	mux.HandleFunc("GET /api/v1/scans", s.withAuth(s.listScans))
 	mux.HandleFunc("GET /api/v1/scans/{id}", s.withAuth(s.getScan))
+	mux.HandleFunc("GET /api/v1/scans/{id}/parent-state", s.withAuth(s.scanParentState))
 	mux.HandleFunc("GET /api/v1/scans/{id}/budget", s.withAuth(s.taskBudget))
 	mux.HandleFunc("PUT /api/v1/scans/{id}/budget", s.withAuth(s.updateTaskBudget))
 	mux.HandleFunc("PUT /api/v1/scans/{id}/budget/attempts/{attempt}", s.withAuth(s.reconcileTaskCost))
@@ -100,8 +126,18 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/scans/{id}/report.pdf", s.withAuth(s.exportReportPDF))
 	mux.HandleFunc("POST /api/v1/scans/{id}/cancel", s.withAuth(s.cancelScan))
 	mux.HandleFunc("POST /api/v1/scans/{id}/retry", s.withAuth(s.retryScan))
+	mux.HandleFunc("GET /api/v1/scans/{id}/recovery", s.withAuth(s.scanRecovery))
+	mux.HandleFunc("POST /api/v1/scans/{id}/recovery", s.withAuth(s.recoverScan))
 	mux.HandleFunc("DELETE /api/v1/scans/{id}", s.withAuth(s.deleteScan))
+	mux.HandleFunc("POST /api/v1/git-snapshots", s.withAuth(s.uploadGitSnapshot))
+	mux.HandleFunc("GET /api/v1/snapshots/{id}/git-diff", s.withAuth(s.gitDiffPreview))
+	mux.HandleFunc("GET /api/v1/snapshots/{id}/git-diff/files/{file}", s.withAuth(s.gitDiffContent))
 	mux.HandleFunc("POST /api/v1/uploads", s.withAuth(s.uploadSnapshot))
+	mux.HandleFunc("GET /api/v1/knowledge", s.withAuth(s.listKnowledge))
+	mux.HandleFunc("GET /api/v1/knowledge/versions/{id}", s.withAuth(s.knowledgeVersion))
+	mux.HandleFunc("POST /api/v1/knowledge", s.withAuth(s.saveKnowledge))
+	mux.HandleFunc("POST /api/v1/knowledge/{id}/versions", s.withAuth(s.saveKnowledge))
+	mux.HandleFunc("PUT /api/v1/knowledge/{id}/archive", s.withAuth(s.archiveKnowledge))
 	mux.HandleFunc("GET /api/v1/snapshots", s.withAuth(s.listSnapshots))
 	mux.HandleFunc("DELETE /api/v1/snapshots/{id}", s.withAuth(s.deleteSnapshot))
 	mux.HandleFunc("PUT /api/v1/snapshots/{id}/project", s.withAuth(s.assignSnapshotProject))
@@ -185,6 +221,22 @@ func (s *Server) createScan(w http.ResponseWriter, r *http.Request, _ *store.Use
 	if err != nil {
 		httputil.Error(w, 400, 40000, err.Error())
 		return
+	}
+	if body.Operation == "preflight" {
+		if input.SourceSnapshotID <= 0 {
+			httputil.Error(w, 400, 40000, "SDK 预检需要先上传不可变代码快照")
+			return
+		}
+		input.SDKOperation = newSDKPreflight(nil)
+		input.ScanNo = "PREFLIGHT-" + strings.TrimPrefix(input.ScanNo, "SCAN-")
+		input.MaxTotalCostUSD = nil
+		input.InputContractVersion = contracts.SDKOperationInputVersion
+		if input.GitTarget != nil {
+			input.InputContractVersion = contracts.GitDiffInputVersion
+		}
+		if input.ScanInput == nil {
+			input.ScanInput = &contracts.ScanInput{SchemaVersion: 1, Knowledge: []contracts.KnowledgeDocument{}}
+		}
 	}
 	id, err := s.Store.InsertPending(r.Context(), input)
 	if err != nil {
@@ -372,6 +424,13 @@ func (s *Server) dashboard(w http.ResponseWriter, r *http.Request, _ *store.User
 		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
 		return
 	}
+	ordinary := []store.Task{}
+	for _, task := range scans {
+		if task.SDKOperationKind == "" {
+			ordinary = append(ordinary, task)
+		}
+	}
+	scans = ordinary
 	recent := scans
 	if len(recent) > 5 {
 		recent = recent[:5]
@@ -514,6 +573,7 @@ func (s *Server) listModelConfigs(w http.ResponseWriter, r *http.Request, _ *sto
 	// 编辑视图需要看到「Key 是否已配置」：填充掩码提示（sk-…尾 4 位），密文不出进程。
 	for i := range items {
 		if items[i].ApiKeyEncrypted == "" {
+			items[i].SDKIdentityOnly = true
 			continue
 		}
 		if key, err := cryptokey.Decrypt(items[i].ApiKeyEncrypted); err == nil {
@@ -614,16 +674,17 @@ func friendlyHTTPStatus(status int, modelsURL string) string {
 
 func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *store.User) {
 	var body struct {
-		Name       string `json:"name"`
-		Provider   string `json:"provider"`
-		BaseURL    string `json:"baseUrl"`
-		Model      string `json:"model"`
-		ApiKey     string `json:"apiKey"`
-		Remark     string `json:"remark"`
-		WebsiteURL string `json:"websiteUrl"`
-		WireAPI    string `json:"wireApi"`
+		SDKIdentityOnly bool   `json:"sdkIdentityOnly"`
+		Name            string `json:"name"`
+		Provider        string `json:"provider"`
+		BaseURL         string `json:"baseUrl"`
+		Model           string `json:"model"`
+		ApiKey          string `json:"apiKey"`
+		Remark          string `json:"remark"`
+		WebsiteURL      string `json:"websiteUrl"`
+		WireAPI         string `json:"wireApi"`
 	}
-	if err := httputil.Decode(r, &body); err != nil || strings.TrimSpace(body.Name) == "" || body.ApiKey == "" {
+	if err := httputil.Decode(r, &body); err != nil || strings.TrimSpace(body.Name) == "" || (body.ApiKey == "" && !body.SDKIdentityOnly) {
 		httputil.Error(w, http.StatusBadRequest, 40000, "name and apiKey required")
 		return
 	}
@@ -649,12 +710,21 @@ func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		httputil.Error(w, http.StatusBadRequest, 40006, "wireApi must be responses or chat")
 		return
 	}
-	enc, err := cryptokey.Encrypt(body.ApiKey)
+	if body.SDKIdentityOnly && (body.ApiKey != "" || body.Provider != "openai" || (body.BaseURL != "" && normalizeModelBaseURL(body.BaseURL) != "https://api.openai.com/v1") || (body.WireAPI != "" && body.WireAPI != "responses")) {
+		httputil.Error(w, 400, 40000, "仅原生 OpenAI Responses 模型可由 SDK 执行身份提供凭据")
+		return
+	}
+	enc := ""
+	var err error
+	if !body.SDKIdentityOnly {
+		enc, err = cryptokey.Encrypt(body.ApiKey)
+	}
 	if err != nil {
 		httputil.Error(w, http.StatusInternalServerError, 50000, "encrypt failed")
 		return
 	}
 	row, err := s.Store.CreateModelConfig(r.Context(), store.ModelConfigRow{
+		SDKIdentityOnly: body.SDKIdentityOnly,
 		Name:            strings.TrimSpace(body.Name),
 		Provider:        strings.TrimSpace(body.Provider),
 		BaseURL:         normalizeModelBaseURL(body.BaseURL),
@@ -749,8 +819,12 @@ func (s *Server) testModelConfig(w http.ResponseWriter, r *http.Request, _ *stor
 		return
 	}
 	row, err := s.Store.GetModelConfig(r.Context(), id)
-	if err != nil || row.ApiKeyEncrypted == "" {
+	if err != nil {
 		httputil.Error(w, http.StatusNotFound, 40002, "model config not found")
+		return
+	}
+	if row.ApiKeyEncrypted == "" {
+		httputil.Error(w, http.StatusConflict, 40900, "此模型通过 SDK 执行身份提供凭据，请在 Web 身份管理中查询绑定节点的账户状态")
 		return
 	}
 	apiKey, err := cryptokey.Decrypt(row.ApiKeyEncrypted)
@@ -872,21 +946,24 @@ func (s *Server) fetchProviderModels(w http.ResponseWriter, r *http.Request, _ *
 }
 
 func (s *Server) listFindingSummaries(w http.ResponseWriter, r *http.Request, _ *store.User) {
-	q := r.URL.Query()
-	snapID, _ := strconv.ParseInt(q.Get("sourceSnapshotId"), 10, 64)
-	items, err := s.Store.ListFindingSummaries(r.Context(), store.FindingFilter{
-		Severity:         q.Get("severity"),
-		Status:           q.Get("status"),
-		Query:            q.Get("q"),
-		SourceSnapshotID: snapID,
-		SourcePath:       q.Get("sourcePath"),
-	})
+	f, page, paged, err := findingCatalogQuery(r.URL.Query())
 	if err != nil {
-		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
+		httputil.Error(w, 400, 40000, err.Error())
 		return
 	}
-	if items == nil {
-		items = []store.FindingSummary{}
+	if paged {
+		result, err := s.Store.ListFindingSummariesPage(r.Context(), f, page)
+		if err != nil {
+			httputil.Error(w, 500, 50000, err.Error())
+			return
+		}
+		httputil.OK(w, result)
+		return
+	}
+	items, err := s.Store.ListFindingSummaries(r.Context(), f)
+	if err != nil {
+		httputil.Error(w, 500, 50000, err.Error())
+		return
 	}
 	httputil.OK(w, items)
 }
@@ -927,6 +1004,10 @@ func (s *Server) compareScan(w http.ResponseWriter, r *http.Request, _ *store.Us
 		httputil.Error(w, http.StatusNotFound, 40002, "scan not found")
 		return
 	}
+	if task.SDKOperation != nil || task.ComponentPlanning != nil {
+		httputil.Error(w, 409, 40900, "SDK 独立操作没有扫描对比或扫描报告，请查看其原始操作报告")
+		return
+	}
 	cmp, err := s.buildCompare(r.Context(), task)
 	if err != nil {
 		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
@@ -941,6 +1022,9 @@ func (s *Server) compareScan(w http.ResponseWriter, r *http.Request, _ *store.Us
 }
 
 func (s *Server) buildCompare(ctx context.Context, task *store.Task) (*report.Compare, error) {
+	if task.ComponentScan != nil {
+		return &report.Compare{Added: []store.Finding{}, Removed: []store.Finding{}}, nil
+	}
 	cur, err := s.Store.ListFindings(ctx, task.ID)
 	if err != nil {
 		return nil, err
@@ -988,18 +1072,33 @@ func flat(from, to map[string]store.Finding) []store.Finding {
 }
 
 func (s *Server) listSnapshots(w http.ResponseWriter, r *http.Request, _ *store.User) {
-	items, err := s.Store.ListSnapshots(r.Context(), 200, queryInt64(r, "projectId"))
+	f, page, paged, err := snapshotCatalogQuery(r.URL.Query())
 	if err != nil {
-		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
+		httputil.Error(w, 400, 40000, err.Error())
 		return
 	}
-	if items == nil {
-		items = []store.SnapshotRow{}
+	if paged {
+		result, err := s.Store.ListSnapshotsPage(r.Context(), f, page)
+		if err != nil {
+			httputil.Error(w, 500, 50000, err.Error())
+			return
+		}
+		httputil.OK(w, result)
+		return
+	}
+	// Historical projectId=0 means all projects on the array endpoint.
+	projectID := int64(0)
+	if f.ProjectID != nil {
+		projectID = *f.ProjectID
+	}
+	items, err := s.Store.ListSnapshots(r.Context(), 200, projectID)
+	if err != nil {
+		httputil.Error(w, 500, 50000, err.Error())
+		return
 	}
 	httputil.OK(w, items)
 }
 
-// deleteSnapshot 删除未被扫描引用的快照（记录 + 解压目录）。
 func (s *Server) deleteSnapshot(w http.ResponseWriter, r *http.Request, u *store.User) {
 	s.deleteManaged(w, r, u, "snapshot")
 }
@@ -1154,14 +1253,8 @@ func (s *Server) exportReportPDF(w http.ResponseWriter, r *http.Request, _ *stor
 		httputil.Error(w, http.StatusBadRequest, 40000, "invalid id")
 		return
 	}
-	task, err := s.Store.Get(r.Context(), id)
-	if err != nil {
-		httputil.Error(w, http.StatusNotFound, 40002, "scan not found")
-		return
-	}
-	findings, err := s.Store.ListFindings(r.Context(), id)
-	if err != nil {
-		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
+	task, findings, ok := s.reportInput(w, r, id)
+	if !ok {
 		return
 	}
 	var snap *store.SnapshotRow
@@ -1170,10 +1263,14 @@ func (s *Server) exportReportPDF(w http.ResponseWriter, r *http.Request, _ *stor
 			snap = row
 		}
 	}
-	cmp, err := s.buildCompare(r.Context(), task)
-	if err != nil {
-		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
-		return
+	var cmp *report.Compare
+	var err error
+	if !r.URL.Query().Has("attempt") {
+		cmp, err = s.buildCompare(r.Context(), task)
+		if err != nil {
+			httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
+			return
+		}
 	}
 	html, err := report.Build(task, findings, snap, cmp)
 	if err != nil {
@@ -1196,14 +1293,8 @@ func (s *Server) exportReport(w http.ResponseWriter, r *http.Request, _ *store.U
 		httputil.Error(w, http.StatusBadRequest, 40000, "invalid id")
 		return
 	}
-	task, err := s.Store.Get(r.Context(), id)
-	if err != nil {
-		httputil.Error(w, http.StatusNotFound, 40002, "scan not found")
-		return
-	}
-	findings, err := s.Store.ListFindings(r.Context(), id)
-	if err != nil {
-		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
+	task, findings, ok := s.reportInput(w, r, id)
+	if !ok {
 		return
 	}
 	var snap *store.SnapshotRow
@@ -1212,10 +1303,14 @@ func (s *Server) exportReport(w http.ResponseWriter, r *http.Request, _ *store.U
 			snap = row
 		}
 	}
-	cmp, err := s.buildCompare(r.Context(), task)
-	if err != nil {
-		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
-		return
+	var cmp *report.Compare
+	var err error
+	if !r.URL.Query().Has("attempt") {
+		cmp, err = s.buildCompare(r.Context(), task)
+		if err != nil {
+			httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
+			return
+		}
 	}
 	html, err := report.Build(task, findings, snap, cmp)
 	if err != nil {

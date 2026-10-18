@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/git-diff-target.schema.json",
+  "title": "GitDiffTarget",
+  "$ref": "#/$defs/GitDiffTarget",
+  "$defs": {
+    "GitDiffTarget": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "kind": {
+          "type": "string",
+          "const": "refs"
+        },
+        "objectFormat": {
+          "type": "string",
+          "const": "sha1"
+        },
+        "baseCommit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "headCommit": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "baseTree": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "headTree": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40}$"
+        },
+        "diffSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "headContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "kind",
+        "objectFormat",
+        "baseCommit",
+        "headCommit",
+        "baseTree",
+        "headTree",
+        "diffSha256",
+        "headContentHash"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

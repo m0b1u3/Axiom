@@ -11,6 +11,12 @@ import (
 // Lease is local execution state, not a database row. Modern tasks retain the
 // validated Assignment; the legacy wire DTO is used only by the old adapter.
 type Lease struct {
+	SDKIdentity                *contracts.SDKTaskIdentity
+	ComponentScan              *contracts.ComponentScanRequest
+	ComponentPlanning          *contracts.ComponentPlanningOperation
+	GitDiff                    *contracts.GitDiffAssignment
+	SDKOperation               *contracts.SDKOperation
+	ScanInput                  *contracts.ScanInputAssignment
 	Execution                  contracts.ExecutionRef
 	Assignment                 *contracts.ExecutionAssignment
 	Legacy                     *control.LegacyLease

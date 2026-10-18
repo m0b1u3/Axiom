@@ -1,3 +1,10 @@
+import {selectedSDKAuth} from "../runtime/sdk-identity.js";
+import {sdkScanTarget} from '../runtime/git-target.js';
+import {restoreSdkParentState,exportSdkParentState} from '../runtime/sdk-parent-state.js';
+import {SDKSessionJournal} from '../runtime/sdk-session-journal.js';
+import {SDKDiagnosticTracker} from '../runtime/sdk-diagnostics.js';
+import {sdkScanInputOptions} from '../contract/sdk-scan-input.js';
+import {sdkLifecycleCallbacks} from '../runtime/sdk-lifecycle.js';
 import {ContractProgressSink} from '../runtime/contract-progress.js';
 import {publishResult} from "../artifact/result-publisher.js";
 import { AuditCheckpoints } from "../runtime/audit-checkpoints.js";
@@ -53,6 +60,9 @@ export class CodexSecurityEngine implements AuditEngine {
 
   async scan(task: ScanTask, signal?: AbortSignal): Promise<ScanResult> {
     validateScanTask(task);
+    await restoreSdkParentState(task);
+    const advancedOptions = await sdkScanInputOptions(task);
+    const target = await sdkScanTarget(task,signal);
     const deepOptions = deepScanOptions(task);
     const validationOptions = exploitabilityOptions(task);
     assertCredentialPresent(task);
@@ -94,7 +104,10 @@ export class CodexSecurityEngine implements AuditEngine {
       overrides !== undefined ? { codexOverrides: overrides } : {},
     );
 
+    let parentExportScanId:string|undefined;
     let lastObservedCost: Record<string,unknown>|undefined;
+    const diagnostics=task.resultSchemaVersion&&task.executionAttempt?new SDKDiagnosticTracker({taskId:String(task.taskId),attempt:task.executionAttempt},task.outputPath):null;
+    const sessions=task.resultSchemaVersion&&task.executionAttempt?new SDKSessionJournal({taskId:String(task.taskId),attempt:task.executionAttempt},task.outputPath):null;
     try {
       return await withIsolatedScanEnvironment(task, async () => {
         const stopProgressObserver = observeSdkProgress(task.outputPath,p=>sink instanceof ContractProgressSink?sink.observation(p):sink.progress({phase:p.phase,...(p.filesTotal!==null?{filesTotal:p.filesTotal}:{})}),message=>observe(sink.warning(message)));
@@ -108,26 +121,28 @@ export class CodexSecurityEngine implements AuditEngine {
             process.stderr.write(`scan-activity released ${released} stale workbench scan(s)\n`);
           }
           const sdkResult = await security.run(task.sourcePath, {
+            ...advancedOptions,
             outputDir: rawDir,
             // 同一 taskId 重试时 raw/ 里还留着上次取消的产物；SDK 默认拒绝覆盖。
             // archiveExisting 把旧结果挪到归档目录再开新扫（对应 CLI --archive-existing）。
             archiveExisting: true,
-            scanPrompt: [buildScanPrompt(task.scanFocus),workspace.prompt,validationOptions.scanPrompt].filter(Boolean).join("\n\n"),
+            scanPrompt: [buildScanPrompt(task.scanFocus),workspace.prompt,validationOptions.scanPrompt,advancedOptions.scanPrompt].filter(Boolean).join("\n\n"),
             ...(validationOptions.validationPrompt ? {validationPrompt:validationOptions.validationPrompt}:{}),
             mode: task.scanMode,
             ...deepOptions,
             // 路径子集扫描：白名单透传 SDK ScanTarget（readonly string[] 形态）。
-            ...(task.includePaths !== undefined && task.includePaths.length > 0
-              ? { target: task.includePaths.map(normalizeIncludePath) }
-              : {}),
+            ...(target !== undefined ? {target} : {}),
             ...(task.mock
               ? { mock: true }
               : nativeOpenAI(task)
-                ? { auth: "api-key" as const }
+                ? { auth: selectedSDKAuth(task) }
                 : {}),
             ...(task.maxCostUsd !== undefined ? { maxCostUsd: task.maxCostUsd } : {}),
             ...(task.scanMode === "deep" && task.workers !== undefined ? { workers: task.workers } : {}),
             ...(signal !== undefined ? { signal } : {}),
+            ...sdkLifecycleCallbacks((state,message,warning)=>{
+              observe(sink instanceof ContractProgressSink ? sink.lifecycle(state,message,warning) : warning ? sink.warning(message) : sink.activity(message));
+            }),
             onProgress: (progress) => {
               observe(sink.progress(progress));
               process.stderr.write(
@@ -142,7 +157,10 @@ export class CodexSecurityEngine implements AuditEngine {
             },
             onDeepProgress: (progress) => { observe(sink.deepProgress(progress)); },
             onReconnect: (attempt, maximum, details) => { observe(sink.reconnect(attempt, maximum, details)); },
-            onObserverError: (name) => { observe(sink.warning(`进度观察器 ${name} 出错，部分状态可能暂不可用`)); },
+            onObserverError: (name,error) => {
+              if(diagnostics){const entry=diagnostics.observer(name,error);observe(sink instanceof ContractProgressSink?sink.sdkDiagnostic(diagnostics.snapshot(),entry):sink.warning(entry.message));}
+              else observe(sink.warning(`进度观察器 ${name} 出错，部分状态可能暂不可用`));
+            },
             onWorkerStatus: (status) => {
               observe(sink.workerStatus(status));
               process.stderr.write(`scan-worker ${JSON.stringify(status)}\n`);
@@ -154,11 +172,12 @@ export class CodexSecurityEngine implements AuditEngine {
                 `scan-cost usd=${cost.estimatedUsd} in=${cost.inputTokens} out=${cost.outputTokens}\n`,
               );
             },
-            onWarning: (warning) => {
-              observe(sink.warning(warning));
-              process.stderr.write(`scan-warning ${warning}\n`);
+            onWarning: (warning,details) => {
+              if(diagnostics){const entry=diagnostics.warning(warning,details);observe(sink instanceof ContractProgressSink?sink.sdkDiagnostic(diagnostics.snapshot(),entry):sink.warning(entry.message));process.stderr.write(`scan-warning ${entry.message}\n`);}
+              else observe(sink.warning(warning));
             },
             onSessionEvent: (event) => {
+              sessions?.record(event);
               workspace.ensureTemp();
               checkpoints.session(event);
               if(sink instanceof ContractProgressSink){observe(sink.session(event));return;}
@@ -182,20 +201,29 @@ export class CodexSecurityEngine implements AuditEngine {
             normalizedResultPath: SCANNER_LAYOUT.normalizedResult,
             ...(sdkSnapshot?{sdkSnapshot}:{}),
           });
+          if(["completed","partial"].includes(converted.status))parentExportScanId=sdkResult.manifest.scan.id;
           if(lastObservedCost)converted.lastObservedCost=lastObservedCost;
+          if(diagnostics)converted.sdkDiagnostics=diagnostics.snapshot();
+          if(sessions)converted.sdkSession=sessions.close();
           await attachValidationReview(task,converted,rawDir);
           checkpoints.attach(converted);
+          if(sink instanceof ContractProgressSink)await sink.drain();
+          await diagnostics?.drain();
           await writeNormalized(task, converted);
           await finishProgress(converted);
           return converted;
         } catch (error) {
           const result = await salvageOrFail(task, error, startedAt, rawDir);
+          if(diagnostics)result.sdkDiagnostics=diagnostics.snapshot();
+          if(sessions)result.sdkSession=sessions.close();
           if(lastObservedCost){result.lastObservedCost=lastObservedCost;if(!task.resultSchemaVersion && !result.cost)result.cost={estimatedUsd:lastObservedCost.estimatedUsd as number,inputTokens:lastObservedCost.inputTokens as number,outputTokens:lastObservedCost.outputTokens as number};}
           // Interrupted/recovered artifacts and callbacks are partial observations.
           // The final heartbeat retains their cost; the portable result only carries
           // a final SDK-returned estimate. Keep the historical reader unchanged.
           if(task.resultSchemaVersion)delete result.cost;
           checkpoints.attach(result);
+          if(sink instanceof ContractProgressSink)await sink.drain();
+          await diagnostics?.drain();
           await writeNormalized(task, result);
           await finishProgress(result);
           return result;
@@ -207,7 +235,9 @@ export class CodexSecurityEngine implements AuditEngine {
         }
       });
     } finally {
+      sessions?.close();
       await security.close();
+      if(parentExportScanId)await exportSdkParentState(task,parentExportScanId).catch(()=>{process.stderr.write("scan-warning parent SDK state snapshot unavailable; scan result retained\n");});
     }
   }
 }
@@ -317,7 +347,7 @@ function showReasoning(): boolean {
 }
 
 function assertCredentialPresent(task: ScanTask): void {
-  if (task.mock) return;
+  if (task.mock || task.sdkIdentity?.identity.kind==='chatgpt') return;
   const envName = task.credentialEnv ?? requiredCredentialEnv(task.provider);
   if (!process.env[envName]) {
     throw new Error(`Missing ${envName} for provider ${task.provider}`);
@@ -332,3 +362,5 @@ async function writeNormalized(task: ScanTask, result: ScanResult): Promise<void
 }
 
 export { SCAN_EXIT_CODES };
+
+export {maybeStartChatShim,ensureModelCatalog};

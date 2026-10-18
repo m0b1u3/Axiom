@@ -1,0 +1,410 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/component-scan.schema.json",
+  "$defs": {
+    "ComponentScanRequest": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "planVersion": {
+          "$ref": "https://axiom.invalid/contracts/v1/component-planning.schema.json#/$defs/ComponentPlanVersion"
+        },
+        "selectedIndices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 127
+          },
+          "minItems": 1,
+          "maxItems": 128,
+          "uniqueItems": true
+        },
+        "workers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "componentLimitMicros": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "grantMicros": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "acknowledgeMatchingCost": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "planVersion",
+        "selectedIndices",
+        "workers",
+        "componentLimitMicros",
+        "grantMicros",
+        "acknowledgeMatchingCost"
+      ],
+      "additionalProperties": false
+    },
+    "ComponentScanReceipt": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "running",
+            "completed",
+            "partial",
+            "failed",
+            "canceled"
+          ]
+        },
+        "allocatedMicros": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "observedMicros": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finalMicros": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "findingCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "scanId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resultArtifact": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ArtifactRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ContractError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "activity": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "index",
+        "status",
+        "allocatedMicros",
+        "observedMicros",
+        "finalMicros",
+        "findingCount",
+        "scanId",
+        "resultArtifact",
+        "error",
+        "phase",
+        "activity"
+      ],
+      "additionalProperties": false
+    },
+    "ComponentScanMatching": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_started",
+            "running",
+            "completed",
+            "incomplete"
+          ]
+        },
+        "costState": {
+          "type": "string",
+          "enum": [
+            "known",
+            "unknown"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 2048
+        },
+        "native": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/JsonObject"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "status",
+        "costState",
+        "reason",
+        "native"
+      ],
+      "additionalProperties": false
+    },
+    "ComponentScanSnapshot": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "planId": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/TaskId"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "versionSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "source": {
+          "$ref": "https://axiom.invalid/contracts/v1/component-planning.schema.json#/$defs/ComponentSource"
+        },
+        "phase": {
+          "type": "string",
+          "enum": [
+            "preparing",
+            "scanning",
+            "matching",
+            "finished"
+          ]
+        },
+        "observedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "grantMicros": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "reservedMicros": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "observedMicros": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/component-scan.schema.json#/$defs/ComponentScanReceipt"
+          },
+          "minItems": 1,
+          "maxItems": 128
+        },
+        "matching": {
+          "$ref": "https://axiom.invalid/contracts/v1/component-scan.schema.json#/$defs/ComponentScanMatching"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "planId",
+        "version",
+        "versionSha256",
+        "source",
+        "phase",
+        "observedAt",
+        "grantMicros",
+        "reservedMicros",
+        "observedMicros",
+        "components",
+        "matching"
+      ],
+      "additionalProperties": false
+    },
+    "ComponentScanResult": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.1.25"
+        },
+        "request": {
+          "$ref": "https://axiom.invalid/contracts/v1/component-scan.schema.json#/$defs/ComponentScanRequest"
+        },
+        "snapshot": {
+          "$ref": "https://axiom.invalid/contracts/v1/component-scan.schema.json#/$defs/ComponentScanSnapshot"
+        },
+        "native": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/JsonObject"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ContractError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sdkVersion",
+        "request",
+        "snapshot",
+        "native",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "ComponentFindingBinding": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "planId": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/TaskId"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "versionSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "source": {
+          "$ref": "https://axiom.invalid/contracts/v1/component-planning.schema.json#/$defs/ComponentSource"
+        },
+        "componentIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 127
+        },
+        "scanId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "resultArtifact": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ArtifactRef"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "planId",
+        "version",
+        "versionSha256",
+        "source",
+        "componentIndex",
+        "scanId",
+        "resultArtifact"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

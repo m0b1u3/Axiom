@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "sequence": 0,
+  "occurredAt": "2026-10-16T08:00:00Z",
+  "threadId": "fixture-thread",
+  "worker": 0,
+  "event": {
+    "event": {
+      "type": "new_future_event",
+      "payload": {
+        "preserved": true
+      }
+    }
+  },
+  "redacted": true
+}

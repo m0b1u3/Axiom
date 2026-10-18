@@ -19,10 +19,24 @@ jobs:
     env:
       AXIOM_TEST_DATABASE_URL: postgres://postgres:fixture-password@127.0.0.1:5432/axiom_test_input?sslmode=disable
       AXIOM_TEST_WEB_INPUT: '1'
+      AXIOM_TEST_WEB_OPERATIONS: '1'
+      AXIOM_TEST_WEB_RECOVERY: '1'
+      AXIOM_TEST_WEB_EVIDENCE: '1'
+      AXIOM_TEST_WEB_GIT_DIFF: '1'
+      AXIOM_TEST_WEB_COMPONENTS: '1'
+      AXIOM_TEST_WEB_COMPONENT_SCANS: '1'
+      AXIOM_TEST_WEB_IDENTITIES: '1'
+      AXIOM_TEST_GIT_SCREENSHOTS: '0'
+      AXIOM_TEST_RECOVERY_REPORT_DIR: ${{ github.workspace }}/output/playwright/scan-recovery
+      AXIOM_TEST_OPERATION_REPORT_DIR: ${{ github.workspace }}/output/playwright/sdk-operations
       AXIOM_TEST_SCREENSHOT_DIR: ${{ github.workspace }}/output/playwright
       AXIOM_TEST_AUTH_SCREENSHOT_DIR: ${{ github.workspace }}/output/playwright/auth
       AXIOM_TEST_STORAGE_SCREENSHOT_DIR: ${{ github.workspace }}/output/playwright/storage
       AXIOM_TEST_BUDGET_SCREENSHOT_DIR: ${{ github.workspace }}/output/playwright/budget
+      AXIOM_TEST_FRONTEND_REPORT_DIR: ${{ github.workspace }}/output/playwright/frontend
+      AXIOM_TEST_NATIVE_REPORT_DIR: ${{ github.workspace }}/output/playwright/sdk-native
+      AXIOM_TEST_KNOWLEDGE_REPORT_DIR: ${{ github.workspace }}/output/playwright/knowledge
+      AXIOM_TEST_CATALOG_REPORT_DIR: ${{ github.workspace }}/output/playwright/catalog
     services:
       postgres:
         image: postgres:16.15-alpine3.24@sha256:1a66d744c1b459e13b05a8fca341da84cb63383e99ce262210efee5a319d4551
@@ -56,6 +70,8 @@ jobs:
         working-directory: contracts
       - run: npm ci --no-audit --no-fund
         working-directory: code-audit-scanner
+      - run: npm run verify:sdk-integration && npm run test:sdk-integration
+        working-directory: code-audit-scanner
       - run: npm run build
         working-directory: code-audit-scanner
       - run: npm test
@@ -70,8 +86,31 @@ jobs:
         working-directory: code-audit-web
       - run: go test -count=1 ./...
         working-directory: code-audit-agent
+      - run: go test -count=1 ./...
+        working-directory: shared/sourceidentity
       # Store and process fixtures share one disposable database.
       - run: go test -p 1 -count=1 ./...
         working-directory: code-audit-server
       - run: npm test
         working-directory: contracts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: frontend-fixture-acceptance
+          path: |
+            output/playwright/frontend/
+            output/playwright/catalog/
+            output/playwright/knowledge/
+            output/playwright/sdk-native/
+            output/playwright/sdk-operations/
+            output/playwright/scan-recovery/
+            output/playwright/evidence-graph/
+            output/playwright/git-diff/
+            output/playwright/component-planning/*.json
+            output/playwright/component-planning/*.png
+            output/playwright/component-scans/*.json
+            output/playwright/component-scans/*.png
+            output/playwright/sdk-identities/browser/*.json
+            output/playwright/sdk-identities/browser/*.png
+          retention-days: 14
+          if-no-files-found: warn

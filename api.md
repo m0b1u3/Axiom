@@ -1572,3 +1572,43 @@ Codex Security SDK 并不只是：
 `GET /api/v1/scans/{id}/logs?after={sequence}&attempt={attempt}` 保留接口与轮询方式。新版返回 `format: scan_event_v2`、`execution`、`events[].event`（完整生成 ScanEventV2）、`nextAfter`、`total`（最大有效序号）、`recordCount`（有效唯一记录数）、`hasMore`、`invalidRecords` 和可选 `diagnostic`。兼容字段 n/timestamp/level/kind/message 是展示投影，n=sequence；message 不决定语义。老执行返回 `legacy_jsonl`，after 仍按原行号处理。JSONL 未结束的半行不推进游标，重复事件不重复展示，无效或异执行的记录不进入有效事件集合。
 
 后台内部 v4 presence/claim 协商输入、结果和 ObservationCapabilities；v4 heartbeat 接收 ExecutionHeartbeat v1（execution、agentId、progress 对象或 null、可选 diagnostic），回包包括 status、revision 和 accepted。它继续采用 HTTP，不改变用户入口。lease_expired 表示所有者、执行编号、租约或终态不允许再续租；protocol_version_unsupported 表示合同版本不支持；进度校验失败不会通过解析 message 被认定为扫描结论。
+
+
+## Web 扫描输入与知识文档（SDK 0.1.25）
+
+`POST /api/v1/scans` 可附加 `scanInput`（`ScanInput` v1，浏览器的 `knowledge` 必须为空）、`knowledgeVersionIds` 和 `parentTaskId`。Server 解析并冻结文档及父扫描，选择输入合同版本 2；普通请求保留输入版本 1。调用仍由 Web 表单发起。
+
+| 路径 | 行为 |
+| --- | --- |
+| `GET /api/v1/knowledge?q=&archived=false&page=1` | 固定每页 50 条，返回 items/total/page/pageSize；仅最新版本元数据。 |
+| `GET /api/v1/knowledge?documentId=...&page=1` | 分页读取指定文档版本历史，归档后仍可读。 |
+| `GET /api/v1/knowledge/versions/{id}` | 原始正文、版本、最新版本号、SHA-256 和时间。 |
+| `POST /api/v1/knowledge` | title/content/baseVersion=0 创建文档。 |
+| `POST /api/v1/knowledge/{id}/versions` | title/content/baseVersion 进行 CAS，生成新版本；冲突 409。 |
+| `PUT /api/v1/knowledge/{id}/archive` | 必须明确 archived:true/false；归档与恢复均保留历史。 |
+| `GET /api/v1/scans/{id}/parent-state` | 只返回经证据核验的父任务元数据，不返回私有 SDK 数据库。 |
+
+读取沿用 read 权限，文档写入沿用 operate 与操作记录。正文最多 64 KiB，每次最多 8 个版本，浏览器不提交任意路径。完整参数/模式约束、私有父状态和版本协商见 [扫描输入与知识库基线](docs/SDK_INPUT_KNOWLEDGE.md)。
+
+
+## SDK 原生结果、诊断和用量估算
+
+归档结果 extensions.sdkNative 为独立 SDKNativeResult v1，含 Markdown/SARIF 引用、仓库历史、冻结用量估算和诊断。进度 extensions.sdkDiagnostics 为 SDKDiagnostics v1，完整日志以原产物下载接口读取。新增只读 sdk-cost-estimate 与 sdk-history-links 接口，不触发模型或外部写入；具体路径、历史与身份约束见 [原生结果基线](docs/SDK_NATIVE_RESULTS.md)。
+
+## SDK 独立操作与原生会话事件
+
+- `POST /api/v1/scans`：可传 `operation:"preflight"`，从本次 Web 配置新建原生预检，需要不可变源码快照。
+- `POST /api/v1/scans/{id}/sdk-operations`：`kind:"preflight"`；或 `kind:"validate", findingId:"123", originAttempt:1, acknowledgeUnknownCost:true`。后者必须选择本来源已结束执行的现存漏洞，费用未知且不支持费用上限。
+- `GET /api/v1/scans/{id}/sdk-operations?page=1`：关联操作每页 50 项，含总数与冻结来源。
+- `GET /api/v1/scans/{id}/attempts/{attempt}/sdk-sessions?after=0`：最多 50 条/8 MiB；正式归档校验完整文件的身份、序号、数量、大小与哈希。没有归档结果时返回 uncommitted 快照，完整性未知；`download=1` 下载已保存的 partial JSONL。正式完整日志沿用 artifacts 路由下载。
+
+读者可查看，operator/admin 可创建或取消；通用 retry 与预算设置不能绕过独立复核的未知费用确认。完整操作结果位于归档 ScanResult 的 `extensions.sdkOperation`，完整会话元数据位于 `extensions.sdkSession`，均有独立 Schema；基础结果版本不变。原生操作不生成扫描对比或 HTML/PDF 扫描报告（409），可下载其原生报告/完整 JSON。
+
+
+## 扫描中断恢复（SDK 0.1.25）
+
+`GET /api/v1/scans/{id}/recovery` 返回 `ScanRecoverySnapshot` v1，包含当前执行、断点续扫不支持的事实、提交结果核验、过期中断登记与重新执行资格。旧 Server 无此接口时，新 Web 保留历史读取并停用恢复写操作。
+
+`POST /api/v1/scans/{id}/recovery` 接收 `ScanRecoveryAction` v1：`schemaVersion:1`、`execution:{taskId:string,attempt:number}`、`expectedStatus`、`action`、`resultSha256` 和 `acknowledgeReexecution`。`restore_result` 要求当前提交结果 SHA-256 且确认字段为 false；`restart` 要求确认 true、哈希 null；`interrupt_expired` 两者分别为 null / false。动作绑定原执行及状态，冲突返回 409；不接受 resume 或文件路径。恢复结果不调用 SDK、不增加 attempt，取消/超时保持原状态；重新执行继续执行费用/预算准入。
+
+恢复记录通过快照及执行历史的 `resultRecovery` 读取，保留原错误、原完成信封、操作者、时间与提交哈希。权限、校验和测试边界见 [扫描中断恢复](docs/SCAN_RECOVERY.md)。旧 `/retry` 的兼容语义保留。

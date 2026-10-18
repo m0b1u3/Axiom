@@ -1,4 +1,5 @@
 import type { Finding } from "./finding.js";
+import type {SDKDiagnostics} from '@axiom/contracts';
 
 export type ScanResultStatus =
   | "completed"
@@ -67,6 +68,11 @@ export type ScanErrorCode =
   | "unknown";
 
 export interface ScanResult {
+  componentScan?:import("@axiom/contracts").ComponentScanResult;
+  componentPlanning?:import("@axiom/contracts").ComponentPlanningResult;
+  sdkOperation?:import('@axiom/contracts').SDKOperationResult;
+  sdkSession?:import('@axiom/contracts').SDKSessionSummary;
+  sdkDiagnostics?: SDKDiagnostics;
   sdkRaw?: Record<string,unknown>;
   lastObservedCost?: Record<string,unknown>;
   sdkRawSource?: "sdk_to_json"|"recovered_artifacts";

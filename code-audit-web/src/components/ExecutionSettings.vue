@@ -22,7 +22,7 @@ onMounted(load);
 <template>
  <section class="execution-settings" aria-labelledby="execution-settings-heading">
   <div class="section-heading"><h2 id="execution-settings-heading">扫描任务调度</h2><Button variant="ghost" size="sm" :disabled="saving" :loading="loading" @click="load">重新加载</Button></div>
-  <p class="muted">设置同时运行的扫描任务数量。深度扫描内部 worker 数保持 SDK 默认。</p>
+  <p class="muted">设置同时运行的扫描任务数量。单次深度扫描的 Worker 数在新建扫描中配置。</p>
   <div v-if="error" class="request-error" role="alert">{{error}}</div>
   <p v-if="loading && !settings" role="status">正在读取调度配置…</p>
   <template v-if="settings">
@@ -31,14 +31,14 @@ onMounted(load);
     <div class="limits-grid">
     <div v-for="(field,i) in fields" :key="field.key" class="limit-row">
      <div><label :for="`limit-${field.key}`">{{field.label}}</label><p :id="`help-${field.key}`">{{field.help}}</p></div>
-     <Input v-if="i===0" id="limit-global" v-model="global" type="number" min="1" max="64" step="1" required :disabled="!canEdit||saving" aria-describedby="help-global" />
-     <Input v-else-if="i===1" id="limit-model" v-model="perModel" type="number" min="1" max="64" step="1" required :disabled="!canEdit||saving" aria-describedby="help-model" />
-     <Input v-else id="limit-project" v-model="perProject" type="number" min="1" max="64" step="1" required :disabled="!canEdit||saving" aria-describedby="help-project" />
+     <Input v-if="i===0" id="limit-global" v-model="global" type="number" min="1" max="64" step="1" required :disabled="!canEdit||saving||loading" aria-describedby="help-global" />
+     <Input v-else-if="i===1" id="limit-model" v-model="perModel" type="number" min="1" max="64" step="1" required :disabled="!canEdit||saving||loading" aria-describedby="help-model" />
+     <Input v-else id="limit-project" v-model="perProject" type="number" min="1" max="64" step="1" required :disabled="!canEdit||saving||loading" aria-describedby="help-project" />
     </div>
     </div>
     <p class="muted">取值 1–64。实际并发同时受上述上限和在线执行机槽位限制。降低上限后，已有扫描结束释放槽位，才会继续领取新任务。</p>
     <p v-if="!canEdit" class="muted">仅系统管理员可修改调度配置。</p>
-    <div class="save-row"><Button v-if="canEdit" type="submit" :disabled="!valid||!dirty||saving" :loading="saving">保存并发配置</Button><span>最近更新 {{absoluteTime(settings.updatedAt)}}</span></div>
+    <div class="save-row"><Button v-if="canEdit" type="submit" :disabled="!valid||!dirty||saving||loading" :loading="saving">保存并发配置</Button><span>最近更新 {{absoluteTime(settings.updatedAt)}}</span></div>
     <p v-if="notice" role="status" class="notice">{{notice}}</p>
    </form>
    <details v-if="overview" class="settings-details"><summary>执行节点与组件兼容性</summary><ExecutionNodes :agents="overview.agents" /><p class="muted">节点每 10 秒上报，超过 30 秒未上报视为离线。兼容性以实际合同能力为准；预检被阻止的节点不能开始新的执行。</p></details>

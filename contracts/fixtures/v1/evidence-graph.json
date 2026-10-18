@@ -1,0 +1,571 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "findingFingerprint": "fixture:evidence-chain",
+  "sourceContentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+  "archiveSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "projectorVersion": 1,
+  "origin": "native_evidence",
+  "completeness": "complete",
+  "sourceFinding": {
+    "fingerprint": "fixture:evidence-chain",
+    "title": "Fixtures / Mock：查询输入进入数据库调用",
+    "severity": "high",
+    "description": "仅用于合同和浏览器验收，不代表真实漏洞。",
+    "raw": {
+      "findingId": "fixture-evidence-1",
+      "title": "Fixtures / Mock：查询输入进入数据库调用",
+      "summary": "合成证据链，用于验证引用和推断边界。",
+      "severity": {
+        "level": "high"
+      },
+      "codeEvidence": [
+        {
+          "id": "E-source",
+          "label": "读取查询参数",
+          "path": "fixture.ts",
+          "startLine": 2,
+          "code": "const query = request.query.q;",
+          "explanation": "合成代码证据；确认代码存在不等于验证漏洞。"
+        },
+        {
+          "id": "E-sink",
+          "label": "数据库调用",
+          "path": "fixture.ts",
+          "startLine": 3,
+          "code": "database.execute(query);",
+          "explanation": "合成危险操作证据。"
+        }
+      ],
+      "rootCause": {
+        "summary": "SDK 假设：查询参数缺少约束",
+        "evidenceRefs": [
+          "E-source",
+          "E-sink"
+        ]
+      },
+      "attackPath": {
+        "summary": "SDK 推断的输入传播路径",
+        "dataFlow": {
+          "summary": "查询参数流向数据库调用",
+          "source": "request.query.q",
+          "sink": "database.execute",
+          "transformations": [
+            "将参数赋给 query"
+          ],
+          "evidence_refs": [
+            "E-source",
+            "E-sink"
+          ]
+        },
+        "steps": [
+          "读取外部参数",
+          "执行数据库调用"
+        ],
+        "assumptions": [
+          "假设上游没有进行参数约束"
+        ],
+        "controls": [
+          "需要检查数据库驱动的参数化行为"
+        ],
+        "evidenceRefs": [
+          "E-source"
+        ]
+      },
+      "validation": {
+        "status": "verified",
+        "summary": "SDK 复核声称 reportable；本合成样本未执行独立复现",
+        "evidenceRefs": [
+          "E-sink"
+        ],
+        "counterEvidence": [
+          "上游中间件可能已约束输入"
+        ],
+        "limitations": [
+          "未提供实际请求与运行轨迹"
+        ]
+      },
+      "unknownNative": {
+        "retained": [
+          null,
+          0,
+          false,
+          ""
+        ],
+        "x/y~z": "原始字段"
+      }
+    }
+  },
+  "nodes": [
+    {
+      "id": "58957baf6d9d7cd3e3d97272be0af3de7547acc9108a53008c268c748c0d6ac9",
+      "kind": "finding",
+      "label": "Fixtures / Mock：查询输入进入数据库调用",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/title",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "85a9c1169ea40d298552ff85a19467faf1c78d7dcd91a4d7ec0b3d69916df8c1",
+      "kind": "code_evidence",
+      "label": "读取查询参数",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/codeEvidence/0",
+      "sdkEvidenceId": "E-source",
+      "location": {
+        "path": "fixture.ts",
+        "startLine": 2,
+        "endLine": null
+      },
+      "code": "const query = request.query.q;",
+      "explanation": "合成代码证据；确认代码存在不等于验证漏洞。",
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "6d7b142bbf859ad87de841ad9369da82ba9a1554efbae82ab6718a35a145f440",
+      "kind": "code_evidence",
+      "label": "数据库调用",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/codeEvidence/1",
+      "sdkEvidenceId": "E-sink",
+      "location": {
+        "path": "fixture.ts",
+        "startLine": 3,
+        "endLine": null
+      },
+      "code": "database.execute(query);",
+      "explanation": "合成危险操作证据。",
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "87542a0ee19eb47090d025bb0bc3b3eaace015ae0be854d6e856c6857bb8d6bc",
+      "kind": "root_cause",
+      "label": "SDK 假设：查询参数缺少约束",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/rootCause",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "302b23531a67f09efbb18c6d1429631233894a09615e03c968eac7141a80770c",
+      "kind": "step",
+      "label": "SDK 推断的输入传播路径",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/attackPath",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "1cba5b14406e8b24b1041c3a9abb4187f899c03c8cc62ae0a93f4afac044dd46",
+      "kind": "step",
+      "label": "查询参数流向数据库调用",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/attackPath/dataFlow",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "be4c5011c2e3c97659aa7a465243c788135c54f303fee465182eddcc675956d1",
+      "kind": "source",
+      "label": "request.query.q",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/attackPath/dataFlow/source",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "0d2740f9eb5ccc05ae3f720df4169cbe7db42de1374a90f57af3e1290812b710",
+      "kind": "sink",
+      "label": "database.execute",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/attackPath/dataFlow/sink",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "70ce4eb704af1d4d490263eaad7a22be8d93edf30f47f996a17163ad0ac1e233",
+      "kind": "step",
+      "label": "将参数赋给 query",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/attackPath/dataFlow/transformations/0",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "6e914df3afe02b5a73d690dbb0329130a1589e74d91dde4d5b7b6d354431d505",
+      "kind": "step",
+      "label": "读取外部参数",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/attackPath/steps/0",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "5210894336575049d09f7b4eb27ff3f2c547f853eb1dad5e1e0fd6d3ec9f58ca",
+      "kind": "step",
+      "label": "执行数据库调用",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/attackPath/steps/1",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "c6f3fd83bfd941013edc05a1f6930392ed55d6fc89a69abd1b823b75092f4efe",
+      "kind": "assumption",
+      "label": "假设上游没有进行参数约束",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/attackPath/assumptions/0",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "dcad90773f5582f5190c3f896a8436c3c988e4c207ea2b10b6ae6e3832e8c643",
+      "kind": "control",
+      "label": "需要检查数据库驱动的参数化行为",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/attackPath/controls/0",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "b465b6545b36608a17107a856c6c6e054ec4460c56cf1654aed50c70d7873e60",
+      "kind": "validation",
+      "label": "SDK 复核声称 reportable；本合成样本未执行独立复现",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/validation",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "f8dcf5202e8a0ad99038be48822699d1cc970272e181b71e3cec3ed0679602bb",
+      "kind": "counter_evidence",
+      "label": "上游中间件可能已约束输入",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/validation/counterEvidence/0",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    },
+    {
+      "id": "e846a79f5954b0287482f415e981ec4d8a024e82b764cc30a703f92baffe64a9",
+      "kind": "limitation",
+      "label": "未提供实际请求与运行轨迹",
+      "state": "inferred",
+      "stateReason": "SDK 报告或推断；未据此确认实际执行或漏洞复现。",
+      "sourcePointer": "/raw/validation/limitations/0",
+      "sdkEvidenceId": null,
+      "location": null,
+      "code": null,
+      "explanation": null,
+      "sourceCheck": "not_checked",
+      "sourceFileSha256": null,
+      "verification": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "6847b9919ef46acfa3029ce1d28c0e8d543e70907bfd90465ffd616d1079535a",
+      "from": "58957baf6d9d7cd3e3d97272be0af3de7547acc9108a53008c268c748c0d6ac9",
+      "to": "85a9c1169ea40d298552ff85a19467faf1c78d7dcd91a4d7ec0b3d69916df8c1",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/codeEvidence/0",
+      "reason": "漏洞结果包含此证据条目；不推定该条目证明整个漏洞。"
+    },
+    {
+      "id": "988c773d0b04b1371ce819c02d2593efc3e82e4c4024f4f2e21161244cd277ea",
+      "from": "58957baf6d9d7cd3e3d97272be0af3de7547acc9108a53008c268c748c0d6ac9",
+      "to": "6d7b142bbf859ad87de841ad9369da82ba9a1554efbae82ab6718a35a145f440",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/codeEvidence/1",
+      "reason": "漏洞结果包含此证据条目；不推定该条目证明整个漏洞。"
+    },
+    {
+      "id": "271f6846e7fb3b5afc350c45be36f580116e5826d3e336d9d0e8911f370bbfc3",
+      "from": "58957baf6d9d7cd3e3d97272be0af3de7547acc9108a53008c268c748c0d6ac9",
+      "to": "87542a0ee19eb47090d025bb0bc3b3eaace015ae0be854d6e856c6857bb8d6bc",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/rootCause",
+      "reason": "SDK 结果中的分析内容。"
+    },
+    {
+      "id": "70b90d1028b480471a72df1cb2eae899b329a7b8dbb3d7bcb3817099b586dff6",
+      "from": "85a9c1169ea40d298552ff85a19467faf1c78d7dcd91a4d7ec0b3d69916df8c1",
+      "to": "87542a0ee19eb47090d025bb0bc3b3eaace015ae0be854d6e856c6857bb8d6bc",
+      "kind": "supports",
+      "state": "inferred",
+      "sourcePointer": "/raw/rootCause/evidenceRefs/0",
+      "reason": "SDK 通过证据 ID 明确引用；该支持关系仍属于 SDK 分析结论。"
+    },
+    {
+      "id": "3902961bcca1c249862aed57b05ac59fffe776da1978e79bd115ee9457ec5708",
+      "from": "6d7b142bbf859ad87de841ad9369da82ba9a1554efbae82ab6718a35a145f440",
+      "to": "87542a0ee19eb47090d025bb0bc3b3eaace015ae0be854d6e856c6857bb8d6bc",
+      "kind": "supports",
+      "state": "inferred",
+      "sourcePointer": "/raw/rootCause/evidenceRefs/1",
+      "reason": "SDK 通过证据 ID 明确引用；该支持关系仍属于 SDK 分析结论。"
+    },
+    {
+      "id": "fcff275d5016f4bf84aa526db4fbcb82cb091a3b4a90d02397c97eddbc8bd470",
+      "from": "58957baf6d9d7cd3e3d97272be0af3de7547acc9108a53008c268c748c0d6ac9",
+      "to": "302b23531a67f09efbb18c6d1429631233894a09615e03c968eac7141a80770c",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath",
+      "reason": "SDK 结果中的分析内容。"
+    },
+    {
+      "id": "584cfe18ec4783a4d6f54c5a804c91e3b9eae28820a2110127e6bc62b4dcbe73",
+      "from": "85a9c1169ea40d298552ff85a19467faf1c78d7dcd91a4d7ec0b3d69916df8c1",
+      "to": "302b23531a67f09efbb18c6d1429631233894a09615e03c968eac7141a80770c",
+      "kind": "supports",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/evidenceRefs/0",
+      "reason": "SDK 通过证据 ID 明确引用；该支持关系仍属于 SDK 分析结论。"
+    },
+    {
+      "id": "0d8edef3148b885dd56f2dc4d693f24670fc41decd5edcca57a49a4e52ff659d",
+      "from": "302b23531a67f09efbb18c6d1429631233894a09615e03c968eac7141a80770c",
+      "to": "1cba5b14406e8b24b1041c3a9abb4187f899c03c8cc62ae0a93f4afac044dd46",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/dataFlow",
+      "reason": "SDK 结果中的分析内容。"
+    },
+    {
+      "id": "424a4187afc72b56a058c2c44ac6aa8bbc992f7be7d99a61033b12140864001a",
+      "from": "85a9c1169ea40d298552ff85a19467faf1c78d7dcd91a4d7ec0b3d69916df8c1",
+      "to": "1cba5b14406e8b24b1041c3a9abb4187f899c03c8cc62ae0a93f4afac044dd46",
+      "kind": "supports",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/dataFlow/evidence_refs/0",
+      "reason": "SDK 通过证据 ID 明确引用；该支持关系仍属于 SDK 分析结论。"
+    },
+    {
+      "id": "47cd3a69cc77e9d6bda37154f746f36c4bf0b0da3ec57bb6acd432342254fca9",
+      "from": "6d7b142bbf859ad87de841ad9369da82ba9a1554efbae82ab6718a35a145f440",
+      "to": "1cba5b14406e8b24b1041c3a9abb4187f899c03c8cc62ae0a93f4afac044dd46",
+      "kind": "supports",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/dataFlow/evidence_refs/1",
+      "reason": "SDK 通过证据 ID 明确引用；该支持关系仍属于 SDK 分析结论。"
+    },
+    {
+      "id": "82f2b6d939ca465301cfcf394c409c0e659681178d395e63447d02d71444cbe4",
+      "from": "1cba5b14406e8b24b1041c3a9abb4187f899c03c8cc62ae0a93f4afac044dd46",
+      "to": "be4c5011c2e3c97659aa7a465243c788135c54f303fee465182eddcc675956d1",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/dataFlow/source",
+      "reason": "SDK 结果中的分析内容。"
+    },
+    {
+      "id": "cf676c4b219cd3a90a0c30383a778448ac33008675d4d591265156faea0ef213",
+      "from": "1cba5b14406e8b24b1041c3a9abb4187f899c03c8cc62ae0a93f4afac044dd46",
+      "to": "0d2740f9eb5ccc05ae3f720df4169cbe7db42de1374a90f57af3e1290812b710",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/dataFlow/sink",
+      "reason": "SDK 结果中的分析内容。"
+    },
+    {
+      "id": "39d229a8724306f9484b6c1c1239e8dea46e1f10b82a2447def6583b5fa2b46a",
+      "from": "1cba5b14406e8b24b1041c3a9abb4187f899c03c8cc62ae0a93f4afac044dd46",
+      "to": "70ce4eb704af1d4d490263eaad7a22be8d93edf30f47f996a17163ad0ac1e233",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/dataFlow/transformations/0",
+      "reason": "SDK 明确列出的内容。"
+    },
+    {
+      "id": "2f61eefd3b7e934d8a5caf94371aa6d69310708c660c5df4a7eeea3c4969fbd3",
+      "from": "be4c5011c2e3c97659aa7a465243c788135c54f303fee465182eddcc675956d1",
+      "to": "70ce4eb704af1d4d490263eaad7a22be8d93edf30f47f996a17163ad0ac1e233",
+      "kind": "describes_next",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/dataFlow",
+      "reason": "SDK 描述的数据流次序；未验证真实调用或传播。"
+    },
+    {
+      "id": "bfd1c7b146028a8c254d0731bb8ac301bc519d0c8e063bdefddbc1cda391a94e",
+      "from": "70ce4eb704af1d4d490263eaad7a22be8d93edf30f47f996a17163ad0ac1e233",
+      "to": "0d2740f9eb5ccc05ae3f720df4169cbe7db42de1374a90f57af3e1290812b710",
+      "kind": "describes_next",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/dataFlow",
+      "reason": "SDK 描述的数据流次序；未验证真实调用或传播。"
+    },
+    {
+      "id": "9f7cbd50a056420312a858eb1829a38063ffcb9f282afc125244fe1d2b4ad1f9",
+      "from": "302b23531a67f09efbb18c6d1429631233894a09615e03c968eac7141a80770c",
+      "to": "6e914df3afe02b5a73d690dbb0329130a1589e74d91dde4d5b7b6d354431d505",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/steps/0",
+      "reason": "SDK 明确列出的内容。"
+    },
+    {
+      "id": "f893f72911919ff9406abd53cc8a57947c33234c0812ba9a16efe45f2f045eb1",
+      "from": "302b23531a67f09efbb18c6d1429631233894a09615e03c968eac7141a80770c",
+      "to": "5210894336575049d09f7b4eb27ff3f2c547f853eb1dad5e1e0fd6d3ec9f58ca",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/steps/1",
+      "reason": "SDK 明确列出的内容。"
+    },
+    {
+      "id": "7e9124a830f758d4528d765f7d6f87272d261c8ab3e537158e6a9d1957fd35ab",
+      "from": "6e914df3afe02b5a73d690dbb0329130a1589e74d91dde4d5b7b6d354431d505",
+      "to": "5210894336575049d09f7b4eb27ff3f2c547f853eb1dad5e1e0fd6d3ec9f58ca",
+      "kind": "describes_next",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/steps",
+      "reason": "SDK 列出的步骤顺序；不代表真实调用栈。"
+    },
+    {
+      "id": "28f392e1f64a7f86f5069550e7086d1764eb62b2ff1376836068619c88a25db6",
+      "from": "302b23531a67f09efbb18c6d1429631233894a09615e03c968eac7141a80770c",
+      "to": "c6f3fd83bfd941013edc05a1f6930392ed55d6fc89a69abd1b823b75092f4efe",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/assumptions/0",
+      "reason": "SDK 明确列出的内容。"
+    },
+    {
+      "id": "21033ddcefeb5b5cf58ee1884f97dc5c30188c1dade97abe30815cc672c51f44",
+      "from": "302b23531a67f09efbb18c6d1429631233894a09615e03c968eac7141a80770c",
+      "to": "dcad90773f5582f5190c3f896a8436c3c988e4c207ea2b10b6ae6e3832e8c643",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/attackPath/controls/0",
+      "reason": "SDK 明确列出的内容。"
+    },
+    {
+      "id": "bf7aa6cb6fbcfd045ae1cbea3333b9e65e373adb51c8b8953f58eae211108149",
+      "from": "58957baf6d9d7cd3e3d97272be0af3de7547acc9108a53008c268c748c0d6ac9",
+      "to": "b465b6545b36608a17107a856c6c6e054ec4460c56cf1654aed50c70d7873e60",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/validation",
+      "reason": "已记录 SDK 复核输出；不自动视为独立复现。"
+    },
+    {
+      "id": "286b07b762d6080ac2acf581c4843e0616ab308f2ef20cd8d5eaac1f51854a55",
+      "from": "6d7b142bbf859ad87de841ad9369da82ba9a1554efbae82ab6718a35a145f440",
+      "to": "b465b6545b36608a17107a856c6c6e054ec4460c56cf1654aed50c70d7873e60",
+      "kind": "supports",
+      "state": "inferred",
+      "sourcePointer": "/raw/validation/evidenceRefs/0",
+      "reason": "SDK 通过证据 ID 明确引用；该支持关系仍属于 SDK 分析结论。"
+    },
+    {
+      "id": "d065181036f8b3e1334c1445d18346a911d72ffe9af88e91669a974405ea6f03",
+      "from": "f8dcf5202e8a0ad99038be48822699d1cc970272e181b71e3cec3ed0679602bb",
+      "to": "58957baf6d9d7cd3e3d97272be0af3de7547acc9108a53008c268c748c0d6ac9",
+      "kind": "contradicts",
+      "state": "inferred",
+      "sourcePointer": "/raw/validation/counterEvidence/0",
+      "reason": "SDK 报告的反证；尚未独立验证。"
+    },
+    {
+      "id": "994d42c1160bd3082701bcd9bc3e5ea22d68c562126b6f713a5372aa87765aa2",
+      "from": "b465b6545b36608a17107a856c6c6e054ec4460c56cf1654aed50c70d7873e60",
+      "to": "e846a79f5954b0287482f415e981ec4d8a024e82b764cc30a703f92baffe64a9",
+      "kind": "contains",
+      "state": "inferred",
+      "sourcePointer": "/raw/validation/limitations/0",
+      "reason": "SDK 明确列出的内容。"
+    }
+  ],
+  "diagnostics": []
+}

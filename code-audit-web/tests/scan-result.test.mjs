@@ -9,6 +9,7 @@ test('unknown costs and reported model stay unknown while observed zero remains 
  assert.equal(module.reportedModel({turn:{model:'fixture-reported'}}),'fixture-reported');assert.equal(module.reportedModel({cost:null}),'未知');
 });
 test('process discrepancy compares the committed result, independently of execution cancellation',()=>{
+ assert.equal(module.processMismatch({executionStatus:'completed',process:{code:null,signal:null},result:{status:'completed'}}),false);
  assert.equal(module.processMismatch({executionStatus:'canceled',process:{code:0,signal:null},result:{status:'completed'}}),false);
  assert.equal(module.processMismatch({process:{code:10,signal:null},result:{status:'completed'}}),true);
  assert.equal(module.processMismatch({process:{code:2,signal:null},result:{status:'partial'}}),false);

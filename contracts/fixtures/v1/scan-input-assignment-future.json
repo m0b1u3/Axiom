@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 3,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "input": {
+    "schemaVersion": 1,
+    "scanPrompt": "\u8865\u5145\u5ba1\u8ba1\u6307\u4ee4\n\u7b2c\u4e8c\u884c",
+    "validationPrompt": "\u5408\u6210\u81ea\u5b9a\u4e49\u9a8c\u8bc1\u8981\u6c42",
+    "postScanPrompt": "\u5408\u6210\u540e\u5904\u7406\u8981\u6c42",
+    "workflowId": "fixture-workflow",
+    "safetyIdentifier": "fixture-anonymous-user",
+    "parentScanId": "fixture-parent-native-scan",
+    "expectedPluginVersion": "0.1.94",
+    "failureSeverity": "informational",
+    "knowledge": [
+      {
+        "versionId": "17",
+        "title": "\u5408\u6210\u77e5\u8bc6\u6587\u6863",
+        "sha256": "db9dff596247e19522f64dc7c082077a4b751674fb2b37792b9b7b60ef2361b5",
+        "content": "# Synthetic knowledge\n\u7528\u6237\u63d0\u4f9b\u7684\u53c2\u8003\u8d44\u6599\uff0c\u4e0d\u662f\u5df2\u786e\u8ba4\u4e8b\u5b9e\u3002\n"
+      }
+    ]
+  }
+}

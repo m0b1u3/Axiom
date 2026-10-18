@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/git-diff-assignment.schema.json",
+  "title": "GitDiffAssignment",
+  "$ref": "#/$defs/GitDiffAssignment",
+  "$defs": {
+    "GitDiffAssignment": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sourceSnapshotId": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/TaskId"
+        },
+        "sourceContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "target": {
+          "$ref": "https://axiom.invalid/contracts/v1/git-diff-target.schema.json#/$defs/GitDiffTarget"
+        },
+        "evidenceRevision": {
+          "type": "string",
+          "const": "head"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sourceSnapshotId",
+        "sourceContentHash",
+        "target",
+        "evidenceRevision"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

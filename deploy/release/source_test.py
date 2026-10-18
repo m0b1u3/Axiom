@@ -50,6 +50,19 @@ class SourceDeliveryGuards(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "tree differs"):
             verify(self.base/"export")
 
+    def test_identity_credentials_browser_state_and_database_sidecars_are_excluded(self):
+        for name in [".sdk-identities/agent/identity/credential", "state/.sdk-identities/private.json",
+                     ".playwright-cli/page.yml", "auth.json", ".npmrc", ".netrc", "id_rsa", "id_ed25519",
+                     "instance.sqlite", "instance.sqlite-shm", "instance.sqlite-wal", "instance.db-shm",
+                     "instance.db-wal", "instance.sqlite3-shm", "instance.sqlite3-wal",
+                     "database.dump", "identity.p12", "identity.pfx", "server.pem", "identity.key"]:
+            self.put("code-audit-scanner/"+name, "private fixture")
+        self.put(".gitattributes", "deploy/sdk/overrides/** -text\n")
+        self.put("code-audit-scanner/src/main.ts", "// source fixture\n")
+        data = export(self.root, self.base/"export")
+        names = {item["path"] for item in data["files"]}
+        self.assertEqual(names, {"VERSION", "README.md", ".gitattributes", "code-audit-scanner/src/main.ts"})
+
     def test_source_link_is_rejected_without_exporting_its_target(self):
         outside = self.base/"private"
         outside.write_text("private")

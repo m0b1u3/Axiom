@@ -20,14 +20,19 @@ const el = ref<HTMLDivElement | null>(null);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let editor: any = null;
 const height = ref(120);
+const loadError = ref("");
+const loading = ref(false);
+let disposed = false;
 
 function langOf(): string {
   return props.language;
 }
 
-onMounted(async () => {
+async function loadEditor(): Promise<void> {
+  loading.value = true; loadError.value = "";
+  try {
   const monaco = await import("monaco-editor");
-  if (!el.value) return;
+  if (disposed || !el.value) return;
   monacoModule = monaco;
   const dark = document.documentElement.classList.contains("dark");
   const lines = props.code.split("\n").length;
@@ -54,7 +59,10 @@ onMounted(async () => {
     domReadOnly: true,
     contextmenu: false,
   });
-});
+  } catch (error) { if (!disposed) loadError.value = `代码查看器加载失败：${(error as Error).message}。下方保留原始文本。`; }
+  finally { if (!disposed) loading.value = false; }
+}
+onMounted(loadEditor);
 
 watch(
   () => props.code,
@@ -71,6 +79,7 @@ watch(isDark, dark => monacoModule?.editor.setTheme(dark ? "vs-dark" : "vs"));
 watch(() => props.language, language => { if (editor && monacoModule) monacoModule.editor.setModelLanguage(editor.getModel(), language); });
 
 onUnmounted(() => {
+  disposed = true;
   const model = editor?.getModel();
   editor?.dispose();
   model?.dispose();
@@ -79,8 +88,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="code-viewer" :style="{ height: height + 'px' }">
-    <div ref="el" class="cv-el" />
+  <div class="code-viewer" :style="{ height: loadError ? undefined : height + 'px' }">
+    <p v-if="loading" role="status">正在加载代码查看器…</p>
+    <p v-if="loadError" role="alert">{{loadError}}</p>
+    <pre v-if="loadError" tabindex="0" aria-label="原始代码文本">{{code}}</pre>
+    <div v-show="!loadError" ref="el" class="cv-el" />
   </div>
 </template>
 
@@ -95,4 +107,6 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
 }
+.code-viewer p{margin:var(--space-2);font-size:var(--font-size-xs);color:var(--text-secondary)}
+.code-viewer pre{margin:0;padding:var(--space-3);max-height:320px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:var(--font-size-xs)/var(--line-height-body) var(--font-mono)}
 </style>

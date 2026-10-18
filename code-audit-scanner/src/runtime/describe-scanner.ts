@@ -7,14 +7,15 @@ export async function describeScanner() {
     version:string; dependencies:Record<string,string>;
   };
   const version=CONTRACT_BASELINE_VERSION;
-  const baselineVersions={assignment:[version],job:[version,2,3],progress:[version,2],event:[version,2],result:[version],completion:[version]};
+  const baselineVersions={assignment:[version],job:[version,2,3,4,5,6,7,8],progress:[version,2],event:[version,2],result:[version],completion:[version]};
   return {
     schemaVersion:SCANNER_DESCRIPTION_VERSION,
+ sdkIdentityVersion:1,
     name:'axiom-scanner',
     version:pkg.version,
     baselineVersions,
     runtime:{input:'scanner_job',events:'scan_event',result:'scan_result',
-      versions:{assignment:[version],job:[version,2,3],progress:[2],event:[2],result:[version],completion:[version]}},
+      versions:{assignment:[version],job:[version,2,3,4,5,6,7,8],progress:[2],event:[2],result:[version],completion:[version]}},
     capabilities:{describe:true,jobFile:true,maxCostUsd:true,structuredEvents:true,versionedResults:true,atomicResultCommit:true},
     configuredSdk:{package:'@openai/codex-security',version:pkg.dependencies['@openai/codex-security']},
   };

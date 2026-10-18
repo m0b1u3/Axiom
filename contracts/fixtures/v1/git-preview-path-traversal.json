@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "snapshotId": "7",
+  "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "target": {
+    "schemaVersion": 1,
+    "kind": "refs",
+    "objectFormat": "sha1",
+    "baseCommit": "1111111111111111111111111111111111111111",
+    "headCommit": "2222222222222222222222222222222222222222",
+    "baseTree": "3333333333333333333333333333333333333333",
+    "headTree": "4444444444444444444444444444444444444444",
+    "diffSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+    "headContentHash": "6666666666666666666666666666666666666666666666666666666666666666"
+  },
+  "files": [
+    {
+      "index": 0,
+      "status": "renamed",
+      "oldPath": "src/旧.ts",
+      "newPath": "../outside",
+      "oldBlob": "7777777777777777777777777777777777777777",
+      "newBlob": "8888888888888888888888888888888888888888"
+    }
+  ],
+  "page": 1,
+  "pageSize": 50,
+  "total": 1
+}

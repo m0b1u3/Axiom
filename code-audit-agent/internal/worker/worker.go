@@ -41,6 +41,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		capabilities.Result = contracts.NoResultCapabilities()
 		capabilities.Observation = contracts.NoObservationCapabilities()
 	}
+	client.SDKIdentityVersion = capabilities.IdentityVersion
 	client.InputCapabilities = &capabilities.Input
 	client.ResultCapabilities = &capabilities.Result
 	client.ObservationCapabilities = &capabilities.Observation
@@ -105,6 +106,18 @@ func (w *Worker) Run(ctx context.Context) error {
 }
 func (w *Worker) loop(ctx context.Context, c *execution.Client, slot int) {
 	for ctx.Err() == nil {
+		if c.SDKIdentityVersion == 1 {
+			handled, e := w.executeIdentity(ctx, c)
+			if e != nil && ctx.Err() == nil {
+				log.Print("SDK identity operation interrupted; inspect status in Web")
+			}
+			if handled {
+				if w.Cfg.Once {
+					return
+				}
+				continue
+			}
+		}
 		lease, e := c.Claim(ctx, w.Cfg.AgentID)
 		if e != nil {
 			log.Printf("slot=%d claim: %v", slot, e)
@@ -186,7 +199,7 @@ func (w *Worker) execute(ctx context.Context, c *execution.Client, lease *execut
 		if lease.Assignment != nil {
 			a := lease.Assignment
 			job, e := scanner.JobFromAssignment(*a, task.SourcePath, task.OutputPath)
-			if e == nil && !a.Credential.Present && os.Getenv("AXIOM_SCAN_MOCK") != "1" {
+			if e == nil && (lease.SDKOperation == nil || lease.SDKOperation.Kind == contracts.SDKOperationKindValidate) && (lease.ComponentPlanning == nil || lease.ComponentPlanning.Kind == "suggest") && lease.SDKIdentity == nil && !a.Credential.Present && os.Getenv("AXIOM_SCAN_MOCK") != "1" {
 				e = errors.New("selected model has no credential; configure its API Key in the Web model settings")
 			}
 			if e != nil {
@@ -197,7 +210,7 @@ func (w *Worker) execute(ctx context.Context, c *execution.Client, lease *execut
 				if a.Credential.Present {
 					overrides[a.Credential.Value.EnvName] = a.Credential.Value.Value
 				}
-				result, err = scanner.Run(runCtx, scanner.Request{ObservationContractVersion: task.ObservationContractVersion, ResultContractVersion: task.ResultContractVersion, Job: job, TaskID: task.NumericTaskID(), Attempt: int(task.Execution.Attempt), OutputPath: task.OutputPath, Provider: string(a.Model.ProviderID), ScannerDir: w.Cfg.ScannerDir, NodePath: w.Cfg.NodePath, EnvOverrides: overrides, Mock: os.Getenv("AXIOM_SCAN_MOCK") == "1"})
+				result, err = scanner.Run(runCtx, scanner.Request{SDKIdentity: lease.SDKIdentity, DataDir: w.Cfg.DataDir, AgentID: w.Cfg.AgentID, ComponentScan: lease.ComponentScan, ComponentPlanning: lease.ComponentPlanning, GitTarget: gitTargetFromLease(lease), SDKOperation: lease.SDKOperation, ParentState: parentStateFromLease(lease), ScanInput: scanInputFromLease(lease), ObservationContractVersion: task.ObservationContractVersion, ResultContractVersion: task.ResultContractVersion, Job: job, TaskID: task.NumericTaskID(), Attempt: int(task.Execution.Attempt), OutputPath: task.OutputPath, Provider: string(a.Model.ProviderID), ScannerDir: w.Cfg.ScannerDir, NodePath: w.Cfg.NodePath, EnvOverrides: overrides, Mock: os.Getenv("AXIOM_SCAN_MOCK") == "1"})
 			}
 		} else {
 			result, err = w.runLegacy(runCtx, task.Legacy)
@@ -315,4 +328,25 @@ func legacyMode(task *execution.Lease) string {
 		return "standard"
 	}
 	return task.Legacy.Task.ScanMode
+}
+
+func scanInputFromLease(l *execution.Lease) *contracts.ScanInput {
+	if l.ScanInput == nil {
+		return nil
+	}
+	return &l.ScanInput.Input
+}
+
+func parentStateFromLease(l *execution.Lease) *contracts.SDKParentState {
+	if l.ScanInput == nil || !l.ScanInput.ParentState.Present {
+		return nil
+	}
+	return &l.ScanInput.ParentState.Value
+}
+
+func gitTargetFromLease(l *execution.Lease) *contracts.GitDiffTarget {
+	if l.GitDiff == nil {
+		return nil
+	}
+	return &l.GitDiff.Target
 }

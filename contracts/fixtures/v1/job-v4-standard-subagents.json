@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 4,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "source": {
+    "path": "/fixture/source",
+    "snapshotId": "7",
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "output": {
+    "path": "/fixture/output/attempt-2"
+  },
+  "model": {
+    "providerId": "fixture-provider",
+    "connectionType": "openai_compatible",
+    "model": "fixture-model",
+    "baseUrl": "https://fixture.invalid/v1",
+    "wireApi": "responses",
+    "credentialEnv": "FIXTURE_API_KEY",
+    "configurationRevision": "fixture-revision-1"
+  },
+  "policy": {
+    "mode": "standard",
+    "timeBudget": {
+      "scanSeconds": 1800,
+      "finalizationGraceSeconds": 0
+    },
+    "includePaths": [
+      "src/a,b.ts",
+      "src/中文.ts"
+    ],
+    "focus": [
+      "authz"
+    ],
+    "validation": {
+      "mode": "default"
+    },
+    "maxCostUsd": 5
+  },
+  "resultSchemaVersion": 1,
+  "progressSchemaVersion": 2,
+  "eventSchemaVersion": 2,
+  "scanInput": {
+    "schemaVersion": 1,
+    "scanPrompt": "补充审计指令\n第二行",
+    "validationPrompt": "合成自定义验证要求",
+    "postScanPrompt": "合成后处理要求",
+    "workflowId": "fixture-workflow",
+    "safetyIdentifier": "fixture-anonymous-user",
+    "parentScanId": "fixture-parent-native-scan",
+    "expectedPluginVersion": "0.1.94",
+    "failureSeverity": "informational",
+    "knowledge": [
+      {
+        "versionId": "17",
+        "title": "合成知识文档",
+        "sha256": "db9dff596247e19522f64dc7c082077a4b751674fb2b37792b9b7b60ef2361b5",
+        "content": "# Synthetic knowledge\n用户提供的参考资料，不是已确认事实。\n"
+      }
+    ],
+    "subagents": 0
+  }
+}

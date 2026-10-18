@@ -71,9 +71,9 @@ func compileSchemas() {
 
 func limitFor(kind Kind) int {
 	switch kind {
-	case KindProgressSnapshot, KindProgressSnapshotV2, KindExecutionHeartbeat:
+	case KindProgressSnapshot, KindProgressSnapshotV2, KindExecutionHeartbeat, KindSDKDiagnostics:
 		return MaxProgressBytes
-	case KindScanEvent, KindScanEventV2:
+	case KindScanEvent, KindScanEventV2, KindSDKDiagnostic:
 		return MaxEventBytes
 	default:
 		return MaxDocumentBytes
@@ -126,6 +126,28 @@ func ValidateJSON(kind Kind, data []byte, expected *ExecutionRef) error {
 	if expected != nil && (!ok || execution["taskId"] != string(expected.TaskID) || execution["attempt"] != float64(expected.Attempt)) {
 		return invalid("identity_mismatch", kind)
 	}
+	if kind == KindFindingEvidence || kind == KindEvidenceGraph {
+		if err := validateEvidenceFields(kind, object); err != nil {
+			return err
+		}
+	}
+	if kind == KindScanRecoverySnapshot {
+		if recovery, ok := object["recovery"].(map[string]any); ok {
+			if cost, ok := recovery["previousCost"].(map[string]any); ok {
+				nested := cost["execution"].(map[string]any)
+				if nested["taskId"] != execution["taskId"] || nested["attempt"] != execution["attempt"] {
+					return invalid("identity_mismatch", kind)
+				}
+			}
+			if previous, ok := recovery["previousCompletion"].(map[string]any); ok {
+				raw, _ := json.Marshal(previous)
+				ref := &ExecutionRef{TaskID: TaskID(execution["taskId"].(string)), Attempt: int64(execution["attempt"].(float64))}
+				if e := ValidateJSON(KindExecutionCompletion, raw, ref); e != nil {
+					return e
+				}
+			}
+		}
+	}
 	if kind == KindExecutionCompletion {
 		if result, exists := object["result"].(map[string]any); exists {
 			nested := result["execution"].(map[string]any)
@@ -137,6 +159,55 @@ func ValidateJSON(kind Kind, data []byte, expected *ExecutionRef) error {
 		process := object["process"].(map[string]any)
 		if process["resultCommitted"] != hasResult {
 			return invalid("invalid_contract", kind)
+		}
+	}
+	if e := validateIdentityFields(kind, object); e != nil {
+		return e
+	}
+	if err := validateComponentScanFields(kind, object, execution); err != nil {
+		return err
+	}
+	if err := validateComponentFields(kind, object, execution); err != nil {
+		return err
+	}
+	if err := validateSDKOperationFields(kind, object, execution); err != nil {
+		return err
+	}
+	if kind == KindSDKNativeResult || kind == KindSDKDiagnostics {
+		expectedNested := &ExecutionRef{TaskID: TaskID(execution["taskId"].(string)), Attempt: int64(execution["attempt"].(float64))}
+		if kind == KindSDKNativeResult {
+			for key, nestedKind := range map[string]Kind{"usageEstimate": KindSDKCostEstimate, "diagnostics": KindSDKDiagnostics} {
+				raw, _ := json.Marshal(object[key])
+				if err := ValidateJSON(nestedKind, raw, expectedNested); err != nil {
+					return err
+				}
+			}
+		} else {
+			warnings, observers := object["warningCount"].(float64), object["observerErrorCount"].(float64)
+			total, omitted := warnings+observers, object["omittedCount"].(float64)
+			entries := object["entries"].([]any)
+			if total > 9007199254740991 || omitted+float64(len(entries)) != total {
+				return invalid("invalid_contract", kind)
+			}
+			var retainedWarnings, retainedObservers float64
+			for index, value := range entries {
+				entry := value.(map[string]any)
+				raw, _ := json.Marshal(entry)
+				if err := ValidateJSON(KindSDKDiagnostic, raw, expectedNested); err != nil {
+					return err
+				}
+				if entry["sequence"] != omitted+float64(index)+1 {
+					return invalid("invalid_contract", kind)
+				}
+				if entry["source"] == "sdk_warning" {
+					retainedWarnings++
+				} else {
+					retainedObservers++
+				}
+			}
+			if retainedWarnings > warnings || retainedObservers > observers {
+				return invalid("invalid_contract", kind)
+			}
 		}
 	}
 	if kind == KindExecutionHeartbeat {

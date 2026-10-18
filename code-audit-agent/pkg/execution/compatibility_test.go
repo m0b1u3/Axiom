@@ -146,3 +146,26 @@ func TestMatrixMismatchPublishesDiagnosticWithoutClaiming(t *testing.T) {
 		t.Fatal(e)
 	}
 }
+
+func TestSDKIdentityCapabilityRequiresServerSupport(t *testing.T) {
+	for _, version := range []int{0, 1} {
+		t.Run(strconv.Itoa(version), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.HasSuffix(r.URL.Path, "/describe") {
+					json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": control.ServerDescription{ControlAPIs: control.ControlAPIs(), MatrixHash: control.MatrixHash, SDKIdentityVersion: version}})
+					return
+				}
+				w.Write([]byte(`{"code":0,"data":{"ok":true}}`))
+			}))
+			defer server.Close()
+			c := richClient(server.URL)
+			c.SDKIdentityVersion = 1
+			if e := c.Negotiate(t.Context(), "fixture-agent", 1); e != nil {
+				t.Fatal(e)
+			}
+			if c.SDKIdentityVersion != version {
+				t.Fatal("identity capability did not follow Server advertisement")
+			}
+		})
+	}
+}

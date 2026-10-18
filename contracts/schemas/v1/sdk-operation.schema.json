@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-operation.schema.json",
+  "title": "SDKOperation",
+  "$ref": "#/$defs/SDKOperation",
+  "$defs": {
+    "SDKOperation": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "preflight",
+            "validate"
+          ]
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "findingId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[1-9][0-9]*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finding": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/JsonObject"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "acknowledgeUnknownCost": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "kind",
+        "origin",
+        "findingId",
+        "finding",
+        "acknowledgeUnknownCost"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "preflight"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "finding": {
+                "type": "null"
+              },
+              "findingId": {
+                "type": "null"
+              },
+              "acknowledgeUnknownCost": {
+                "const": false
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "origin": {
+                "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+              },
+              "findingId": {
+                "type": "string",
+                "pattern": "^[1-9][0-9]*$"
+              },
+              "finding": {
+                "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/JsonObject"
+              },
+              "acknowledgeUnknownCost": {
+                "const": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

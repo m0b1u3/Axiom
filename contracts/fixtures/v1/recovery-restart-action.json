@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "17",
+    "attempt": 1
+  },
+  "expectedStatus": "failed",
+  "action": "restart",
+  "resultSha256": null,
+  "acknowledgeReexecution": true
+}

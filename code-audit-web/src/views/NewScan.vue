@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import { useAuth } from "../composables/auth";
 const { canOperate } = useAuth();
-import { computed, onMounted, reactive, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Upload } from "lucide-vue-next";
 import { api, type ModelConfig, type SnapshotInfo } from "../api";
 import type { Project } from "../types";
+import GitSnapshotImport from '../components/GitSnapshotImport.vue';
+import GitDiffPreview from '../components/GitDiffPreview.vue';
+import type {GitDiffTarget} from '../contracts';
+import SDKIdentityPicker from "../components/SDKIdentityPicker.vue";
+import KnowledgePicker from '../components/KnowledgePicker.vue';
+import AdvancedScanConfiguration from '../components/AdvancedScanConfiguration.vue';
+import {emptyAdvancedScanForm,advancedScanInput} from '../utils/advanced-scan-input';
 import PageHeader from "../components/PageHeader.vue";
 import Button from "../components/ui/Button.vue";
 import Input from "../components/ui/Input.vue";
 import Select from "../components/ui/Select.vue";
 import { message } from "../lib/toast";
+import CatalogPagination from "../components/CatalogPagination.vue";
 import { shortHash } from "../utils/format";
 import {scanInput,scopePaths,optionalBudget} from "../utils/scan-input";
 
@@ -18,6 +26,7 @@ import {scanInput,scopePaths,optionalBudget} from "../utils/scan-input";
 const router = useRouter();
 const route = useRoute();
 const submitting = ref(false);
+const advanced=ref(emptyAdvancedScanForm()),knowledgeIds=ref<number[]>([]);
 const form = reactive({
   sourcePath: "",
   scanMode: "standard",
@@ -32,12 +41,40 @@ const projects = ref<Project[]>([]);
 const selectedProjectId = ref<number | null>(null);
 const snapshots = ref<SnapshotInfo[]>([]);
 const selectedSnapshotId = ref("");
+const gitBusy=ref(false),gitPreviewBusy=ref(false),gitError=ref('');
+const gitSnapshot=computed(()=>snapshots.value.find(s=>String(s.id)===selectedSnapshotId.value)?.gitDiff===true);
+function gitImported(v:{snapshot:SnapshotInfo;target:GitDiffTarget}){snapshots.value=[v.snapshot,...snapshots.value.filter(s=>s.id!==v.snapshot.id)];selectedSnapshotId.value=String(v.snapshot.id);form.sourcePath=v.snapshot.snapshotPath;lastSnapshot.value=v.snapshot;form.scanMode='standard';includeText.value='';gitError.value='';}
+watch(gitSnapshot,(value)=>{gitError.value='';gitPreviewBusy.value=value;if(value){form.scanMode='standard';includeText.value='';}});
+const snapshotSearch=ref(''), snapshotLoading=ref(false), snapshotError=ref('');
+const snapshotPage=ref(1), snapshotTotal=ref<number>();
+let snapshotGeneration=0, snapshotTimer:ReturnType<typeof setTimeout> | undefined;
+async function loadSnapshots(page=snapshotPage.value) {
+  const gen=++snapshotGeneration;snapshotLoading.value=true;snapshotError.value='';
+  try {
+    const pin=Number(selectedSnapshotId.value) || (querySnapshotPending ? Number(route.query.snapshotId) : 0);
+    const [list,pinned]=await Promise.all([api.snapshotPage({page,q:snapshotSearch.value}),pin>0 ? api.snapshotPage({id:pin}) : Promise.resolve(null)]);
+    if(gen!==snapshotGeneration)return;
+    snapshots.value=list.items;snapshotPage.value=list.page;snapshotTotal.value=list.total;
+    if(pinned?.items[0] && !snapshots.value.some(s=>s.id===pin)) snapshots.value=[pinned.items[0],...snapshots.value];
+    if(pin>0 && !pinned?.items.length) throw new Error('选定的代码快照已不存在，请重新选择或上传源码包');
+  } catch(error) { if(gen===snapshotGeneration) snapshotError.value=(error as Error).message; }
+  finally {if(gen===snapshotGeneration)snapshotLoading.value=false;}
+}
+watch(snapshotSearch,()=>{
+  clearTimeout(snapshotTimer);snapshotGeneration++;snapshotLoading.value=true;
+  snapshotTimer=setTimeout(()=>void loadSnapshots(1),250);
+});
+onUnmounted(()=>{snapshotGeneration++;clearTimeout(snapshotTimer)});
 const modelConfigs = ref<ModelConfig[]>([]);
 const selectedModelConfigId = ref("");
+const sdkIdentityId=ref("");
 const includeText = ref("");
 const selectedFocus = ref<string[]>([]);
 const validationMode = ref('default'), businessContext = ref('');
 const inputError=ref("");
+const lookupsLoading = ref(false);
+const lookupErrors = ref<string[]>([]);
+let optionsStarted = false, querySnapshotPending = true;
 const budgetError=computed(()=>{try{optionalBudget(form.maxCostUsd);return "";}catch(error){return (error as Error).message;}});
 watch([()=>form.maxTotalCostUsd,()=>form.maxCostUsd,()=>form.workers,()=>form.scanMode,()=>form.timeoutMinutes,includeText,selectedSnapshotId,selectedModelConfigId],()=>{inputError.value="";});
 watch(()=>form.scanMode,mode=>{if(mode==='deep')validationMode.value='default'});
@@ -77,7 +114,7 @@ const projectOptions = computed(() =>
 );
 
 const snapshotOptions = computed(() =>
-  snapshots.value.filter(s => selectedProjectId.value === null || s.projectId === selectedProjectId.value || !s.projectId || String(s.id) === selectedSnapshotId.value).map((s) => ({
+  snapshots.value.map((s) => ({
     value: String(s.id),
     label: `#${s.id}  ${s.originalFilename}  ·  ${s.fileCount} 文件 · ${shortHash(s.archiveSha256)}`,
   })),
@@ -120,6 +157,12 @@ async function onFilePicked(event: Event): Promise<void> {
   }
 }
 
+function discardMissingSnapshot() {
+  querySnapshotPending=false;selectedSnapshotId.value='';form.sourcePath='';lastSnapshot.value=null;
+  lookupErrors.value=lookupErrors.value.filter(error=>!error.startsWith('代码快照读取失败'));
+  void loadSnapshots(1);
+}
+
 function onPickSnapshot(v: string): void {
   if (!v) { form.sourcePath = ""; lastSnapshot.value = null; return; }
   const snap = snapshots.value.find((item) => String(item.id) === v);
@@ -137,8 +180,9 @@ function onProjectChange(v: string): void {
   selectedProjectId.value = v ? Number(v) : null;
 }
 
-async function submit(): Promise<void> {
-  if (!canOperate.value || submitting.value || uploading.value) return;
+async function submit(operation?:"preflight"): Promise<void> {
+  if (gitBusy.value||gitPreviewBusy.value||gitError.value)return;
+  if (!canOperate.value || submitting.value || uploading.value || lookupsLoading.value || lookupErrors.value.length || snapshotLoading.value || snapshotError.value) return;
   if (!selectedModelConfigId.value) {
     message.warning("请选择模型配置（没有则先到「模型配置」新建）");
     return;
@@ -148,14 +192,19 @@ async function submit(): Promise<void> {
     return;
   }
   if(form.scanMode==='deep' && [form.deepMaxDiscoveryRuns,form.deepStopAfterNoNew].some(v=>v!==''&&(!Number.isInteger(Number(v))||Number(v)<1||Number(v)>1000))){message.warning('深度扫描次数须为 1–1000 的整数，或留空使用 SDK 默认值');return;}
+  if(gitSnapshot.value&&(form.scanMode!=="standard"||includeText.value.trim())){inputError.value="Git 提交差异只支持标准扫描，不能叠加路径范围。";return;}
   submitting.value = true;
   inputError.value="";
   try {
     const payload=scanInput({snapshotId:Number(selectedSnapshotId.value),modelConfigId:Number(selectedModelConfigId.value),projectId:selectedProjectId.value,
       mode:form.scanMode,timeoutMinutes:form.timeoutMinutes,budget:form.maxCostUsd,totalBudget:form.maxTotalCostUsd,workers:form.workers,includeText:includeText.value,focus:selectedFocus.value,
       validationMode:validationMode.value as "default"|"exploitability",businessContext:businessContext.value,deepMaxDiscoveryRuns:form.deepMaxDiscoveryRuns,deepStopAfterNoNew:form.deepStopAfterNoNew});
-    const task = await api.createScan(payload);
-    message.success(`已创建扫描 #${task.id}，等待 Agent 领取`);
+    const extra=advancedScanInput(advanced.value,form.scanMode,validationMode.value);
+    if(extra)payload.scanInput=extra;
+    if(String(advanced.value.parentTaskId).trim())payload.parentTaskId=Number(advanced.value.parentTaskId);
+    if(knowledgeIds.value.length)payload.knowledgeVersionIds=[...knowledgeIds.value];
+    const task = await api.createScan({...payload,...(sdkIdentityId.value?{sdkIdentityId:sdkIdentityId.value}:{}),...(operation?{operation}: {})});
+    message.success(`已创建${operation?"原生预检":"扫描"} #${task.id}，等待 Agent 领取`);
     void router.push({ name: "scan-detail", params: { id: task.id } });
   } catch (error) {
     inputError.value=(error as Error).message;
@@ -165,27 +214,29 @@ async function submit(): Promise<void> {
   }
 }
 
-onMounted(async () => {
+async function loadOptions(): Promise<void> {
+  if (lookupsLoading.value || !canOperate.value) return;
+  lookupsLoading.value = true;
+  lookupErrors.value = [];
   const qProject = Number(route.query.projectId);
-  if (qProject > 0) selectedProjectId.value = qProject;
-  try {
-    projects.value = await api.listProjects();
-  } catch {
-    projects.value = [];
-  }
-  try {
-    snapshots.value = await api.listSnapshots();
-  } catch {
-    snapshots.value = [];
-  }
+  if (!optionsStarted && qProject > 0) selectedProjectId.value = qProject;
+  optionsStarted = true;
+  const results = await Promise.allSettled([api.listProjects(), loadSnapshots(), api.listModelConfigs()]);
+  const [projectResult, snapshotResult, modelResult] = results;
+  if (projectResult.status === 'fulfilled') projects.value = projectResult.value;
+  if (snapshotError.value) lookupErrors.value.push('代码快照读取失败：' + snapshotError.value);
+  if (modelResult.status === 'fulfilled') modelConfigs.value = modelResult.value;
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') lookupErrors.value.push(`${['项目', '代码快照', '模型配置'][index]}读取失败：${result.reason.message}`);
+  });
   const qSnap = Number(route.query.snapshotId);
-  if (qSnap > 0 && snapshots.value.some((s) => s.id === qSnap)) {
+  if (querySnapshotPending && !snapshotError.value && snapshotResult.status === 'fulfilled' && !selectedSnapshotId.value && qSnap > 0 && snapshots.value.some((s) => s.id === qSnap)) {
     selectedSnapshotId.value = String(qSnap);
     const snap = snapshots.value.find((s) => s.id === qSnap);
     if (snap) { form.sourcePath = snap.snapshotPath; lastSnapshot.value = snap; if (!selectedProjectId.value && snap.projectId > 0) selectedProjectId.value = snap.projectId; }
   }
-  try {
-    modelConfigs.value = await api.listModelConfigs();
+  if (!snapshotError.value && snapshotResult.status === 'fulfilled') querySnapshotPending = false;
+  if (!selectedModelConfigId.value) {
     // 默认选中「已启用」的工作模型；无启用时仅在唯一配置下兜底
     const enabled = modelConfigs.value.find((c) => c.enabled);
     if (enabled) {
@@ -193,10 +244,10 @@ onMounted(async () => {
     } else if (modelConfigs.value.length === 1) {
       selectedModelConfigId.value = String(modelConfigs.value[0]!.id);
     }
-  } catch {
-    modelConfigs.value = [];
   }
-});
+  lookupsLoading.value = false;
+}
+onMounted(() => void loadOptions());
 </script>
 
 <template>
@@ -205,6 +256,8 @@ onMounted(async () => {
 
     <p v-if="!canOperate" class="request-error" role="status">当前账户为只读用户，无法创建扫描。请联系管理员调整角色。</p>
     <div v-else class="form-wrap">
+      <p v-if="lookupsLoading" role="status">正在读取项目、代码快照与模型配置…</p>
+      <div v-if="lookupErrors.length" class="request-error" role="alert"><div><p v-for="error in lookupErrors" :key="error">{{error}}</p><p>已填写的内容会保留，请重新读取后创建扫描。</p></div><Button variant="outline" size="sm" :loading="lookupsLoading" @click="loadOptions">重新读取配置</Button></div>
 <section class="scan-section"><header><h2>代码来源</h2><p>选择本次审计的源码。</p></header><div class="section-body">      <div class="source-field">
       <div class="field-label">归属项目（可选）</div>
       <Select aria-label="归属项目"
@@ -217,16 +270,21 @@ onMounted(async () => {
       </div>
       <div class="source-field snapshot-field">
       <div class="field-label">代码快照<span v-if="selectedSnapshotId" class="source-selected"> · 已选定源码</span></div>
+      <Input v-model="snapshotSearch" aria-label="搜索已有代码快照" maxlength="256" placeholder="搜索全部快照：文件名 / 项目 / 哈希 / 路径" />
+      <div v-if="snapshotError && !lookupErrors.length" class="request-error" role="alert">代码快照读取失败：{{snapshotError}}<Button variant="outline" size="sm" @click="loadSnapshots()">重读代码快照</Button></div>
+      <Button v-if="snapshotError.includes('已不存在')" variant="outline" size="sm" @click="discardMissingSnapshot">清除失效源码并重新选择</Button>
       <Select aria-label="代码快照"
         v-model="selectedSnapshotId"
         :options="snapshotOptions"
+        :disabled="snapshotLoading || !!snapshotError"
         clearable
         :placeholder="snapshotOptions.length ? '选择已有快照，或上传新的源码包' : '暂无可选快照，请上传源码包'"
         @change="onPickSnapshot"
       />
       </div>
 
-      <p v-if="selectedSnapshotId" class="upload-hint">修改归属项目会保留当前源码，仅改变本次扫描归属，不移动原资产。</p>
+      <CatalogPagination label="可选快照分页" :page="snapshotTotal === undefined ? undefined : snapshotPage" :page-size="50" :total="snapshotTotal" :loading="snapshotLoading" :unavailable="!!snapshotError" @change="loadSnapshots" />
+      <p v-if="selectedSnapshotId" class="upload-hint">翻页和搜索会保留已选定源码。修改归属项目会保留当前源码，仅改变本次扫描归属，不移动原资产。</p>
       <div class="upload-row">
         <div>
           <div class="upload-title">上传新的源码包</div>
@@ -238,9 +296,12 @@ onMounted(async () => {
         <Button variant="secondary" :loading="uploading" @click="fileInput?.click()">
           <Upload :size="14" />选择文件上传
         </Button>
-        <input ref="fileInput" type="file" accept=".zip,.tar.gz,.tgz,.gz" style="display: none" @change="onFilePicked" />
+        <input id="source-archive" aria-label="普通源码归档" ref="fileInput" type="file" accept=".zip,.tar.gz,.tgz,.gz" style="display: none" @change="onFilePicked" />
       </div>
 
+      <RouterLink v-if="selectedSnapshotId" :to="'/component-plans?snapshotId='+selectedSnapshotId">管理此快照的组件计划</RouterLink>
+      <GitSnapshotImport :project-id="selectedProjectId??undefined" :disabled="submitting||uploading" @busy="gitBusy=$event" @imported="gitImported"/>
+      <GitDiffPreview v-if="gitSnapshot" :snapshot-id="Number(selectedSnapshotId)" :source-hash="snapshots.find(s=>String(s.id)===selectedSnapshotId)?.contentHash" @state="gitPreviewBusy=$event.busy;gitError=$event.error"/>
       <div v-if="lastSnapshot" class="snap-info mono">
         <div class="snap-line">
           <span>文件 {{ lastSnapshot.fileCount }}</span>
@@ -252,14 +313,14 @@ onMounted(async () => {
 
 </div></section>
 <section class="scan-section"><header><h2>扫描配置</h2><p>选择模型和执行方式。</p></header><div class="section-body"><label class="field-label">模型配置</label>
-      <Select
+      <Select aria-label="模型配置"
         v-if="modelConfigs.length"
         v-model="selectedModelConfigId"
         :options="modelOptions"
         placeholder="选择扫描使用的模型配置"
         class="wide-reset"
       />
-      <div v-else class="config-hint">
+      <div v-else-if="!lookupsLoading && !lookupErrors.length" class="config-hint">
         还没有模型配置，
         <router-link to="/settings/model-configs" class="tlink">到「模型配置」新建</router-link>
 
@@ -269,14 +330,16 @@ onMounted(async () => {
         <span class="muted">{{ selConfig.baseUrl || "（OpenAI 官方）" }}</span>
       </div>
 
+      <SDKIdentityPicker v-model="sdkIdentityId" :native="!!selConfig&&selConfig.provider==='openai'&&(!selConfig.baseUrl||selConfig.baseUrl==='https://api.openai.com/v1')&&selConfig.wireApi!=='chat'" :disabled="submitting"/>
       <div class="params">
         <div>
           <div class="field-label">扫描模式</div>
           <Select
+            aria-label="扫描模式"
             v-model="form.scanMode"
             :options="[
               { value: 'standard', label: '标准扫描' },
-              { value: 'deep', label: '深度扫描' },
+              ...(gitSnapshot?[]:[{ value: 'deep', label: '深度扫描' }]),
             ]"
           />
         </div>
@@ -311,8 +374,9 @@ onMounted(async () => {
         <p>每次表示一次独立审查，不是文件数量。满足任一停止条件即可进入收尾；限时结束不代表完整覆盖。</p>
       </details>
 </div></section>
+<section class="scan-section"><header><h2>知识文档</h2><p>固定本次审计的参考资料。</p></header><div class="section-body"><KnowledgePicker v-model="knowledgeIds"/></div></section>
 <section class="scan-section"><header><h2>审计要求</h2><p>限定范围，明确审计重点。</p></header><div class="section-body"><label class="field-label" for="scan-include">扫描范围（可选）</label>      <textarea
-        id="scan-include" v-model="includeText"
+        id="scan-include" v-model="includeText" :disabled="gitSnapshot"
         rows="3" class="scope-input" aria-describedby="scope-help"
         placeholder="每行一个相对路径，留空扫描全部"
       ></textarea>
@@ -321,6 +385,7 @@ onMounted(async () => {
       </div>
       <p id="scope-help" class="upload-hint">每行一个目录或文件；文件名中的逗号会原样保留。</p>
 
+<AdvancedScanConfiguration v-model="advanced" :mode="form.scanMode" :validation="validationMode" :source-snapshot-id="Number(selectedSnapshotId)"/>
 <div class="field-label focus-label">发现重点（可选）</div>      <div class="focus-row">
         <Button
           v-for="opt in FOCUS_OPTIONS"
@@ -350,8 +415,9 @@ onMounted(async () => {
       </fieldset>
 </div></section>
       <div class="submit-row">
-        <Button :loading="submitting" :disabled="uploading" @click="submit">创建扫描</Button>
-        <span class="submit-note">扫描将在后台执行，你可以在任务详情中查看进度、日志和分析结果。</span>
+        <Button :loading="submitting" :disabled="gitBusy || gitPreviewBusy || !!gitError || uploading || lookupsLoading || !!lookupErrors.length || snapshotLoading || !!snapshotError" @click="submit()">创建扫描</Button>
+        <Button variant="outline" :disabled="gitBusy || gitPreviewBusy || !!gitError || submitting || uploading || lookupsLoading || !!lookupErrors.length || snapshotLoading || !!snapshotError" @click="submit('preflight')">仅执行 SDK 预检</Button>
+        <span class="submit-note">预检只检查本地输入和配置，不启动扫描，不验证模型访问权限。扫描将在后台执行，你可以在任务详情中查看进度、日志和分析结果。</span>
       </div>
       <p v-if="inputError" class="field-error" role="alert">{{inputError}}</p>
     </div>

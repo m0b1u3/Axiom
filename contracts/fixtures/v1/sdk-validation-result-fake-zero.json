@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "kind": "validate",
+  "sdkVersion": "0.1.25",
+  "startedAt": "2026-10-16T08:00:00Z",
+  "finishedAt": "2026-10-16T08:00:01Z",
+  "cost": {
+    "state": "unknown",
+    "estimatedUsd": 0,
+    "reason": "SDK 没有公开费用回调"
+  },
+  "preflight": null,
+  "validation": {
+    "disposition": "deferred",
+    "report": "Fixtures / Mock：合成复核报告",
+    "threadId": null
+  },
+  "error": null
+}

@@ -19,7 +19,9 @@
     "m0:salvage": "node --import tsx src/m0/salvage-raw.ts",
     "postinstall": "node ../deploy/sdk/apply.mjs",
     "verify:sdk": "node ../deploy/sdk/apply.mjs --check",
-    "test:sdk-patches": "node --test ../deploy/sdk/apply.test.mjs"
+    "test:sdk-patches": "node --test ../deploy/sdk/apply.test.mjs",
+    "verify:sdk-integration": "node ../deploy/sdk/integration-check.mjs",
+    "test:sdk-integration": "node --test ../deploy/sdk/integration-check.test.mjs"
   },
   "dependencies": {
     "@axiom/contracts": "file:../contracts/ts",

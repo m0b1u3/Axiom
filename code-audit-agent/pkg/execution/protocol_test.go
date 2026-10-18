@@ -96,3 +96,130 @@ func TestInputLeaseRejectsWrongIdentityAndAmbiguousRepresentations(t *testing.T)
 		t.Fatal("empty queue response changed")
 	}
 }
+
+func TestScanInputBundleRejectsMissingIdentityAndUnsupportedScanner(t *testing.T) {
+	for _, scenario := range []string{"valid", "missing", "wrong-identity", "unversioned", "old-scanner"} {
+		t.Run(scenario, func(t *testing.T) {
+			a := fixtureAssignment(t)
+			sidecar := &contracts.ScanInputAssignment{SchemaVersion: 2, Execution: a.Execution, Input: contracts.ScanInput{SchemaVersion: 1, Knowledge: []contracts.KnowledgeDocument{}}}
+			v := control.ObservationLease{InputContractVersion: 2, ContractLease: control.ContractLease{InputLease: control.InputLease{Assignment: &a, SourcePath: "/source", OutputPath: "/output", LeaseSeconds: int(a.Lease.LeaseSeconds)}, ResultContractVersion: 1}, ObservationContractVersion: 1, ScanInput: sidecar}
+			switch scenario {
+			case "missing":
+				v.ScanInput = nil
+			case "wrong-identity":
+				v.ScanInput.Execution.Attempt++
+			case "unversioned":
+				v.InputContractVersion = 1
+			}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": v})
+			}))
+			defer server.Close()
+			client := richClient(server.URL)
+			if scenario != "old-scanner" {
+				client.ObservationCapabilities.JobVersions = append(client.ObservationCapabilities.JobVersions, 4)
+			}
+			lease, e := client.Claim(t.Context(), string(a.Lease.AgentID))
+			if scenario == "valid" {
+				if e != nil || lease.ScanInput == nil {
+					t.Fatal(e, lease)
+				}
+			} else if e == nil {
+				t.Fatal("incompatible or mismatched sidecar was accepted")
+			}
+		})
+	}
+}
+
+func TestSDKOperationBundleNeverFallsBackToScan(t *testing.T) {
+	for _, scenario := range []string{"valid", "missing-operation", "missing-input", "wrong-execution", "old-scanner", "unmarked"} {
+		t.Run(scenario, func(t *testing.T) {
+			a := fixtureAssignment(t)
+			op := &contracts.SDKOperation{SchemaVersion: 1, Execution: a.Execution, Kind: "preflight"}
+			v := control.ObservationLease{InputContractVersion: 3, ScanInput: &contracts.ScanInputAssignment{SchemaVersion: 2, Execution: a.Execution, Input: contracts.ScanInput{SchemaVersion: 1, Knowledge: []contracts.KnowledgeDocument{}}}, SDKOperation: op, ContractLease: control.ContractLease{InputLease: control.InputLease{Assignment: &a, SourcePath: "/source", OutputPath: "/output", LeaseSeconds: int(a.Lease.LeaseSeconds)}, ResultContractVersion: 1}, ObservationContractVersion: 1}
+			switch scenario {
+			case "missing-operation":
+				v.SDKOperation = nil
+			case "missing-input":
+				v.ScanInput = nil
+			case "wrong-execution":
+				op.Execution.Attempt++
+			case "unmarked":
+				v.InputContractVersion = 2
+			}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": v})
+			}))
+			defer server.Close()
+			client := richClient(server.URL)
+			client.ObservationCapabilities.JobVersions = append(client.ObservationCapabilities.JobVersions, 4)
+			if scenario != "old-scanner" {
+				client.ObservationCapabilities.JobVersions = append(client.ObservationCapabilities.JobVersions, 5)
+			}
+			lease, e := client.Claim(t.Context(), string(a.Lease.AgentID))
+			if scenario == "valid" {
+				if e != nil || lease.SDKOperation == nil {
+					t.Fatal(e, lease)
+				}
+			} else if e == nil {
+				t.Fatal("SDK operation bundle was silently downgraded")
+			}
+		})
+	}
+}
+
+func TestGitDiffLeaseRequiresVersionedBindingWithoutFallback(t *testing.T) {
+	for _, scenario := range []string{"valid", "preflight", "missing", "wrong-execution", "wrong-source", "wrong-snapshot", "unmarked", "old-scanner", "missing-input", "preflight-old-operation"} {
+		t.Run(scenario, func(t *testing.T) {
+			a := fixtureAssignment(t)
+			raw, e := os.ReadFile("../../../contracts/fixtures/v1/git-assignment.json")
+			if e != nil {
+				t.Fatal(e)
+			}
+			binding, e := contracts.DecodeGitDiffAssignment(raw, nil)
+			if e != nil {
+				t.Fatal(e)
+			}
+			binding.Execution = a.Execution
+			binding.SourceSnapshotID = a.Source.SnapshotID
+			binding.SourceContentHash = a.Source.ContentHash
+			v := control.ObservationLease{InputContractVersion: contracts.GitDiffInputVersion, ScanInput: &contracts.ScanInputAssignment{SchemaVersion: 2, Execution: a.Execution, Input: contracts.ScanInput{SchemaVersion: 1, Knowledge: []contracts.KnowledgeDocument{}}}, GitDiff: &binding, ContractLease: control.ContractLease{InputLease: control.InputLease{Assignment: &a, SourcePath: "/source", OutputPath: "/output", LeaseSeconds: int(a.Lease.LeaseSeconds)}, ResultContractVersion: 1}, ObservationContractVersion: 1}
+			switch scenario {
+			case "preflight", "preflight-old-operation":
+				v.SDKOperation = &contracts.SDKOperation{SchemaVersion: 1, Execution: a.Execution, Kind: "preflight"}
+			case "missing":
+				v.GitDiff = nil
+			case "wrong-execution":
+				binding.Execution.Attempt++
+			case "wrong-source":
+				binding.SourceContentHash = contracts.Digest(string(a.Source.ContentHash[:63]) + "0")
+			case "wrong-snapshot":
+				binding.SourceSnapshotID = "999"
+			case "unmarked":
+				v.InputContractVersion = contracts.ScanInputVersion
+			case "missing-input":
+				v.ScanInput = nil
+			}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": v})
+			}))
+			defer server.Close()
+			client := richClient(server.URL)
+			client.ObservationCapabilities.JobVersions = append(client.ObservationCapabilities.JobVersions, 4)
+			if scenario != "preflight-old-operation" {
+				client.ObservationCapabilities.JobVersions = append(client.ObservationCapabilities.JobVersions, 5)
+			}
+			if scenario != "old-scanner" {
+				client.ObservationCapabilities.JobVersions = append(client.ObservationCapabilities.JobVersions, 6)
+			}
+			lease, e := client.Claim(t.Context(), string(a.Lease.AgentID))
+			if scenario == "valid" || scenario == "preflight" {
+				if e != nil || lease.GitDiff == nil || lease.GitDiff.Target != binding.Target {
+					t.Fatal("Git binding lost", e, lease)
+				}
+			} else if e == nil {
+				t.Fatal("invalid Git diff lease accepted", scenario)
+			}
+		})
+	}
+}

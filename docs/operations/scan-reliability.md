@@ -20,3 +20,5 @@ The custom provider configuration sets request_max_retries and stream_max_retrie
 ## Deployment
 
 Deployment and backup receipts are retained privately on the original development host. API and agent restarted only after confirming no queued/running/preparing tasks. Existing task 13 remains failed; historical missing evidence cannot be reconstructed.
+
+2026-10-16：已核实 SDK 0.1.25 没有跨进程续扫入口。Web 新增过期中断登记、完整提交结果恢复入库与明确确认后的重新执行，保持原执行、费用和历史证据。迁移 017 仅保存恢复来源；既有合同、SDK 锁与七处补丁不变。详情见 [扫描中断恢复](../SCAN_RECOVERY.md)。验证只使用本地 Mock / Fixture，业务 Docker 未升级。

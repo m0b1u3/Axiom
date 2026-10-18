@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "9",
+  "title": "计划合同",
+  "source": {
+    "snapshotId": "7",
+    "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "headCommit": null
+  },
+  "revision": 1,
+  "document": {
+    "components": [
+      {
+        "name": "完整源码",
+        "paths": [
+          "."
+        ]
+      }
+    ]
+  },
+  "origin": "manual",
+  "createdAt": "2026-10-17T00:00:00Z",
+  "updatedAt": "2026-10-17T00:00:00Z"
+}

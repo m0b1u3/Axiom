@@ -1,6 +1,9 @@
 package control
 
-import "axiom/contracts"
+import (
+	"axiom/contracts"
+	"slices"
+)
 
 type Profile struct {
 	ID          string `json:"id"`
@@ -14,10 +17,12 @@ type Profile struct {
 	Event       int    `json:"event"`
 }
 type Requirements struct {
-	Input       int  `json:"input"`
-	Result      int  `json:"result"`
-	Observation int  `json:"observation"`
-	Budget      bool `json:"budget"`
+	SDKOperation bool `json:"sdkOperation,omitempty"`
+	ScanInput    bool `json:"scanInput,omitempty"`
+	Input        int  `json:"input"`
+	Result       int  `json:"result"`
+	Observation  int  `json:"observation"`
+	Budget       bool `json:"budget"`
 }
 type Capabilities struct {
 	Input       contracts.InputCapabilities
@@ -28,8 +33,14 @@ type Capabilities struct {
 func ControlAPIs() []int  { return append([]int(nil), controlAPIs...) }
 func Profiles() []Profile { return append([]Profile(nil), profiles...) }
 func RequiredProfile(v Requirements) (Profile, bool) {
+	if v.SDKOperation && v.Input != contracts.SDKOperationInputVersion && v.Input != contracts.GitDiffInputVersion {
+		return Profile{}, false
+	}
+	if v.ScanInput && ((v.Input != contracts.ScanInputVersion && v.Input != contracts.SDKOperationInputVersion && v.Input != contracts.GitDiffInputVersion && v.Input != contracts.ComponentPlanningInputVersion && v.Input != contracts.ComponentScanInputVersion) || v.Result != 1 || v.Observation != 1) {
+		return Profile{}, false
+	}
 	for _, p := range profiles {
-		if p.Input == v.Input && p.Result == v.Result && p.Observation == v.Observation && (!v.Budget || p.Input == 1) {
+		if p.Input == v.Input && p.Result == v.Result && p.Observation == v.Observation && (!v.Budget || p.Input > 0) {
 			return p, true
 		}
 	}
@@ -43,7 +54,22 @@ func Missing(v Requirements, c Capabilities) []string {
 		return []string{"task_contract_unsupported"}
 	}
 	missing := []string{}
-	if v.Input == 1 && !c.Input.SupportsInput(1, false) {
+	if v.Input == contracts.ComponentScanInputVersion && !slices.Contains(c.Observation.JobVersions, contracts.ComponentScanJobVersion) {
+		missing = append(missing, "component_scan")
+	}
+	if v.Input == contracts.ComponentPlanningInputVersion && !slices.Contains(c.Observation.JobVersions, contracts.ComponentPlanningJobVersion) {
+		missing = append(missing, "component_planning")
+	}
+	if v.Input == contracts.GitDiffInputVersion && !slices.Contains(c.Observation.JobVersions, contracts.GitDiffJobVersion) {
+		missing = append(missing, "git_diff")
+	}
+	if (v.SDKOperation || v.Input == contracts.SDKOperationInputVersion) && !slices.Contains(c.Observation.JobVersions, contracts.SDKOperationJobVersion) {
+		missing = append(missing, "sdk_operation")
+	}
+	if (v.ScanInput || v.Input == contracts.ScanInputVersion || v.Input == contracts.SDKOperationInputVersion || v.Input == contracts.GitDiffInputVersion || v.Input == contracts.ComponentPlanningInputVersion || v.Input == contracts.ComponentScanInputVersion) && !slices.Contains(c.Observation.JobVersions, int64(contracts.ScanInputJobVersion)) {
+		missing = append(missing, "scan_input")
+	}
+	if v.Input > 0 && !c.Input.SupportsInput(1, false) {
 		missing = append(missing, "input")
 	}
 	if v.Budget && !c.Input.MaxCostUSD {
@@ -64,6 +90,7 @@ type RuntimeReport struct {
 	Runtime contracts.AgentRuntime `json:"runtime"`
 }
 type ServerDescription struct {
-	ControlAPIs []int  `json:"controlAPIs"`
-	MatrixHash  string `json:"matrixHash"`
+	SDKIdentityVersion int    `json:"sdkIdentityVersion,omitempty"`
+	ControlAPIs        []int  `json:"controlAPIs"`
+	MatrixHash         string `json:"matrixHash"`
 }
