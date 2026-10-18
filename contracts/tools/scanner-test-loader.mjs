@@ -4,6 +4,11 @@ import {existsSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 const prefix=new URL('../../code-audit-scanner/src/',import.meta.url).href;
 export async function resolve(specifier,context,nextResolve) {
+  // The standalone contract job installs only contracts dependencies. Resolve
+  // the real generated contract build without relying on Scanner node_modules.
+  if(specifier==='@axiom/contracts' && context.parentURL?.startsWith(prefix)) {
+    return await nextResolve(new URL('../ts/dist/index.js',import.meta.url).href,context);
+  }
   if(context.parentURL===new URL('../../code-audit-scanner/src/main.ts',import.meta.url).href && specifier==='./engine/codex-security-engine.js' && process.env.AXIOM_CONTRACT_ENGINE_STUB) {
     return await nextResolve(new URL(process.env.AXIOM_CONTRACT_ENGINE_STUB).href,context);
   }
