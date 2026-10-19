@@ -17,7 +17,7 @@ AXIOM_API_TARGET=http://127.0.0.1:8080 npm run dev -- --host 127.0.0.1 --port 51
 
 请将开发代理指向本机隔离 Server。完整逐页验收使用独立 PostgreSQL、真实 Server 和静态生产构建；不启动 Agent、Scanner、SDK 或真实模型。运行方式、完成/缺失/待验证清单及证据见 [前端完整性验收](../docs/FRONTEND_ACCEPTANCE.md)。既有输入、结果、进度等集成测试使用 SDK 替身。
 
-正式 Linux amd64 单机安装见 [Beta 安装说明](../docs/BETA_INSTALLATION.md)。普通构建或前端验收不代表已完成真实 SDK 审计效果验证。
+正式 Linux amd64 安装见 [Beta 安装说明](../docs/BETA_INSTALLATION.md)。普通构建或前端验收不代表已完成真实 SDK 审计效果验证。
 
 资产/漏洞列表及源码选择支持服务端全量分页、搜索和组合筛选。Web与Server需同步升级；旧数组API继续供历史客户端读取。参数、历史语义和独立浏览器测试见 [查询基线](../docs/CATALOG_PAGINATION.md)。
 

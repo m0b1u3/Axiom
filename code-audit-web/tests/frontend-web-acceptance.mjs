@@ -314,7 +314,7 @@ try {
 
   await page.goto(base + '/settings?section=account'); await page.getByRole('heading', {name: '登录会话', exact: true}).waitFor();
   await button('修改密码').click(); await button('取消', page.getByRole('dialog', {name: '修改密码', exact: true})).click();
-  for (const [section, name] of [['users', '账户管理'], ['operations', '操作记录'], ['about', '关于系统'], ['storage', '存储与清理'], ['execution', '扫描调度']]) {
+  for (const [section, name] of [['users', '账户管理'], ['operations', '操作日志'], ['about', '关于系统'], ['storage', '存储与清理'], ['execution', '扫描设置']]) {
     await button(name).click(); await page.waitForURL(url => url.searchParams.get('section') === section);
     assert.equal(await button(name).getAttribute('aria-current'), 'page');
   }
@@ -332,7 +332,7 @@ try {
   assert.equal(await button('新建扫描').count(), 0);
   await page.goto(base + '/projects/' + project); await page.getByRole('heading', {name: 'Fixture 前端完整性项目', exact: true}).waitFor();
   assert.equal(await button('上传代码包').count(), 0);
-  await page.goto(base + '/settings?section=users'); await page.getByRole('heading', {name: '扫描任务调度', exact: true}).waitFor();
+  await page.goto(base + '/settings?section=users'); await page.getByRole('alert').filter({hasText:'需要管理员权限'}).waitFor();
   assert.equal(await button('账户管理').count(), 0);
   checks.push('Project deletion stays in list; viewer has no mutation actions or administrator deep-link access');
 

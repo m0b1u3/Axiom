@@ -30,10 +30,10 @@ let searchGeneration = 0;
 const groups = [
  { label: "工作区", items: [{to:"/",label:"概览",icon:LayoutDashboard},{to:"/projects",label:"项目",icon:FolderGit2},{to:"/scans",label:"扫描任务",icon:ScanLine}] },
  { label:"安全",items:[{to:"/findings",label:"漏洞",icon:ShieldAlert},{to:"/assets",label:"资产",icon:Archive},{to:"/component-plans",label:"组件计划",icon:FolderTree},{to:"/knowledge",label:"知识文档",icon:Archive}] },
- { label:"管理",items:[{to:"/settings/model-configs",label:"模型配置",icon:Cpu},{to:"/settings",label:"系统设置",icon:Settings}] },
+ { label:"管理",items:[{to:"/settings?section=models",label:"模型与授权",icon:Cpu},{to:"/settings",label:"系统设置",icon:Settings}] },
 ];
 const allNav = groups.flatMap(g => g.items);
-function isActive(to:string):boolean { const matches = (t:string) => t==='/'?route.path==='/':route.path===t||route.path.startsWith(t+'/');return matches(to)&&!allNav.some(n=>n.to.length>to.length&&matches(n.to)); }
+function isActive(to:string):boolean {if(to==='/settings?section=models')return route.path==='/settings'&&route.query.section==='models';if(to==='/settings')return route.path==='/settings'&&route.query.section!=='models';const matches = (t:string) => t==='/'?route.path==='/':route.path===t||route.path.startsWith(t+'/');return matches(to)&&!allNav.some(n=>n.to.length>to.length&&matches(n.to)); }
 const searchResults = computed(() => {
  const q=search.value.trim().toLowerCase();
  return [

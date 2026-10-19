@@ -1,6 +1,6 @@
 # 前端完整性验收与收尾
 
-2026-10-15。范围为 Linux amd64 单机可信用户自托管 Beta 的全部 11 个业务页面及新增的无效链接页。保留 Go Server + Go Agent + Node Scanner、现有 HTTP、共享产物与 JSONL。遵循 `AGENTS.md` 和 `design/` 设计规范，复用现有组件和 Token。
+2026-10-15。范围为 Linux amd64 可信用户自托管 Beta 的全部 11 个业务页面及新增的无效链接页。保留 Go Server + Go Agent + Node Scanner、现有 HTTP、共享产物与 JSONL。遵循 `AGENTS.md` 和 `design/` 设计规范，复用现有组件和 Token。
 
 以下逐页表格保留原前端收尾轮次；新增知识文档及高级扫描配置的本批验收见文末和 [输入/知识库基线](SDK_INPUT_KNOWLEDGE.md)。
 

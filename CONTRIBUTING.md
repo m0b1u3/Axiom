@@ -1,6 +1,6 @@
 # 参与 Axiom
 
-Axiom 当前准备首个单机自托管 Beta，支持 Linux amd64 与可信用户共享工作空间。所有扫描操作保留在 Web，Go Server、Go Agent、Node Scanner / SDK 的边界保持明确。
+Axiom 当前准备首个自托管 Beta，支持 Linux amd64 与可信用户共享工作空间。所有扫描操作保留在 Web，Go Server、Go Agent、Node Scanner / SDK 的边界保持明确。
 
 ## 报告问题与提出修改
 

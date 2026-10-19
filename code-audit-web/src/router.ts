@@ -61,8 +61,7 @@ export const router = createRouter({
         {
           path: "settings/model-configs",
           name: "model-configs",
-          component: () => import("./views/ModelConfigs.vue"),
-          meta: { title: "模型配置", description: "管理模型供应商与 API Key" },
+          redirect: to => ({path:'/settings',query:{...to.query,section:'models',tab:'models'},hash:to.hash}),
         },
         {
           path: "scans/new",
@@ -91,4 +90,5 @@ router.beforeEach((to) => {
   if (to.name !== "login" && !getToken()) {
     return { name: "login", query: { redirect: to.fullPath } };
   }
+  if(to.name==='settings'&&to.query.section==='sdk-identities')return {path:'/settings',query:{...to.query,section:'models',tab:'accounts'},hash:to.hash};
 });

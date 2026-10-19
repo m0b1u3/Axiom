@@ -8,7 +8,7 @@
 
 只更新开发部署的 Web 时，在私有 `.env` 设置 `AXIOM_WEB_RELEASE` 为已验收的 Web 标签，再执行上述命令的 `web` 单服务版本：`docker compose --env-file deploy/docker/.env -p docker -f deploy/docker/docker-compose.yml up -d --no-build --no-deps web`。Server、Agent 和数据卷仍按原配置运行。该变量为空时跟随 `AXIOM_RELEASE`；后续整套升级时应清空它或明确选择配套 Web 版本。只涉及前端的回滚可将它改回备份记录中的旧 Web 标签，再重新应用 `web`；涉及数据库或合同变更时仍按下文恢复流程处理。
 
-适用范围：单机、可信用户、自托管。当前 SDK 基线验证 Linux x64，正式配置固定 Server/Agent 为 `linux/amd64`；Apple Silicon Docker 使用模拟执行。真实模型任务仍待单独验收。
+适用范围：可信用户、自托管，各服务共置于同一主机。当前 SDK 基线验证 Linux x64，正式配置固定 Server/Agent 为 `linux/amd64`；Apple Silicon Docker 使用模拟执行。真实模型任务仍待单独验收。
 
 首个候选为 `0.1.0-beta.1`。完整的新安装、配置切换及回滚步骤见 [Beta 安装指南](../docs/BETA_INSTALLATION.md)，开源发布与 CI 门槛见 [发布流程](../docs/RELEASE_PROCESS.md)。
 

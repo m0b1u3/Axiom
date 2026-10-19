@@ -68,7 +68,6 @@ async function submit(): Promise<void> {
         </Button>
       </form>
 
-      <p class="foot mono">单机部署 · 本地账户认证</p>
     </div>
   </div>
 </template>
@@ -132,12 +131,6 @@ h1 {
 }
 .submit {
   margin-top: var(--space-2);
-}
-.foot {
-  margin-top: var(--space-5);
-  text-align: center;
-  color: var(--text-tertiary);
-  font-size: 11px;
 }
 .login-theme{position:absolute;right:var(--space-6);top:var(--space-6);padding:var(--space-2);color:var(--text-secondary)}.login-error{font-size:var(--font-size-sm);color:var(--state-danger);line-height:1.7;margin:0 0 var(--space-4)}
 </style>

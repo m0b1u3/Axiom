@@ -15,10 +15,10 @@ watch(()=>props.native,value=>{if(!value)emit('update:modelValue','')});onMounte
   <label>SDK 执行身份<Select aria-label="SDK 执行身份" :model-value="modelValue||'model-config'" @update:model-value="emit('update:modelValue',$event==='model-config'?'':$event)" :options="options" :disabled="disabled||loading||!native"/></label>
   <p v-if="!native">独立 SDK 身份仅用于原生 OpenAI Responses 模型；其他供应商继续使用模型配置的凭据。</p>
   <p v-else-if="selected">绑定节点 {{selected.identity.agentId}} · 凭据版本 {{selected.identity.generation}} · {{selected.checkedAt}}。节点不可用、状态未知或身份撤销时不会改用其他凭据。</p>
-  <p v-else>可选择已认证的 API Key 或 ChatGPT 身份。SDK 身份与本地 Axiom 登录分开管理。</p>
+  <p v-else>可选择已认证的 API Key 或 ChatGPT 身份。SDK 身份与 Axiom 账户登录分开管理。</p>
   <p v-if="modelValue&&(!selected||!usableIdentity(selected))" role="alert">选定身份不可用，请刷新并核对登录状态。</p>
   <p v-if="error" role="alert" class="request-error">{{error}} <Button variant="ghost" size="sm" @click="load">重读执行身份</Button></p>
-  <RouterLink to="/settings?section=sdk-identities">管理 SDK 执行身份</RouterLink>
+  <RouterLink to="/settings?section=models&tab=accounts">管理授权账户</RouterLink>
  </section>
 </template>
 <style scoped>

@@ -112,5 +112,7 @@ jobs:
             output/playwright/component-scans/*.png
             output/playwright/sdk-identities/browser/*.json
             output/playwright/sdk-identities/browser/*.png
+            output/playwright/settings/*.json
+            output/playwright/settings/*.png
           retention-days: 14
           if-no-files-found: warn

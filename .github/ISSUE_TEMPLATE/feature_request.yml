@@ -20,4 +20,4 @@ body:
     id: boundaries
     attributes:
       label: 环境与边界
-      description: 注明版本和部署范围；首版支持 Linux amd64 单机可信用户自托管。
+      description: 注明版本和部署范围；首版支持 Linux amd64 可信用户自托管。

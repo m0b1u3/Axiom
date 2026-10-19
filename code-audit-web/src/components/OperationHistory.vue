@@ -23,7 +23,7 @@ onMounted(() => load());
 </script>
 <template>
   <section class="security-section" aria-labelledby="operations-title">
-    <div class="security-toolbar"><h2 id="operations-title">操作记录</h2><Button variant="outline" size="sm" :loading="loading" @click="load()">刷新记录</Button></div>
+    <div class="security-toolbar"><h2 id="operations-title">操作日志</h2><Button variant="outline" size="sm" :loading="loading" @click="load()">刷新记录</Button></div>
     <p class="security-note">记录操作者、对象、时间和结果。结果未确认表示已登记操作，但未能确认最终结果。记录不包含密码、令牌或 API Key。</p>
     <p v-if="error" class="security-error" role="alert">{{error}}</p><p v-if="loading && !entries.length" role="status">正在加载操作记录…</p>
     <div v-else class="security-table-wrap"><table class="security-table"><caption class="sr-only">工作空间操作记录</caption><thead><tr><th>时间</th><th>操作者</th><th>操作 / 对象</th><th>结果</th><th>证据</th></tr></thead><tbody><template v-for="entry in entries" :key="entry.id"><tr><td>{{absoluteTime(entry.occurredAt)}}</td><td>{{entry.actorName || '未认证'}}</td><td>{{actions[entry.action] || entry.action}}<small><router-link v-if="objectLink(entry)" :to="objectLink(entry)!">{{entry.resource}} #{{entry.resourceId}}</router-link><span v-else>{{entry.resource || '受限资源'}} {{entry.resourceId ? `#${entry.resourceId.slice(0,12)}` : ''}}</span></small></td><td>{{outcomes[entry.outcome] || entry.outcome}}</td><td><Button variant="ghost" size="sm" :aria-expanded="expanded === entry.id" :aria-label="`原始记录 ${entry.id}`" @click="expanded = expanded === entry.id ? '' : entry.id">原始记录</Button></td></tr><tr v-if="expanded === entry.id"><td colspan="5"><pre class="security-raw">{{JSON.stringify(entry, null, 2)}}</pre></td></tr></template><tr v-if="!entries.length"><td colspan="5">尚无操作记录。</td></tr></tbody></table></div>

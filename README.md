@@ -1,12 +1,12 @@
 # Axiom — AI 源代码安全审计一体机
 
-单机自托管的 Web 源代码安全审计平台。用户在浏览器配置模型、上传源码、控制扫描和查看证据，后台使用 Go Server + Go Agent + Node Scanner / Codex Security SDK。
+自托管的 Web 源代码安全审计平台。用户在浏览器配置模型、上传源码、控制扫描和查看证据，后台使用 Go Server + Go Agent + Node Scanner / Codex Security SDK。
 
-当前版本：`0.1.0-beta.1` 发布候选。首版支持 **Linux amd64、单机、可信用户、自托管**。本轮自动验收使用 SDK Fixture 及官方 Mock，真实审计、供应商费用及长期运行验收尚未完成；详见 [CHANGELOG](CHANGELOG.md)。
+当前版本：`0.1.0-beta.1` 发布候选。首版支持 **Linux amd64、可信用户、自托管**。本轮自动验收使用 SDK Fixture 及官方 Mock，真实审计、供应商费用及长期运行验收尚未完成；详见 [CHANGELOG](CHANGELOG.md)。
 
 [安装、升级与回滚](docs/BETA_INSTALLATION.md) · [部署与备份](deploy/README.md) · [参与贡献](CONTRIBUTING.md) · [私密报告安全问题](SECURITY.md) · [发布流程](docs/RELEASE_PROCESS.md)
 
-当前阶段：Web → Go Server → Go Agent → Node Scanner → Codex Security SDK 的输入、结果和事件链路已打通。支持不可变源码快照、模型配置、预算和范围、结构化进度、完整结果与证据、历史尝试及产物下载。单机自托管的可靠性与部署工作见 [成熟化验收记录](docs/MATURITY_BASELINE.md)。模型配置、上传、启动、取消、重试和查看结果均在 Web 完成。
+当前阶段：Web → Go Server → Go Agent → Node Scanner → Codex Security SDK 的输入、结果和事件链路已打通。支持不可变源码快照、模型配置、预算和范围、结构化进度、完整结果与证据、历史尝试及产物下载。自托管的可靠性与部署工作见 [成熟化验收记录](docs/MATURITY_BASELINE.md)。模型配置、上传、启动、取消、重试和查看结果均在 Web 完成。
 
 高级 SDK 参数与知识文档的固定版本、归档/恢复、任务冻结和父扫描状态已接入 Web，范围与测试见 [扫描输入与知识库基线](docs/SDK_INPUT_KNOWLEDGE.md)。这批完成项不表示 SDK 全部能力已集成；后续范围由 [能力清单](deploy/sdk/integration.json) 记录。
 

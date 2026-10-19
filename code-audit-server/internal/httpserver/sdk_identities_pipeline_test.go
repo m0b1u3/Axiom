@@ -513,6 +513,14 @@ func TestSDKIdentitiesPipeline(t *testing.T) {
 		} else {
 			t.Log(string(out))
 		}
+		settings := exec.Command("node", filepath.Join(root, "code-audit-web/tests/settings-web-acceptance.mjs"))
+		settings.Dir = root
+		settings.Env = append(os.Environ(), "AXIOM_TEST_WEB_URL="+ts.URL, "AXIOM_SETTINGS_TEST_FIXTURE=1", "AXIOM_TEST_SETTINGS_REPORT_DIR="+filepath.Join(root, "output/playwright/settings"))
+		if out, err := settings.CombinedOutput(); err != nil {
+			t.Fatal(err, string(out))
+		} else {
+			t.Log(string(out))
+		}
 	}
 }
 func number(v string) int64 { var id int64; fmt.Sscan(v, &id); return id }

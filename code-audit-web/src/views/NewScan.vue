@@ -184,7 +184,7 @@ async function submit(operation?:"preflight"): Promise<void> {
   if (gitBusy.value||gitPreviewBusy.value||gitError.value)return;
   if (!canOperate.value || submitting.value || uploading.value || lookupsLoading.value || lookupErrors.value.length || snapshotLoading.value || snapshotError.value) return;
   if (!selectedModelConfigId.value) {
-    message.warning("请选择模型配置（没有则先到「模型配置」新建）");
+    message.warning("请选择模型配置（没有则先到「模型与授权」添加模型）");
     return;
   }
   if (!selectedSnapshotId.value && !form.sourcePath.trim()) {
@@ -322,7 +322,7 @@ onMounted(() => void loadOptions());
       />
       <div v-else-if="!lookupsLoading && !lookupErrors.length" class="config-hint">
         还没有模型配置，
-        <router-link to="/settings/model-configs" class="tlink">到「模型配置」新建</router-link>
+        <router-link to="/settings?section=models" class="tlink">到「模型与授权」添加模型</router-link>
 
       </div>
       <div v-if="selConfig" class="config-info mono">

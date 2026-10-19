@@ -4,7 +4,7 @@
 
 ## 支持边界
 
-Linux amd64、单机、可信用户、自托管。Web 是用户操作入口；Go Server、Go Agent、Node Scanner / SDK 和现有传输方式保持。当前真实 SDK 验收为 `not-run`，CI 禁止使用真实模型凭据。候选不能宣称真实审计、供应商账单或长期稳定性已经通过。
+Linux amd64、可信用户、自托管。Web 是用户操作入口；Go Server、Go Agent、Node Scanner / SDK 和现有传输方式保持。当前真实 SDK 验收为 `not-run`，CI 禁止使用真实模型凭据。候选不能宣称真实审计、供应商账单或长期稳定性已经通过。
 
 ## 候选检查与源码交付
 

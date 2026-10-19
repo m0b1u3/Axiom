@@ -20,6 +20,7 @@ import iconKimi from "../assets/providers/kimi.svg";
 import iconQwen from "../assets/providers/qwen.svg";
 import iconZhipu from "../assets/providers/zhipu.svg";
 import iconOpenai from "../assets/providers/openai.svg";
+withDefaults(defineProps<{embedded?:boolean}>(),{embedded:false});
 
 /* 品牌图标（cc-switch 同款 SVG）；custom/未知 → lucide Plug */
 const ICONS: Record<string, string> = {
@@ -83,7 +84,7 @@ const fetchedModelItems = computed(() => fetchedModels.value.map((m) => ({ key: 
 async function probeConnection(): Promise<void> {
   if (probing.value) return;
   if (form.sdkIdentityOnly) {
-    probeResult.value = { ok: false, msg: "此模型使用 SDK 执行身份。请在设置中查询绑定节点的 SDK 账户状态。" };
+    probeResult.value = { ok: false, msg: "此模型使用授权账户。请在“模型与授权”的“授权账户”中查询账户状态。" };
     return;
   }
   probing.value = true;
@@ -231,7 +232,7 @@ async function save(): Promise<void> {
     return;
   }
   if (!form.name.trim() || !form.model.trim() || (!editing.value && !form.apiKey && !form.sdkIdentityOnly)) {
-    formError.value = "名称、型号必填；新建需提供 API Key 或选择 SDK 执行身份。";
+    formError.value = "名称、型号必填；新建需提供 API Key 或使用授权账户。";
     return;
   }
   if (form.provider !== "openai" && !form.baseUrl.trim()) {
@@ -354,7 +355,8 @@ onMounted(() => {
 
 <template>
   <div>
-    <PageHeader title="模型配置" description="配置模型供应商与分析引擎，为代码审计和漏洞研判选择合适的模型。">
+    <header v-if="embedded" class="model-section-header"><h3>模型配置</h3><Button v-if="canAdmin" @click="openCreate"><Plus :size="14" :stroke-width="2"/>添加模型</Button></header>
+    <PageHeader v-else title="模型配置" description="配置模型供应商与分析引擎，为代码审计和漏洞研判选择合适的模型。">
       <Button v-if="canAdmin" @click="openCreate">
         <Plus :size="14" :stroke-width="2" />添加模型
       </Button>
@@ -370,7 +372,7 @@ onMounted(() => {
       :data="filtered"
       :columns="columns"
       :empty-title="items.length ? '没有匹配的模型' : '还没有模型配置'"
-      :empty-hint="items.length ? '调整搜索词或状态筛选，查看其他配置。' : '点击「添加模型」，从预设供应商开始，填入你的端点、型号与 API Key。'"
+      :empty-hint="items.length ? '调整搜索词或状态筛选，查看其他配置。' : '添加供应商与模型型号，填写 API Key，或使用授权账户提供凭据。'"
     />
 
     <Dialog
@@ -409,7 +411,7 @@ onMounted(() => {
           <span class="hint">用于在应用中标识该模型配置。</span>
         </label>
 
-        <label v-if="!editing&&form.provider==='openai'" class="field full"><span><input type="checkbox" v-model="form.sdkIdentityOnly" @change="form.apiKey=''"/> 扫描时使用 SDK 执行身份提供凭据</span><span class="hint">模型只保存型号和原生端点；创建扫描时必须另选已认证身份。</span></label>
+        <label v-if="!editing&&form.provider==='openai'" class="field full"><span><input type="checkbox" v-model="form.sdkIdentityOnly" @change="form.apiKey=''"/> 扫描时使用授权账户提供凭据</span><span class="hint">模型只保存型号和接口地址；创建扫描时选择已登录的授权账户。</span></label>
         <label v-if="!form.sdkIdentityOnly||editing" class="field">
           <span class="lab">API Key <button type="button" class="key-toggle" :aria-label="showKey?'隐藏 API Key':'显示 API Key'" @click="showKey=!showKey"><EyeOff v-if="showKey" :size="14"/><Eye v-else :size="14"/></button></span>
           <div class="inbox">
@@ -437,7 +439,7 @@ onMounted(() => {
             </button>
           </div>
           <span v-if="probeResult" class="hint" :role="probeResult.ok ? 'status' : 'alert'" :class="{ ok: probeResult.ok, err: !probeResult.ok }">{{ probeResult.msg }}</span>
-          <span v-else-if="form.sdkIdentityOnly" class="hint">凭据在绑定 Agent 上管理；请到设置中的 SDK 执行身份查询账户状态。</span>
+          <span v-else-if="form.sdkIdentityOnly" class="hint">登录与账户状态在“模型与授权”的“授权账户”页签管理。</span>
           <span v-else class="hint">填写模型服务的接口地址。</span>
         </label>
 
@@ -489,6 +491,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.model-section-header{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);margin-bottom:var(--space-4)}.model-section-header h3{margin:0;font-size:var(--font-size-md);font-weight:var(--font-weight-medium)}
 .dlg {
   display: grid;
   grid-template-columns: minmax(0,1fr) minmax(0,1fr);
