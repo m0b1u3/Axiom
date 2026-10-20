@@ -468,17 +468,17 @@
         "workers": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 64
+          "maximum": 9007199254740991
         },
         "deepMaxDiscoveryRuns": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 1000
+          "maximum": 9007199254740991
         },
         "deepStopAfterNoNew": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 1000
+          "maximum": 9007199254740991
         }
       },
       "required": [

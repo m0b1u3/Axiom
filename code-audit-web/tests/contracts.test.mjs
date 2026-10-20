@@ -123,11 +123,11 @@ test('log normalization retains details, surfaces legacy failures and deduplicat
  assert.equal(activityEntry({...event,kind:'progress',message:'phase=validation files=1/1'}).summary,'验证发现 · 已处理 1/1 文件');
 });
 
-test('execution settings writes omit server-owned metadata and archive requests name an attempt', async () => {
-  response={data:{global:2,perModel:1,perProject:2,revision:4}};
-  await api.saveExecutionSettings({global:2,perModel:1,perProject:2,revision:3,updatedBy:'spoof',updatedAt:'unused'});
-  assert.deepEqual(JSON.parse(last.data),{global:2,perModel:1,perProject:2,revision:3});
-  assert.equal(last.method,'put');
+test('execution reads retain unbounded policy and archives name an attempt without quota writes', async () => {
+  response={data:{dispatchMode:'unbounded',effectiveCapacity:null,active:70,settings:{global:1,perModel:1,perProject:1}}};
+  assert.equal(typeof api.saveExecutionSettings,'undefined');
+  assert.deepEqual(await api.queueOverview(9),response.data);
+  assert.equal(last.method,'get');
   await api.attemptResult(9,2);assert.equal(last.url,'/scans/9/attempts/2/result');
   await api.queueOverview(9);assert.equal(last.params.taskId,9);
 });

@@ -169,3 +169,88 @@ func TestSDKIdentityCapabilityRequiresServerSupport(t *testing.T) {
 		})
 	}
 }
+
+func TestSDKParametersRequireExplicitServerSupport(t *testing.T) {
+	for _, version := range []int{0, 1} {
+		t.Run(strconv.Itoa(version), func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.HasSuffix(r.URL.Path, "/describe") {
+					json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": control.ServerDescription{ControlAPIs: control.ControlAPIs(), MatrixHash: control.MatrixHash, SDKParametersVersion: version}})
+					return
+				}
+				w.Write([]byte(`{"code":0,"data":{"ok":true}}`))
+			}))
+			defer server.Close()
+			client := richClient(server.URL)
+			client.SDKParametersVersion = 1
+			if e := client.Negotiate(t.Context(), "fixture", 1); e != nil {
+				t.Fatal(e)
+			}
+			if client.SDKParametersVersion != version {
+				t.Fatal("New SDK parameters were enabled on an older Server")
+			}
+		})
+	}
+}
+
+func TestSDKParametersMissingOrUnknownSidecarNeverFallsBack(t *testing.T) {
+	for _, version := range []int{1, 2} {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": control.ObservationLease{SDKParametersVersion: version}})
+		}))
+		client := richClient(server.URL)
+		client.SDKParametersVersion = 1
+		if _, e := client.claimObservations(t.Context(), "fixture"); e == nil {
+			t.Fatal("Missing/unknown parameter sidecar accepted", version)
+		}
+		server.Close()
+	}
+}
+
+func TestUnboundedDispatchRequiresExplicitServerPolicy(t *testing.T) {
+	for _, mode := range []string{"", "future", control.DispatchUnbounded} {
+		t.Run("policy-"+mode, func(t *testing.T) {
+			presence := false
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.HasSuffix(r.URL.Path, "/describe") {
+					json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": control.ServerDescription{TaskDispatch: mode, ControlAPIs: control.ControlAPIs(), MatrixHash: control.MatrixHash}})
+					return
+				}
+				presence = true
+				if r.URL.Path != "/api/internal/v4/executions/presence" {
+					t.Error("unexpected request", r.URL.Path)
+				}
+				var payload control.ObservationPresence
+				if e := json.NewDecoder(r.Body).Decode(&payload); e != nil || payload.DispatchMode != control.DispatchUnbounded || payload.Slots != 0 {
+					t.Error("invalid unbounded presence", e, payload)
+				}
+				json.NewEncoder(w).Encode(map[string]any{"code": 0, "data": map[string]bool{"ok": true}})
+			}))
+			defer server.Close()
+			client := richClient(server.URL)
+			client.DispatchMode = control.DispatchUnbounded
+			err := client.Negotiate(t.Context(), "fixture-agent", 0)
+			if mode == control.DispatchUnbounded {
+				if err != nil || !presence {
+					t.Fatal(err, presence)
+				}
+			} else if err == nil || presence {
+				t.Fatal("unbounded dispatcher silently fell back", err, presence)
+			}
+		})
+	}
+	t.Run("missing-descriptor", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !strings.HasSuffix(r.URL.Path, "/describe") {
+				t.Error("fallback presence attempted")
+			}
+			http.NotFound(w, r)
+		}))
+		defer server.Close()
+		client := richClient(server.URL)
+		client.DispatchMode = control.DispatchUnbounded
+		if client.Negotiate(t.Context(), "fixture-agent", 0) == nil {
+			t.Fatal("missing policy accepted")
+		}
+	})
+}

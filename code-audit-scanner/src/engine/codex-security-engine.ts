@@ -256,7 +256,7 @@ async function maybeStartChatShim(task: ScanTask, overrides: JsonObject | undefi
     throw new Error(`chat-shim: ScanTask.baseUrl is required for provider ${task.provider}`);
   }
   const transport = await startReliableUpstream(upstream, path.resolve(task.outputPath, '../../model-request-gate.sqlite'), notice);
-  const converted = wire === "chat" ? await startChatShim(transport.baseUrl) : null;
+  const converted = wire === "chat" ? await startChatShim(transport.baseUrl,task.sdkParameters?.parameters.reasoningEffort) : null;
   const shim: ChatShim = {baseUrl:converted?.baseUrl??transport.baseUrl,upstreamBaseUrl:upstream,
     close:async()=>{await converted?.close();await transport.close();}};
   // codex(reqwest) 会吃 HTTPS_PROXY；环回地址必须进 NO_PROXY，否则代理把

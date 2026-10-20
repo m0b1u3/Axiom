@@ -1,4 +1,6 @@
 export const queueReasons: Record<string,string> = {
+ sdk_concurrency_incompatible:"等待支持 SDK 原生并发参数的配套执行节点，请同步更新 Agent 与 Scanner",
+ sdk_parameters_incompatible:"等待支持推理强度与组件知识、指令的配套执行节点",
  component_scan_incompatible:'等待支持冻结组件审计的配套执行节点',
  git_diff_incompatible:'等待支持冻结 Git 提交差异的配套执行节点',
  cost_unknown:"费用未知，需先核对估算", storage_low:"存储空间不足，等待释放空间",storage_unknown:"存储容量未知，暂停新领取",storage_cleanup:"数据清理中",budget_exhausted:"累计预算已用尽",

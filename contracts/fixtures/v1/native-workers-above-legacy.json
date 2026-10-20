@@ -1,0 +1,19 @@
+{
+  "mode": "deep",
+  "timeBudget": {
+    "scanSeconds": 1800,
+    "finalizationGraceSeconds": 600
+  },
+  "includePaths": [
+    "src/a,b.ts",
+    "src/中文.ts"
+  ],
+  "focus": [
+    "authz"
+  ],
+  "validation": {
+    "mode": "default"
+  },
+  "maxCostUsd": 5,
+  "workers": 1001
+}

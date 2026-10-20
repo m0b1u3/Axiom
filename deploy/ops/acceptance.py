@@ -71,13 +71,18 @@ def task_wait(web, task_id):
     return wait_for(get, 50, "fixture scan did not reach a terminal state")
 
 
-def verify_runtime_baseline(runtime, matrix, description, identity, sdk_version, release):
+def verify_runtime_baseline(runtime, matrix, description, identity, parameters, concurrency, sdk_version, release):
     assert runtime["state"] == "ready", "Agent runtime is not ready"
     assert runtime["controlAPI"] == max(matrix["controlAPIs"]), "Agent selected a different control API"
-    # SDK identity support has its own description version; it does not add a
-    # new scan input/job profile to the execution compatibility matrix.
-    assert description["schemaVersion"] == identity["descriptionVersion"], "Scanner description differs from the identity baseline"
+    # Independent SDK capabilities advance the Scanner description without
+    # adding new scan input/job profiles to the execution matrix. Check the
+    # installed bundle against all current baselines, not only identity v10.
+    expected_description = max(item["descriptionVersion"] for item in (identity, parameters, concurrency))
+    assert description["schemaVersion"] == expected_description, "Scanner description differs from the SDK capability baselines"
     assert description["sdkIdentityVersion"] == identity["identityVersion"], "Scanner identity contract differs from the baseline"
+    assert description["sdkParametersVersion"] == parameters["parametersVersion"], "Scanner parameters contract differs from the baseline"
+    assert description["sdkConcurrencyVersion"] == concurrency["concurrencyVersion"], "Scanner concurrency contract differs from the baseline"
+    assert parameters["sdkVersion"] == concurrency["sdkVersion"] == sdk_version, "SDK capability baselines differ from the pinned dependency"
     assert runtime["scannerDescriptionVersion"] == description["schemaVersion"], "Agent did not report the installed Scanner description"
     assert description["configuredSdk"] == {"package":"@openai/codex-security", "version":sdk_version}, "Scanner SDK differs from the pinned dependency"
     assert runtime["agentBuild"] == release and runtime["scannerBuild"], "Agent/Scanner build identity is missing or stale"
@@ -164,8 +169,10 @@ networks:
         runtime = wait_for(matching_runtime, 20, "Agent did not publish its compatibility matrix")
         description = json.loads(stack.output("exec", "-T", "agent", "node", "/opt/axiom/code-audit-scanner/dist/main.js", "--describe"))
         identity = json.loads((ROOT/"contracts/data/sdk-identity-compatibility.json").read_text())
+        parameters = json.loads((ROOT/"contracts/data/sdk-parameters-compatibility.json").read_text())
+        concurrency = json.loads((ROOT/"contracts/data/sdk-concurrency-compatibility.json").read_text())
         sdk_version = json.loads((ROOT/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"]
-        verify_runtime_baseline(runtime, matrix, description, identity, sdk_version, values["AXIOM_RELEASE"])
+        verify_runtime_baseline(runtime, matrix, description, identity, parameters, concurrency, sdk_version, values["AXIOM_RELEASE"])
         checks.append("release build identity, Server/Agent matrix and Scanner contract preflight")
 
         result_path = f"/api/v1/scans/{task_id}/attempts/1/result"

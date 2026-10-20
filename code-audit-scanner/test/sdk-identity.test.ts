@@ -7,6 +7,7 @@ test('SDK identity is bound to its exact execution and explicit generation',()=>
 // Real public SDK file-copy helper only; no Codex process or network is started.
 import {mkdtemp,mkdir,writeFile,readFile,rm,readdir,realpath} from 'node:fs/promises';
 import path from 'node:path';import os from 'node:os';
+import {snapshotIdentitySession} from '../src/runtime/identity-session.js';
 test('refreshed ChatGPT credentials survive execution cleanup without copying the workbench',async()=>{
  const base=await mkdtemp(path.join(os.tmpdir(),'axiom-identity-fixture-')),home=await realpath(base),sdk=path.join(home,'sdk'),root=path.join(home,'executions/42-1/sdk');
  const previous={home:process.env.AXIOM_SDK_IDENTITY_HOME,state:process.env.CODEX_SECURITY_STATE_DIR};const v=task();v.sdkIdentity!.identity.kind='chatgpt';
@@ -15,6 +16,7 @@ test('refreshed ChatGPT credentials survive execution cleanup without copying th
   // Go and JS may serialize the same reference with different key order.
   await writeFile(path.join(home,'session.json'),JSON.stringify(Object.fromEntries(Object.entries(v.sdkIdentity!.identity).reverse())),{mode:0o600});
   await writeFile(path.join(sdk,'codex-home/auth.json'),'Fixtures / Mock old opaque session',{mode:0o600});
+  await snapshotIdentitySession(v,home,root);
   await writeFile(path.join(root,'codex-home/auth.json'),'Fixtures / Mock refreshed opaque session',{mode:0o600});await writeFile(path.join(root,'workbench.sqlite3'),'Fixtures / Mock workbench',{mode:0o600});
   process.env.AXIOM_SDK_IDENTITY_HOME=home;process.env.CODEX_SECURITY_STATE_DIR=root;
   await persistTaskIdentity(v);await rm(path.join(home,'executions'),{recursive:true,force:true});

@@ -22,7 +22,7 @@ func (s *Server) reportContractAgent(w http.ResponseWriter, r *http.Request) {
 	if !decodeAgent(w, r, &v) {
 		return
 	}
-	if !validInputAgent(v.AgentID, v.InputCapabilities) || !validResultCapabilities(v.ResultCapabilities) || v.Slots < 1 || v.Slots > 64 {
+	if !validInputAgent(v.AgentID, v.InputCapabilities) || !validResultCapabilities(v.ResultCapabilities) || v.Slots < 1 || int64(v.Slots) > contracts.SDKMaxSafeInteger {
 		executionError(w, 400, "invalid_input", "invalid execution capabilities")
 		return
 	}

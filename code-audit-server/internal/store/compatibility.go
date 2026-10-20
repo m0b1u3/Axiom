@@ -22,7 +22,7 @@ type TaskCompatibility struct {
 }
 
 func evaluateTaskCompatibility(t QueueTask, agents []AgentPresence) *TaskCompatibility {
-	v := &TaskCompatibility{Required: control.Requirements{SDKOperation: t.sdkOperation, ScanInput: t.scanInput, Input: t.inputVersion, Result: t.resultVersion, Observation: t.observationVersion, Budget: t.budget}, Candidates: []CompatibilityCandidate{}}
+	v := &TaskCompatibility{Required: control.Requirements{SDKConcurrency: t.sdkConcurrency, SDKParameters: t.sdkParameters, SDKOperation: t.sdkOperation, ScanInput: t.scanInput, Input: t.inputVersion, Result: t.resultVersion, Observation: t.observationVersion, Budget: t.budget}, Candidates: []CompatibilityCandidate{}}
 	p, ok := control.RequiredProfile(v.Required)
 	v.Profile = p.ID
 	if !ok {
@@ -30,7 +30,7 @@ func evaluateTaskCompatibility(t QueueTask, agents []AgentPresence) *TaskCompati
 	}
 	inputOK, resultOK, observationOK, online, blocked, matrixBlocked, ready := false, false, false, false, false, false, false
 	for _, a := range agents {
-		caps := control.Capabilities{Input: a.InputCapabilities, Result: a.ResultCapabilities, Observation: a.ObservationCapabilities}
+		caps := control.Capabilities{SDKConcurrency: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && *a.Runtime.ScannerDescriptionVersion == contracts.SDKConcurrencyDescriptionVersion, SDKParameters: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKParameters(*a.Runtime.ScannerDescriptionVersion), Input: a.InputCapabilities, Result: a.ResultCapabilities, Observation: a.ObservationCapabilities}
 		missing := control.Missing(v.Required, caps)
 		n := CompatibilityCandidate{AgentID: a.AgentID, Online: a.Online, Missing: missing, Ready: a.Online && len(missing) == 0}
 		if a.Runtime != nil && a.Runtime.MatrixHash != control.MatrixHash {
@@ -86,6 +86,10 @@ func evaluateTaskCompatibility(t QueueTask, agents []AgentPresence) *TaskCompati
 		v.Reason = "matrix_incompatible"
 	case blocked && !inputOK:
 		v.Reason = "scanner_incompatible"
+	case t.sdkConcurrency:
+		v.Reason = "sdk_concurrency_incompatible"
+	case t.sdkParameters:
+		v.Reason = "sdk_parameters_incompatible"
 	case t.inputVersion == contracts.ComponentScanInputVersion:
 		v.Reason = "component_scan_incompatible"
 	case t.inputVersion == contracts.ComponentPlanningInputVersion:

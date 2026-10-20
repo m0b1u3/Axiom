@@ -48,7 +48,7 @@ func main() {
 	defer stop()
 
 	w := &worker.Worker{Cfg: cfg}
-	log.Printf("id=%s concurrency=%d scanner=%s", cfg.AgentID, cfg.Concurrency, cfg.ScannerDir)
+	log.Printf("id=%s dispatch=unbounded scanner=%s", cfg.AgentID, cfg.ScannerDir)
 	if err := w.Run(ctx); err != nil && err != context.Canceled {
 		log.Fatal(err)
 	}

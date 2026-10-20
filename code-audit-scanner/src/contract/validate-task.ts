@@ -24,7 +24,7 @@ export function validateScanTask(task: ScanTask): void {
     throw new Error("ScanTask.timeoutMinutes must be positive");
   }
   if(!['standard','deep'].includes(task.scanMode))throw new Error("Unsupported scan mode");
-  if (task.workers !== undefined && (task.scanMode!=="deep" || !Number.isInteger(task.workers) || task.workers < 1 || task.workers > 64)) {
+  if (task.workers !== undefined && (task.scanMode!=="deep" || !Number.isSafeInteger(task.workers) || task.workers < 1)) {
     throw new Error("ScanTask.workers must be >= 1 for deep scans");
   }
   if(task.maxCostUsd!==undefined&&(!Number.isFinite(task.maxCostUsd)||task.maxCostUsd<=0||task.maxCostUsd>Number.MAX_SAFE_INTEGER))throw new Error("ScanTask.maxCostUsd must be a finite positive number");
@@ -38,7 +38,8 @@ export function validateScanTask(task: ScanTask): void {
   if(task.gitTarget){validate("GitDiffTarget",task.gitTarget);if(task.scanMode!=="standard"||task.includePaths?.length||!task.sourceContentHash||!task.sourceSnapshotId)throw new Error("Git diff requires frozen source identity and Standard mode");}
   if(task.componentScan){validate('ComponentScanRequest',task.componentScan,{taskId:String(task.taskId),attempt:task.executionAttempt??1});if(task.componentPlanning||task.sdkOperation||task.gitTarget||task.scanMode!=='standard'||task.includePaths?.length||task.scanFocus?.length||task.scanInput?.knowledge.length||task.parentState||task.maxCostUsd===undefined||task.workers!==undefined||task.componentScan.planVersion.source.contentHash!==task.sourceContentHash||task.componentScan.planVersion.source.snapshotId!==task.sourceSnapshotId)throw new Error('组件审计须使用冻结计划和预算，不能混合其他目标或操作');}
   if(task.componentPlanning){validate('ComponentPlanningOperation',task.componentPlanning,{taskId:String(task.taskId),attempt:task.executionAttempt??1});if(task.sdkOperation||task.gitTarget||task.scanMode!=='standard'||task.includePaths?.length||task.scanInput?.knowledge.length||task.parentState||task.maxCostUsd!==undefined)throw new Error('组件规划不得混合扫描目标、预算或其他 SDK 操作');}
-  validateIncludePaths(task.includePaths);
+  if(task.sdkParameters){validate('SDKParametersAssignment',task.sdkParameters,{taskId:String(task.taskId),attempt:task.executionAttempt??1});if(task.sdkParameters.parameters.componentInput&&!task.componentScan)throw new Error('Component SDK inputs require frozen component execution');}
+ validateIncludePaths(task.includePaths);
   if (task.scanFocus !== undefined) normalizeFocuses(task.scanFocus);
   assertNoSecretOnTask(task);
 }

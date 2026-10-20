@@ -14,18 +14,18 @@ import (
 
 func validObservationAgent(v control.ObservationClaimRequest) bool {
 	raw, e := contracts.EncodeJSON(v.ObservationCapabilities)
-	return e == nil && contracts.ValidateJSON(contracts.KindObservationCapabilities, raw, nil) == nil && validInputAgent(v.AgentID, v.InputCapabilities) && validResultCapabilities(v.ResultCapabilities)
+	return (v.SDKConcurrencyVersion == 0 || v.SDKConcurrencyVersion == 1) && (v.SDKParametersVersion == 0 || v.SDKParametersVersion == 1) && e == nil && contracts.ValidateJSON(contracts.KindObservationCapabilities, raw, nil) == nil && validInputAgent(v.AgentID, v.InputCapabilities) && validResultCapabilities(v.ResultCapabilities)
 }
 func (s *Server) reportObservationAgent(w http.ResponseWriter, r *http.Request) {
 	var v control.ObservationPresence
 	if !decodeAgent(w, r, &v) {
 		return
 	}
-	if !validObservationAgent(v.ObservationClaimRequest) || v.Slots < 1 || v.Slots > 64 {
+	if !validObservationAgent(v.ObservationClaimRequest) || !control.ValidDispatchPresence(v.DispatchMode, v.Slots) {
 		executionError(w, 400, "invalid_input", "invalid execution observation capabilities")
 		return
 	}
-	if e := s.Store.ReportAgentWithObservations(r.Context(), v.AgentID, v.Slots, v.InputCapabilities, v.ResultCapabilities, v.ObservationCapabilities); e != nil {
+	if e := s.Store.ReportAgentWithDispatch(r.Context(), v.AgentID, v.DispatchMode, v.Slots, v.InputCapabilities, v.ResultCapabilities, v.ObservationCapabilities); e != nil {
 		executionError(w, 503, "provider_unavailable", "agent presence unavailable")
 		return
 	}
@@ -42,6 +42,8 @@ func (s *Server) claimObservationExecution(w http.ResponseWriter, r *http.Reques
 	}
 	limits := s.storageClaimLimits(r.Context())
 	limits.SDKIdentityCapable = v.SDKIdentityVersion == 1
+	limits.SDKParametersCapable = v.SDKParametersVersion == 1
+	limits.SDKConcurrencyCapable = v.SDKConcurrencyVersion == 1
 	t, e := s.Store.ClaimExecutionWithObservations(r.Context(), v.AgentID, limits, v.InputCapabilities, v.ResultCapabilities, v.ObservationCapabilities)
 	if e != nil {
 		executionError(w, 503, "provider_unavailable", "queue temporarily unavailable")
@@ -70,6 +72,10 @@ func (s *Server) claimObservationExecution(w http.ResponseWriter, r *http.Reques
 	}
 	if t.SDKIdentity != nil {
 		out.SDKIdentity = &contracts.SDKTaskIdentity{SchemaVersion: 1, Execution: lease.Assignment.Execution, Identity: *t.SDKIdentity}
+	}
+	if t.SDKParameters != nil {
+		out.SDKParametersVersion = 1
+		out.SDKParameters = &contracts.SDKParametersAssignment{SchemaVersion: 1, Execution: lease.Assignment.Execution, Parameters: *t.SDKParameters}
 	}
 	out.ComponentScan = t.ComponentScan
 	out.ComponentPlanning = t.ComponentPlanning

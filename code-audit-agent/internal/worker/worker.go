@@ -27,25 +27,21 @@ func (w *Worker) Run(ctx context.Context) error {
 			return err
 		}
 	}
-	count := w.Cfg.Concurrency
-	if w.Cfg.Once {
-		count = 1
-	}
-	if count < 1 {
-		count = 1
-	}
 	client := execution.NewClient(w.Cfg.ServerURL, w.Cfg.AgentToken)
+	client.DispatchMode = control.DispatchUnbounded
 	capabilities, probeErr := scanner.ProbeContracts(ctx, w.Cfg.ScannerDir, w.Cfg.NodePath)
 	if probeErr != nil {
 		capabilities.Input = contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}}
 		capabilities.Result = contracts.NoResultCapabilities()
 		capabilities.Observation = contracts.NoObservationCapabilities()
 	}
+	client.SDKConcurrencyVersion = capabilities.ConcurrencyVersion
+	client.SDKParametersVersion = capabilities.ParametersVersion
 	client.SDKIdentityVersion = capabilities.IdentityVersion
 	client.InputCapabilities = &capabilities.Input
 	client.ResultCapabilities = &capabilities.Result
 	client.ObservationCapabilities = &capabilities.Observation
-	if err := client.Negotiate(ctx, w.Cfg.AgentID, count); err != nil {
+	if err := client.Negotiate(ctx, w.Cfg.AgentID, 0); err != nil {
 		return err
 	}
 	runtime := contracts.AgentRuntime{SchemaVersion: 1, AgentBuild: execution.AgentBuild, ControlAPI: int64(client.ControlAPI), State: contracts.AgentRuntimeStateReady, MatrixHash: control.MatrixHash}
@@ -63,7 +59,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	presenceCtx, stopPresence := context.WithCancel(ctx)
 	defer stopPresence()
 	report := func() {
-		e := client.Presence(presenceCtx, w.Cfg.AgentID, count)
+		e := client.Presence(presenceCtx, w.Cfg.AgentID, 0)
 		if e == nil {
 			e = client.ReportRuntime(presenceCtx, w.Cfg.AgentID, runtime)
 		}
@@ -96,46 +92,74 @@ func (w *Worker) Run(ctx context.Context) error {
 		<-ctx.Done()
 		return ctx.Err()
 	}
-	var wg sync.WaitGroup
-	for i := 0; i < count; i++ {
-		wg.Add(1)
-		go func(slot int) { defer wg.Done(); w.loop(ctx, client, slot) }(i)
+	if w.Cfg.Once {
+		run, err := w.nextExecution(ctx, client)
+		if err != nil {
+			log.Printf("claim: %v", err)
+		} else if run != nil {
+			if err = run(); err != nil {
+				log.Printf("execution: %v", err)
+			}
+		}
+		return ctx.Err()
 	}
-	wg.Wait()
-	return ctx.Err()
+	return dispatch(ctx, w.Cfg.PollInterval, func(ctx context.Context) (func() error, error) { return w.nextExecution(ctx, client) })
 }
-func (w *Worker) loop(ctx context.Context, c *execution.Client, slot int) {
+
+// Claim serially, start each accepted execution independently, and wait for all
+// executions on shutdown. There is no task-count or worker-slot ceiling.
+func dispatch(ctx context.Context, poll time.Duration, next func(context.Context) (func() error, error)) error {
+	if poll <= 0 {
+		poll = 2 * time.Second
+	}
+	var wg sync.WaitGroup
+	defer wg.Wait()
 	for ctx.Err() == nil {
-		if c.SDKIdentityVersion == 1 {
-			handled, e := w.executeIdentity(ctx, c)
-			if e != nil && ctx.Err() == nil {
-				log.Print("SDK identity operation interrupted; inspect status in Web")
-			}
-			if handled {
-				if w.Cfg.Once {
-					return
+		run, err := next(ctx)
+		if err != nil && ctx.Err() == nil {
+			log.Printf("claim: %v", err)
+		}
+		if err == nil && run != nil {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				if e := run(); e != nil && ctx.Err() == nil {
+					log.Printf("execution: %v", e)
 				}
-				continue
-			}
+			}()
+			continue
 		}
-		lease, e := c.Claim(ctx, w.Cfg.AgentID)
-		if e != nil {
-			log.Printf("slot=%d claim: %v", slot, e)
-		} else if lease.HasTask() {
-			log.Printf("task=%s attempt=%d slot=%d start", lease.Execution.TaskID, lease.Execution.Attempt, slot)
-			if e = w.execute(ctx, c, lease); e != nil {
-				log.Printf("task=%s attempt=%d: %v", lease.Execution.TaskID, lease.Execution.Attempt, e)
-			}
-		}
-		if w.Cfg.Once {
-			return
-		}
+		timer := time.NewTimer(poll)
 		select {
 		case <-ctx.Done():
-			return
-		case <-time.After(w.Cfg.PollInterval):
+			timer.Stop()
+		case <-timer.C:
 		}
 	}
+	return ctx.Err()
+}
+
+func (w *Worker) nextExecution(ctx context.Context, c *execution.Client) (func() error, error) {
+	if c.SDKIdentityVersion == 1 {
+		claim, err := c.ClaimSDKIdentity(ctx, w.Cfg.AgentID)
+		if err != nil && ctx.Err() == nil {
+			log.Print("SDK identity claim unavailable; inspect status in Web")
+		}
+		if err == nil && claim != nil {
+			return func() error { _, e := w.executeIdentityClaim(ctx, c, claim); return e }, nil
+		}
+	}
+	lease, err := c.Claim(ctx, w.Cfg.AgentID)
+	if err != nil {
+		return nil, err
+	}
+	if !lease.HasTask() {
+		return nil, nil
+	}
+	return func() error {
+		log.Printf("task=%s attempt=%d start", lease.Execution.TaskID, lease.Execution.Attempt)
+		return w.execute(ctx, c, lease)
+	}, nil
 }
 func (w *Worker) execute(ctx context.Context, c *execution.Client, lease *execution.Lease) error {
 	task := lease
@@ -210,7 +234,7 @@ func (w *Worker) execute(ctx context.Context, c *execution.Client, lease *execut
 				if a.Credential.Present {
 					overrides[a.Credential.Value.EnvName] = a.Credential.Value.Value
 				}
-				result, err = scanner.Run(runCtx, scanner.Request{SDKIdentity: lease.SDKIdentity, DataDir: w.Cfg.DataDir, AgentID: w.Cfg.AgentID, ComponentScan: lease.ComponentScan, ComponentPlanning: lease.ComponentPlanning, GitTarget: gitTargetFromLease(lease), SDKOperation: lease.SDKOperation, ParentState: parentStateFromLease(lease), ScanInput: scanInputFromLease(lease), ObservationContractVersion: task.ObservationContractVersion, ResultContractVersion: task.ResultContractVersion, Job: job, TaskID: task.NumericTaskID(), Attempt: int(task.Execution.Attempt), OutputPath: task.OutputPath, Provider: string(a.Model.ProviderID), ScannerDir: w.Cfg.ScannerDir, NodePath: w.Cfg.NodePath, EnvOverrides: overrides, Mock: os.Getenv("AXIOM_SCAN_MOCK") == "1"})
+				result, err = scanner.Run(runCtx, scanner.Request{SDKParameters: lease.SDKParameters, SDKIdentity: lease.SDKIdentity, DataDir: w.Cfg.DataDir, AgentID: w.Cfg.AgentID, ComponentScan: lease.ComponentScan, ComponentPlanning: lease.ComponentPlanning, GitTarget: gitTargetFromLease(lease), SDKOperation: lease.SDKOperation, ParentState: parentStateFromLease(lease), ScanInput: scanInputFromLease(lease), ObservationContractVersion: task.ObservationContractVersion, ResultContractVersion: task.ResultContractVersion, Job: job, TaskID: task.NumericTaskID(), Attempt: int(task.Execution.Attempt), OutputPath: task.OutputPath, Provider: string(a.Model.ProviderID), ScannerDir: w.Cfg.ScannerDir, NodePath: w.Cfg.NodePath, EnvOverrides: overrides, Mock: os.Getenv("AXIOM_SCAN_MOCK") == "1"})
 			}
 		} else {
 			result, err = w.runLegacy(runCtx, task.Legacy)

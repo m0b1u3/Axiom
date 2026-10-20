@@ -26,6 +26,8 @@ jobs:
       AXIOM_TEST_WEB_COMPONENTS: '1'
       AXIOM_TEST_WEB_COMPONENT_SCANS: '1'
       AXIOM_TEST_WEB_IDENTITIES: '1'
+      AXIOM_TEST_WEB_DISPATCH: '1'
+      AXIOM_TEST_NATIVE_CONCURRENCY: '1'
       AXIOM_TEST_GIT_SCREENSHOTS: '0'
       AXIOM_TEST_RECOVERY_REPORT_DIR: ${{ github.workspace }}/output/playwright/scan-recovery
       AXIOM_TEST_OPERATION_REPORT_DIR: ${{ github.workspace }}/output/playwright/sdk-operations
@@ -37,6 +39,8 @@ jobs:
       AXIOM_TEST_NATIVE_REPORT_DIR: ${{ github.workspace }}/output/playwright/sdk-native
       AXIOM_TEST_KNOWLEDGE_REPORT_DIR: ${{ github.workspace }}/output/playwright/knowledge
       AXIOM_TEST_CATALOG_REPORT_DIR: ${{ github.workspace }}/output/playwright/catalog
+      AXIOM_TEST_PARAMETER_REPORT_DIR: ${{ github.workspace }}/output/playwright/sdk-parameters
+      AXIOM_TEST_DISPATCH_REPORT_DIR: ${{ github.workspace }}/output/playwright/unbounded-dispatch
     services:
       postgres:
         image: postgres:16.15-alpine3.24@sha256:1a66d744c1b459e13b05a8fca341da84cb63383e99ce262210efee5a319d4551
@@ -114,5 +118,9 @@ jobs:
             output/playwright/sdk-identities/browser/*.png
             output/playwright/settings/*.json
             output/playwright/settings/*.png
+            output/playwright/sdk-parameters/*.json
+            output/playwright/sdk-parameters/*.png
+            output/playwright/unbounded-dispatch/*.json
+            output/playwright/unbounded-dispatch/*.png
           retention-days: 14
           if-no-files-found: warn

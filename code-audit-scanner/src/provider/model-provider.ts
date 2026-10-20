@@ -126,7 +126,8 @@ export function buildCodexOverrides(task: ScanTask): JsonObject | undefined {
     return undefined;
   }
   // The selected model must reach Codex even on its native OpenAI connection.
-  if(nativeOpenAI(task))return {model:task.model};
+  const effort=task.sdkParameters?.parameters.reasoningEffort;
+ if(nativeOpenAI(task))return {model:task.model,...(effort?{model_reasoning_effort:effort}:{})};
   const spec = resolveTaskProvider(task);
   const baseUrl = task.baseUrl ?? spec.defaultBaseUrl;
   if (!baseUrl) {
@@ -136,6 +137,7 @@ export function buildCodexOverrides(task: ScanTask): JsonObject | undefined {
   const overrides: JsonObject = {
     model: task.model,
     model_provider: task.provider,
+ ...(effort?{model_reasoning_effort:effort}:{}),
     cli_auth_credentials_store: "file",
     model_providers: {
       [task.provider]: {
@@ -177,13 +179,14 @@ export function buildModelCatalog(task: ScanTask): JsonObject {
       max_context_window: 1_048_576,
       effective_context_window_percent: 95,
       truncation_policy: { limit: 10_000, mode: "bytes" },
-      default_reasoning_level: "high",
+      default_reasoning_level: task.sdkParameters?.parameters.reasoningEffort??"high",
       default_reasoning_summary: "none",
       supported_reasoning_levels: [
         { description: "Fast responses with lighter reasoning", effort: "low" },
         { description: "Balances speed and reasoning depth for everyday tasks", effort: "medium" },
         { description: "Greater reasoning depth for complex problems", effort: "high" },
         { description: "Maximum reasoning depth", effort: "max" },
+ ...(task.sdkParameters?.parameters.reasoningEffort && !["low","medium","high"].includes(task.sdkParameters.parameters.reasoningEffort)?[{description:"Explicit reasoning selection",effort:task.sdkParameters.parameters.reasoningEffort}]:[]),
       ],
       supports_parallel_tool_calls: true,
       supports_reasoning_summaries: true,

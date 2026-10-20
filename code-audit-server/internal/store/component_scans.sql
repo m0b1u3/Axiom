@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS component_scans (
  task_id INTEGER PRIMARY KEY REFERENCES scan_tasks(id) ON DELETE CASCADE,
  plan_id INTEGER NOT NULL,
  version INTEGER NOT NULL,
- workers INTEGER NOT NULL CHECK(workers BETWEEN 1 AND 8),
+ workers INTEGER NOT NULL CHECK(workers BETWEEN 1 AND 9007199254740991),
  document_json TEXT NOT NULL,
  FOREIGN KEY(plan_id,version) REFERENCES component_plan_versions(plan_id,version)
 );

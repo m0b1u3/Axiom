@@ -18,7 +18,7 @@
 
 `sdk-operation-compatibility.json` 定义 input=3、result=1、observation=1、Job=5、Description=6；执行矩阵新增 sdk_operation profile。基础 Assignment v1、ScanInputAssignment v2、进度/事件 v2、结果/完成 v1 不变。操作 sidecar 和知识输入 sidecar 必须绑定同一 execution。缺少标记、跨 attempt、未知版本、旧 Scanner 或缺失能力在 SDK 前拒绝，不能回退成普通扫描。
 
-Server 原子保存冻结操作与来源，负责权限、租约、结果校验和 PostgreSQL 迁移 016；Agent 负责源码哈希、知识物化、私有环境及进程组；Scanner 是唯一 SDK 实现边界。操作与扫描共用全局/模型/项目容量、执行槽位、存储准入、心跳和取消，不另建旁路执行池。
+Server 原子保存冻结操作与来源，负责权限、租约、结果校验和 PostgreSQL 迁移 016；Agent 负责源码哈希、知识物化、私有环境及进程组；Scanner 是唯一 SDK 实现边界。操作与扫描使用同一按需执行链路，平台不设置全局/模型/项目并发配额或固定执行槽位；存储、身份、租约、费用和取消检查保持原语义。
 
 现有 001–015 迁移与历史 Schema 保留。迁移 016 新建 sdk_operations，扩展输入版本检查允许 3。来源记录受到引用保护，运行/未知费用证据和历史报告默认不自动清理。
 

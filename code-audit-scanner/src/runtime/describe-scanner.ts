@@ -11,6 +11,8 @@ export async function describeScanner() {
   return {
     schemaVersion:SCANNER_DESCRIPTION_VERSION,
  sdkIdentityVersion:1,
+ sdkParametersVersion:1,
+ sdkConcurrencyVersion:1,
     name:'axiom-scanner',
     version:pkg.version,
     baselineVersions,

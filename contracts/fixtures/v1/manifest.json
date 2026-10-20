@@ -2129,7 +2129,7 @@
       "id": "component-scan-workers-excess",
       "kind": "ComponentScanRequest",
       "file": "component-scan-workers-excess.json",
-      "valid": false
+      "valid": true
     },
     {
       "id": "component-scan-forged-cost",
@@ -2312,6 +2312,260 @@
       "kind": "SDKIdentitySnapshot",
       "file": "identity-public-secret-identityPath.json",
       "valid": false
+    },
+    {
+      "id": "sdk-parameters-reasoning",
+      "kind": "SDKScanParameters",
+      "file": "sdk-parameters-reasoning.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-parameters-components",
+      "kind": "SDKScanParameters",
+      "file": "sdk-parameters-components.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-parameters-bad-effort",
+      "kind": "SDKScanParameters",
+      "file": "sdk-parameters-bad-effort.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-parameters-unknown-version",
+      "kind": "SDKScanParameters",
+      "file": "sdk-parameters-unknown-version.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-parameters-empty",
+      "kind": "SDKScanParameters",
+      "file": "sdk-parameters-empty.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-parameters-component-validation",
+      "kind": "ComponentSDKInput",
+      "file": "sdk-parameters-component-validation.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-parameters-assignment",
+      "kind": "SDKParametersAssignment",
+      "file": "sdk-parameters-assignment.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk-parameters-foreign-execution",
+      "kind": "SDKParametersAssignment",
+      "file": "sdk-parameters-assignment.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 3
+      }
+    },
+    {
+      "id": "description-sdk-parameters",
+      "kind": "ScannerDescriptionV11",
+      "file": "description-sdk-parameters.json",
+      "valid": true
+    },
+    {
+      "id": "native-workers-above-legacy",
+      "kind": "ScanPolicy",
+      "file": "native-workers-above-legacy.json",
+      "valid": true
+    },
+    {
+      "id": "native-workers-safe-max",
+      "kind": "ScanPolicy",
+      "file": "native-workers-safe-max.json",
+      "valid": true
+    },
+    {
+      "id": "native-workers-unsafe",
+      "kind": "ScanPolicy",
+      "file": "native-workers-unsafe.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-workers-zero",
+      "kind": "ScanPolicy",
+      "file": "native-workers-zero.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-workers-fraction",
+      "kind": "ScanPolicy",
+      "file": "native-workers-fraction.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-deepMaxDiscoveryRuns-above-legacy",
+      "kind": "ScanPolicy",
+      "file": "native-deepMaxDiscoveryRuns-above-legacy.json",
+      "valid": true
+    },
+    {
+      "id": "native-deepMaxDiscoveryRuns-safe-max",
+      "kind": "ScanPolicy",
+      "file": "native-deepMaxDiscoveryRuns-safe-max.json",
+      "valid": true
+    },
+    {
+      "id": "native-deepMaxDiscoveryRuns-unsafe",
+      "kind": "ScanPolicy",
+      "file": "native-deepMaxDiscoveryRuns-unsafe.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-deepMaxDiscoveryRuns-zero",
+      "kind": "ScanPolicy",
+      "file": "native-deepMaxDiscoveryRuns-zero.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-deepMaxDiscoveryRuns-fraction",
+      "kind": "ScanPolicy",
+      "file": "native-deepMaxDiscoveryRuns-fraction.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-deepStopAfterNoNew-above-legacy",
+      "kind": "ScanPolicy",
+      "file": "native-deepStopAfterNoNew-above-legacy.json",
+      "valid": true
+    },
+    {
+      "id": "native-deepStopAfterNoNew-safe-max",
+      "kind": "ScanPolicy",
+      "file": "native-deepStopAfterNoNew-safe-max.json",
+      "valid": true
+    },
+    {
+      "id": "native-deepStopAfterNoNew-unsafe",
+      "kind": "ScanPolicy",
+      "file": "native-deepStopAfterNoNew-unsafe.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-deepStopAfterNoNew-zero",
+      "kind": "ScanPolicy",
+      "file": "native-deepStopAfterNoNew-zero.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-deepStopAfterNoNew-fraction",
+      "kind": "ScanPolicy",
+      "file": "native-deepStopAfterNoNew-fraction.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-ScanInput-above-legacy",
+      "kind": "ScanInput",
+      "file": "native-ScanInput-above-legacy.json",
+      "valid": true
+    },
+    {
+      "id": "native-ScanInput-safe-max",
+      "kind": "ScanInput",
+      "file": "native-ScanInput-safe-max.json",
+      "valid": true
+    },
+    {
+      "id": "native-ScanInput-unsafe",
+      "kind": "ScanInput",
+      "file": "native-ScanInput-unsafe.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-ScanInput-negative",
+      "kind": "ScanInput",
+      "file": "native-ScanInput-negative.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-ScanInput-fraction",
+      "kind": "ScanInput",
+      "file": "native-ScanInput-fraction.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-ComponentScanRequest-above-legacy",
+      "kind": "ComponentScanRequest",
+      "file": "native-ComponentScanRequest-above-legacy.json",
+      "valid": true
+    },
+    {
+      "id": "native-ComponentScanRequest-safe-max",
+      "kind": "ComponentScanRequest",
+      "file": "native-ComponentScanRequest-safe-max.json",
+      "valid": true
+    },
+    {
+      "id": "native-ComponentScanRequest-unsafe",
+      "kind": "ComponentScanRequest",
+      "file": "native-ComponentScanRequest-unsafe.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-ComponentScanRequest-negative",
+      "kind": "ComponentScanRequest",
+      "file": "native-ComponentScanRequest-negative.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "native-ComponentScanRequest-fraction",
+      "kind": "ComponentScanRequest",
+      "file": "native-ComponentScanRequest-fraction.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "description-sdk-concurrency",
+      "kind": "ScannerDescriptionV12",
+      "file": "description-sdk-concurrency.json",
+      "valid": true
+    },
+    {
+      "id": "description-sdk-concurrency-missing",
+      "kind": "ScannerDescriptionV12",
+      "file": "description-sdk-concurrency-missing.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "description-sdk-concurrency-future",
+      "kind": "ScannerDescriptionV12",
+      "file": "description-sdk-concurrency-future.json",
+      "valid": false,
+      "code": "invalid_contract"
+    },
+    {
+      "id": "description-sdk-concurrency-unverified-sdk",
+      "kind": "ScannerDescriptionV12",
+      "file": "description-sdk-concurrency-unverified-sdk.json",
+      "valid": false,
+      "code": "invalid_contract"
     }
   ]
 }

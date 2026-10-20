@@ -20,14 +20,17 @@ var ErrCompletionConflict = errors.New("completion content conflicts with the ar
 var ErrInvalidResult = errors.New("invalid execution result")
 
 type ClaimLimits struct {
-	SDKIdentityCapable bool
-	Global             int
-	PerModel           int
-	PerProject         int
-	Lease              time.Duration
-	OutputRoot         string
-	MaxRecoveries      int
-	StorageCheck       func(context.Context) string `json:"-"`
+	SDKConcurrencyCapable bool
+	SDKParametersCapable  bool
+	SDKIdentityCapable    bool
+	// Deprecated: the following three values seed historical metadata only.
+	Global        int
+	PerModel      int
+	PerProject    int
+	Lease         time.Duration
+	OutputRoot    string
+	MaxRecoveries int
+	StorageCheck  func(context.Context) string `json:"-"`
 }
 type LeaseRef struct {
 	TaskID  int64  `json:"taskId"`
@@ -81,7 +84,7 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 	if !s.db.postgres {
 		return nil, errors.New("concurrent execution requires PostgreSQL")
 	}
-	if limits.Global < 1 || limits.PerModel < 1 || limits.PerProject < 1 || limits.Lease < 10*time.Second {
+	if limits.Lease < 10*time.Second {
 		return nil, errors.New("invalid queue limits")
 	}
 	release, e := s.storageGate(ctx, false)
@@ -94,15 +97,10 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 		return nil, err
 	}
 	defer tx.Rollback()
-	// Serialize admission only, not control. All server replicas enforce the same quotas.
+	// Serialize claims and budget/identity bindings; task-count quotas are retired.
 	if _, err = tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(740919)`); err != nil {
 		return nil, err
 	}
-	settings, err := readSettings(ctx, tx, limits)
-	if err != nil {
-		return nil, err
-	}
-	limits.Global, limits.PerModel, limits.PerProject = settings.Global, settings.PerModel, settings.PerProject
 	now := time.Now().UTC()
 	stamp := now.Format(time.RFC3339)
 	// Validation cannot report final cost. A lost lease must never replay it.
@@ -147,18 +145,6 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 	if limits.StorageCheck != nil && limits.StorageCheck(ctx) != "" {
 		return nil, tx.Commit()
 	}
-	var active int
-	if err = tx.QueryRowContext(ctx, `SELECT COALESCE(SUM(CASE WHEN input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=scan_tasks.id),1) ELSE 1 END),0) FROM scan_tasks WHERE status IN ('claimed','scanning','cancel_requested') AND lease_expires_at>=?`, stamp).Scan(&active); err != nil {
-		return nil, err
-	}
-	var identityActive int
-	if e := tx.QueryRowContext(ctx, `SELECT count(*) FROM sdk_identity_operations WHERE status IN ('running','waiting') AND lease_until>=?`, stamp).Scan(&identityActive); e != nil {
-		return nil, e
-	}
-	active += identityActive
-	if active >= limits.Global {
-		return nil, tx.Commit()
-	}
 	var id int64
 	var attempt int
 	var previous string
@@ -180,12 +166,16 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 			return nil, tx.Commit()
 		}
 		runtimeAPI = int(runtime.ControlAPI)
-		limits.SDKIdentityCapable = limits.SDKIdentityCapable && runtime.ScannerDescriptionVersion != nil && *runtime.ScannerDescriptionVersion == contracts.SDKIdentityDescriptionVersion
+		limits.SDKConcurrencyCapable = limits.SDKConcurrencyCapable && runtime.ScannerDescriptionVersion != nil && *runtime.ScannerDescriptionVersion == contracts.SDKConcurrencyDescriptionVersion
+		limits.SDKParametersCapable = limits.SDKParametersCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKParameters(*runtime.ScannerDescriptionVersion)
+		limits.SDKIdentityCapable = limits.SDKIdentityCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKIdentity(*runtime.ScannerDescriptionVersion)
 	}
 	if runtimeSeen == nil || now.Sub(*runtimeSeen) >= 30*time.Second {
 		limits.SDKIdentityCapable = false
+		limits.SDKParametersCapable = false
+		limits.SDKConcurrencyCapable = false
 	}
-	caps := control.Capabilities{Input: capabilities, Result: results, Observation: observations}
+	caps := control.Capabilities{SDKConcurrency: limits.SDKConcurrencyCapable, SDKParameters: limits.SDKParametersCapable, Input: capabilities, Result: results, Observation: observations}
 	filters := []string{}
 	for _, p := range control.Profiles() {
 		if p.ControlAPI <= runtimeAPI && caps.ReadyFor(control.Requirements{Input: p.Input, Result: p.Result, Observation: p.Observation}) {
@@ -198,15 +188,14 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 	err = tx.QueryRowContext(ctx, `SELECT t.id,t.attempt,t.status FROM scan_tasks t
  WHERE (t.status='pending' OR (t.status IN ('claimed','scanning') AND (t.lease_expires_at IS NULL OR t.lease_expires_at<?)))
  AND (`+strings.Join(filters, " OR ")+`)
- AND (CASE WHEN t.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=t.id),1) ELSE 1 END)<=`+fmt.Sprint(limits.Global-active)+`
- AND (NOT EXISTS(SELECT 1 FROM task_sdk_identities b WHERE b.task_id=t.id) OR (? AND EXISTS(SELECT 1 FROM task_sdk_identities b JOIN sdk_identities i ON i.id=b.identity_id WHERE b.task_id=t.id AND i.agent_id=? AND i.state='authenticated' AND i.authenticated=TRUE AND i.cleanup_pending=FALSE AND i.generation=(b.reference_json::jsonb->>'generation')::bigint AND NOT EXISTS(SELECT 1 FROM task_sdk_identities active_binding JOIN scan_tasks active_task ON active_task.id=active_binding.task_id WHERE active_binding.identity_id=i.id AND active_task.id<>t.id AND active_task.status IN ('claimed','scanning','cancel_requested') AND active_task.lease_expires_at>=?) AND NOT EXISTS(SELECT 1 FROM sdk_identity_operations o WHERE o.identity_id=i.id AND o.status IN ('queued','running','waiting')))))
+ AND (NOT EXISTS(SELECT 1 FROM task_sdk_identities b WHERE b.task_id=t.id) OR (? AND EXISTS(SELECT 1 FROM task_sdk_identities b JOIN sdk_identities i ON i.id=b.identity_id WHERE b.task_id=t.id AND i.agent_id=? AND i.state='authenticated' AND i.authenticated=TRUE AND i.cleanup_pending=FALSE AND i.generation=(b.reference_json::jsonb->>'generation')::bigint AND (`+fmt.Sprint(limits.SDKConcurrencyCapable)+` OR NOT EXISTS(SELECT 1 FROM task_sdk_identities active_binding JOIN scan_tasks active_task ON active_task.id=active_binding.task_id WHERE active_binding.identity_id=i.id AND active_task.id<>t.id AND active_task.status IN ('claimed','scanning','cancel_requested') AND active_task.lease_expires_at>=?)) AND NOT EXISTS(SELECT 1 FROM sdk_identity_operations o WHERE o.identity_id=i.id AND o.status IN ('queued','running','waiting')))))
  AND (NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=t.id) OR `+fmt.Sprint(containsOperationJob(observations))+`)
+ AND (COALESCE(t.sdk_parameters_json,'')='' OR `+fmt.Sprint(limits.SDKParametersCapable)+`)
+ AND (`+fmt.Sprint(limits.SDKConcurrencyCapable)+` OR NOT `+s.needsSDKConcurrencySQL("t")+`)
  AND (NOT EXISTS(SELECT 1 FROM task_scan_inputs si WHERE si.task_id=t.id) OR ?)
  AND ((t.max_cost_usd IS NULL AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL)) OR (t.input_contract_version IN (1,2,3,4,5,6) AND ?))
  AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL AND (EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=t.id AND c.state='unknown') OR COALESCE((SELECT SUM(c.booked_micros) FROM task_cost_attempts c WHERE c.task_id=t.id),0)>=b.total_micros))
- AND (SELECT COALESCE(SUM(CASE WHEN r.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=r.id),1) ELSE 1 END),0) FROM scan_tasks r WHERE r.status IN ('claimed','scanning','cancel_requested') AND r.lease_expires_at>=? AND COALESCE(r.model_config_id,0)=COALESCE(t.model_config_id,0) AND r.provider=t.provider)+(CASE WHEN t.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=t.id),1) ELSE 1 END)<= ?
- AND (SELECT COALESCE(SUM(CASE WHEN r.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=r.id),1) ELSE 1 END),0) FROM scan_tasks r WHERE r.status IN ('claimed','scanning','cancel_requested') AND r.lease_expires_at>=? AND COALESCE(r.project_id,0)=COALESCE(t.project_id,0))+(CASE WHEN t.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=t.id),1) ELSE 1 END)<= ?
- ORDER BY t.queued_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, stamp, limits.SDKIdentityCapable, agent, stamp, containsJob4(observations), capabilities.MaxCostUSD, stamp, limits.PerModel, stamp, limits.PerProject).Scan(&id, &attempt, &previous)
+ ORDER BY t.queued_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, stamp, limits.SDKIdentityCapable, agent, stamp, containsJob4(observations), capabilities.MaxCostUSD).Scan(&id, &attempt, &previous)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, tx.Commit()
 	}

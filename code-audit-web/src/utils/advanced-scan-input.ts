@@ -14,7 +14,7 @@ export function advancedScanInput(form:AdvancedScanForm,mode:string,validation:s
   out[key]=value;
  }
  if(String(form.subagents).trim()){
-  const n=Number(form.subagents);if(mode!=='deep'||!Number.isSafeInteger(n)||n<0||n>64)throw new Error('子代理数量须为 0–64 的整数，且仅适用于 Deep。');out.subagents=n;
+  const n=Number(form.subagents);if(mode!=='deep'||!Number.isSafeInteger(n)||n<0)throw new Error('子代理数量须为非负安全整数（最高 9007199254740991），且仅适用于 Deep。');out.subagents=n;
  }
  if(out.validationPrompt&&(mode!=='standard'||validation==='exploitability'))throw new Error('自定义验证指令仅适用于 Standard 默认验证，请清空该指令或切换验证方式。');
  for(const key of ['workflowId','safetyIdentifier'] as const)if(out[key]&&!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(out[key]!))throw new Error('工作流和隐私标识只能包含英文字母、数字、点、下划线和连字符。');

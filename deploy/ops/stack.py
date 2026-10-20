@@ -80,8 +80,7 @@ def init_env(path, project, port, release="local"):
         "AXIOM_ADMIN_USER": "admin", "AXIOM_ADMIN_PASSWORD": secrets.token_urlsafe(24),
         "AXIOM_JWT_SECRET": secrets.token_hex(32), "AXIOM_AGENT_TOKEN": secrets.token_hex(32),
         "AXIOM_MASTER_KEY": base64.urlsafe_b64encode(secrets.token_bytes(32)).decode().rstrip("="),
-        "AXIOM_AGENT_ID": "agent-local", "AXIOM_AGENT_CONCURRENCY": "2",
-        "AXIOM_MAX_ACTIVE_SCANS": "2", "AXIOM_MAX_MODEL_SCANS": "2", "AXIOM_MAX_PROJECT_SCANS": "2",
+        "AXIOM_AGENT_ID": "agent-local",
         "AXIOM_MAX_RECOVERIES": "0",
         "AXIOM_SCAN_MOCK": "0",
     }

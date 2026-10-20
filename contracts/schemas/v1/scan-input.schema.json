@@ -46,7 +46,7 @@
         "subagents": {
           "type": "integer",
           "minimum": 0,
-          "maximum": 64
+          "maximum": 9007199254740991
         },
         "scanPrompt": {
           "type": "string",

@@ -40,8 +40,8 @@ type createScanRequest struct {
 	ValidationMode       string               `json:"validationMode"`
 	BusinessContext      string               `json:"businessContext"`
 	TimeoutMinutes       int                  `json:"timeoutMinutes"`
-	DeepMaxDiscoveryRuns int                  `json:"deepMaxDiscoveryRuns"`
-	DeepStopAfterNoNew   int                  `json:"deepStopAfterNoNew"`
+	DeepMaxDiscoveryRuns *int                 `json:"deepMaxDiscoveryRuns"`
+	DeepStopAfterNoNew   *int                 `json:"deepStopAfterNoNew"`
 	MaxCostUSD           *float64             `json:"maxCostUsd"`
 	MaxTotalCostUSD      *float64             `json:"maxTotalCostUsd"`
 	Workers              *int                 `json:"workers"`
@@ -113,18 +113,18 @@ func normalizePolicy(v createScanRequest) (contracts.ScanPolicy, error) {
 	if v.Workers != nil {
 		p.Workers = contracts.Some(int64(*v.Workers))
 	}
-	if v.DeepMaxDiscoveryRuns != 0 {
-		p.DeepMaxDiscoveryRuns = contracts.Some(int64(v.DeepMaxDiscoveryRuns))
+	if v.DeepMaxDiscoveryRuns != nil {
+		p.DeepMaxDiscoveryRuns = contracts.Some(int64(*v.DeepMaxDiscoveryRuns))
 	}
-	if v.DeepStopAfterNoNew != 0 {
-		p.DeepStopAfterNoNew = contracts.Some(int64(v.DeepStopAfterNoNew))
+	if v.DeepStopAfterNoNew != nil {
+		p.DeepStopAfterNoNew = contracts.Some(int64(*v.DeepStopAfterNoNew))
 	}
 	raw, err := json.Marshal(p)
 	if err != nil {
 		return p, err
 	}
 	if err = contracts.ValidateJSON(contracts.KindScanPolicy, raw, nil); err != nil {
-		return p, errors.New("扫描模式、验证方式、路径或深度参数不符合要求；worker 须为 1–64 的整数且仅适用于深度扫描")
+		return p, errors.New("扫描模式、验证方式、路径或深度参数不符合要求；Worker 和发现轮数须为正安全整数，且仅适用于深度扫描")
 	}
 	return p, nil
 }
@@ -183,6 +183,9 @@ func resolveModel(v createScanRequest, cfg *store.ModelConfigRow) (contracts.Res
 		m.BaseURL = contracts.Some(baseURL)
 	}
 	raw, _ := json.Marshal(m)
+	if cfg != nil && cfg.ReasoningEffort != "" {
+		raw = append(raw, []byte("\x00reasoningEffort="+cfg.ReasoningEffort)...)
+	}
 	hash := sha256.Sum256(raw)
 	m.ConfigurationRevision = contracts.Identifier(fmt.Sprintf("config-%d-%s", id, hex.EncodeToString(hash[:])[:16]))
 	raw, _ = json.Marshal(m)
@@ -227,7 +230,7 @@ func (s *Server) prepareScan(r *http.Request, v createScanRequest) (store.Task, 
 	}
 	t := store.Task{ScanNo: "SCAN-" + strconv.FormatInt(time.Now().UnixNano(), 36), SourcePath: v.SourcePath, SourceSnapshotID: v.SourceSnapshotID, ModelConfigID: v.ModelConfigID, ProjectID: v.ProjectID,
 		Provider: string(m.ProviderID), Model: m.Model, BaseURL: m.BaseURL.Value, ScanMode: string(p.Mode), TimeoutMinutes: int(p.TimeBudget.ScanSeconds / 60), MaxCostUSD: v.MaxCostUSD, Workers: v.Workers,
-		ValidationMode: string(p.Validation.Mode), BusinessContext: v.BusinessContext, DeepMaxDiscoveryRuns: v.DeepMaxDiscoveryRuns, DeepStopAfterNoNew: v.DeepStopAfterNoNew}
+		ValidationMode: string(p.Validation.Mode), BusinessContext: v.BusinessContext, DeepMaxDiscoveryRuns: int(p.DeepMaxDiscoveryRuns.Value), DeepStopAfterNoNew: int(p.DeepStopAfterNoNew.Value)}
 	if v.SourceSnapshotID > 0 {
 		t.BudgetAccounting = true
 		t.MaxTotalCostUSD = v.MaxTotalCostUSD
@@ -322,6 +325,9 @@ func (s *Server) prepareScan(r *http.Request, v createScanRequest) (store.Task, 
 	focusJSON, _ := json.Marshal(p.Focus)
 	t.ModelSnapshotJSON, t.PolicySnapshotJSON, t.IncludePaths, t.ScanFocus = string(modelJSON), string(policyJSON), string(includeJSON), string(focusJSON)
 	if cfg != nil {
+		if cfg.ReasoningEffort != "" {
+			t.SDKParameters = &contracts.SDKScanParameters{SchemaVersion: 1, ReasoningEffort: contracts.Some(contracts.ReasoningEffort(cfg.ReasoningEffort))}
+		}
 		t.CredentialSnapshotEncrypted = cfg.ApiKeyEncrypted
 	}
 	if v.SDKIdentityID != "" {

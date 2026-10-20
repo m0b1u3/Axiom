@@ -17,17 +17,21 @@ type Profile struct {
 	Event       int    `json:"event"`
 }
 type Requirements struct {
-	SDKOperation bool `json:"sdkOperation,omitempty"`
-	ScanInput    bool `json:"scanInput,omitempty"`
-	Input        int  `json:"input"`
-	Result       int  `json:"result"`
-	Observation  int  `json:"observation"`
-	Budget       bool `json:"budget"`
+	SDKConcurrency bool `json:"sdkConcurrency,omitempty"`
+	SDKParameters  bool `json:"sdkParameters,omitempty"`
+	SDKOperation   bool `json:"sdkOperation,omitempty"`
+	ScanInput      bool `json:"scanInput,omitempty"`
+	Input          int  `json:"input"`
+	Result         int  `json:"result"`
+	Observation    int  `json:"observation"`
+	Budget         bool `json:"budget"`
 }
 type Capabilities struct {
-	Input       contracts.InputCapabilities
-	Result      contracts.ResultCapabilities
-	Observation contracts.ObservationCapabilities
+	SDKConcurrency bool
+	SDKParameters  bool
+	Input          contracts.InputCapabilities
+	Result         contracts.ResultCapabilities
+	Observation    contracts.ObservationCapabilities
 }
 
 func ControlAPIs() []int  { return append([]int(nil), controlAPIs...) }
@@ -54,6 +58,12 @@ func Missing(v Requirements, c Capabilities) []string {
 		return []string{"task_contract_unsupported"}
 	}
 	missing := []string{}
+	if v.SDKConcurrency && !c.SDKConcurrency {
+		missing = append(missing, "sdk_concurrency")
+	}
+	if v.SDKParameters && !c.SDKParameters {
+		missing = append(missing, "sdk_parameters")
+	}
 	if v.Input == contracts.ComponentScanInputVersion && !slices.Contains(c.Observation.JobVersions, contracts.ComponentScanJobVersion) {
 		missing = append(missing, "component_scan")
 	}
@@ -90,7 +100,10 @@ type RuntimeReport struct {
 	Runtime contracts.AgentRuntime `json:"runtime"`
 }
 type ServerDescription struct {
-	SDKIdentityVersion int    `json:"sdkIdentityVersion,omitempty"`
-	ControlAPIs        []int  `json:"controlAPIs"`
-	MatrixHash         string `json:"matrixHash"`
+	SDKConcurrencyVersion int    `json:"sdkConcurrencyVersion,omitempty"`
+	TaskDispatch          string `json:"taskDispatch,omitempty"`
+	SDKParametersVersion  int    `json:"sdkParametersVersion,omitempty"`
+	SDKIdentityVersion    int    `json:"sdkIdentityVersion,omitempty"`
+	ControlAPIs           []int  `json:"controlAPIs"`
+	MatrixHash            string `json:"matrixHash"`
 }

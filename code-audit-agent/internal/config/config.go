@@ -11,7 +11,6 @@ type Config struct {
 	AgentID      string
 	ServerURL    string
 	AgentToken   string
-	Concurrency  int
 	ScannerDir   string
 	NodePath     string
 	DataDir      string
@@ -28,7 +27,6 @@ func FromEnv() Config {
 		HealthFile:   os.Getenv("AXIOM_AGENT_HEALTH_FILE"),
 		ServerURL:    getenv("AXIOM_SERVER_URL", "http://127.0.0.1:8080"),
 		AgentToken:   os.Getenv("AXIOM_AGENT_TOKEN"),
-		Concurrency:  positiveEnv("AXIOM_AGENT_CONCURRENCY", 2),
 		AgentID:      getenv("AXIOM_AGENT_ID", "agent-local"),
 		ScannerDir:   scanner,
 		NodePath:     getenv("AXIOM_NODE", "node"),
@@ -58,12 +56,4 @@ func durationEnv(key string, fallback time.Duration) time.Duration {
 		return fallback
 	}
 	return d
-}
-
-func positiveEnv(key string, fallback int) int {
-	n, err := strconv.Atoi(os.Getenv(key))
-	if err != nil || n < 1 || n > 64 {
-		return fallback
-	}
-	return n
 }

@@ -16,22 +16,25 @@ func (s *Server) createComponentScan(w http.ResponseWriter, r *http.Request, _ *
 		return
 	}
 	var body struct {
-		SDKIdentityID    string  `json:"sdkIdentityId"`
-		Version          int64   `json:"version"`
-		VersionSHA256    string  `json:"versionSha256"`
-		ModelConfigID    int64   `json:"modelConfigId"`
-		Workers          int     `json:"workers"`
-		TimeoutMinutes   int     `json:"timeoutMinutes"`
-		MaxCostUSD       float64 `json:"maxCostUsd"`
-		MaxTotalCostUSD  float64 `json:"maxTotalCostUsd"`
-		ComponentCostUSD float64 `json:"componentCostUsd"`
-		Acknowledge      bool    `json:"acknowledgeMatchingCost"`
+		KnowledgeVersionIDs []int64 `json:"knowledgeVersionIds"`
+		ScanPrompt          string  `json:"scanPrompt"`
+		PostScanPrompt      string  `json:"postScanPrompt"`
+		SDKIdentityID       string  `json:"sdkIdentityId"`
+		Version             int64   `json:"version"`
+		VersionSHA256       string  `json:"versionSha256"`
+		ModelConfigID       int64   `json:"modelConfigId"`
+		Workers             int     `json:"workers"`
+		TimeoutMinutes      int     `json:"timeoutMinutes"`
+		MaxCostUSD          float64 `json:"maxCostUsd"`
+		MaxTotalCostUSD     float64 `json:"maxTotalCostUsd"`
+		ComponentCostUSD    float64 `json:"componentCostUsd"`
+		Acknowledge         bool    `json:"acknowledgeMatchingCost"`
 	}
 	if !componentBody(w, r, &body) {
 		return
 	}
-	if !body.Acknowledge || body.ModelConfigID < 1 || body.Workers < 1 || body.Workers > 8 {
-		httputil.Error(w, 400, 40000, "请选择模型与 1–8 个并发组件，并确认跨组件匹配费用未知且不受组件扫描预算限制")
+	if !body.Acknowledge || body.ModelConfigID < 1 || body.Workers < 1 || int64(body.Workers) > contracts.SDKMaxSafeInteger {
+		httputil.Error(w, 400, 40000, "请选择模型，并填写正安全整数的并发组件数；同时确认跨组件匹配费用未知且不受组件扫描预算限制")
 		return
 	}
 	component, e := store.BudgetLimitMicros(body.ComponentCostUSD)
@@ -60,6 +63,24 @@ func (s *Server) createComponentScan(w http.ResponseWriter, r *http.Request, _ *
 	if e != nil {
 		componentError(w, e)
 		return
+	}
+	if len(body.KnowledgeVersionIDs) > 0 || body.ScanPrompt != "" || body.PostScanPrompt != "" {
+		docs, e := s.Store.ResolveKnowledge(r.Context(), body.KnowledgeVersionIDs)
+		if e != nil {
+			componentError(w, e)
+			return
+		}
+		input := contracts.ComponentSDKInput{SchemaVersion: 1, Knowledge: docs}
+		if body.ScanPrompt != "" {
+			input.ScanPrompt = contracts.Some(body.ScanPrompt)
+		}
+		if body.PostScanPrompt != "" {
+			input.PostScanPrompt = contracts.Some(body.PostScanPrompt)
+		}
+		if t.SDKParameters == nil {
+			t.SDKParameters = &contracts.SDKScanParameters{SchemaVersion: 1}
+		}
+		t.SDKParameters.ComponentInput = contracts.Some(input)
 	}
 	t.GitTarget = nil
 	t.InputContractVersion = contracts.ComponentScanInputVersion

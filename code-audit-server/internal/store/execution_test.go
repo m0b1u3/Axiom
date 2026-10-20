@@ -62,8 +62,8 @@ func TestPostgresExecution(t *testing.T) {
 	for e := range errs {
 		t.Fatal(e)
 	}
-	if len(claimed) != 2 {
-		t.Fatalf("claimed %d, want 2", len(claimed))
+	if len(claimed) != 3 {
+		t.Fatalf("claimed %d, want 3", len(claimed))
 	}
 	a, b := <-claimed, <-claimed
 	if a.ID == b.ID || a.OutputPath == b.OutputPath {
@@ -142,7 +142,7 @@ func TestPostgresExecution(t *testing.T) {
 		t.Fatal(e)
 	}
 }
-func TestPostgresModelQuota(t *testing.T) {
+func TestPostgresModelQuotaRetired(t *testing.T) {
 	s := pgStore(t)
 	ctx := context.Background()
 	for i, p := range []string{"deepseek", "deepseek", "openai"} {
@@ -160,11 +160,11 @@ func TestPostgresModelQuota(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if a == nil || b == nil || a.Provider == b.Provider {
-		t.Fatal("model cap or queue fairness failed")
+	if a == nil || b == nil || a.Provider != b.Provider {
+		t.Fatal("legacy model quota still restricted FIFO admission")
 	}
 	c, e := s.ClaimExecution(ctx, "c", limits)
-	if e != nil || c != nil {
-		t.Fatal("quota overflow", e)
+	if e != nil || c == nil {
+		t.Fatal("retired quota blocked third task", e)
 	}
 }

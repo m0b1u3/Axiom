@@ -42,12 +42,12 @@ func TestPostgresManagement(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if v.Active != 1 || v.Pending != 1 || v.EffectiveCapacity != 1 || v.Tasks[1].Reason != "global_limit" {
+	if v.Active != 1 || v.Pending != 1 || v.EffectiveCapacity != nil || v.DispatchMode != "unbounded" || v.Tasks[1].Reason != "awaiting_dispatch" {
 		t.Fatalf("overview %+v", v)
 	}
 	blocked, e := s.ClaimExecution(ctx, "qa-agent", limits)
-	if e != nil || blocked != nil {
-		t.Fatal("dynamic cap not enforced", e)
+	if e != nil || blocked == nil || blocked.ID != b {
+		t.Fatal("retired cap still enforced", e)
 	}
 	done := Completion{LeaseRef: LeaseRef{TaskID: a, Attempt: 1, AgentID: "qa-agent"}, Status: "completed", Findings: []Finding{{Fingerprint: "a", Title: "evidence", Severity: "high", Description: "test"}}}
 	if e = s.CompleteExecution(ctx, done); e != nil {
@@ -59,10 +59,6 @@ func TestPostgresManagement(t *testing.T) {
 	result, e := s.AttemptResult(ctx, a, 1)
 	if e != nil || !result.Available || len(result.Findings) != 1 {
 		t.Fatal("history lost", e)
-	}
-	claimed, e = s.ClaimExecution(ctx, "qa-agent", limits)
-	if e != nil || claimed == nil || claimed.ID != b {
-		t.Fatal("manual retry jumped queue", e)
 	}
 	updated.Global = 2
 	if _, e = s.SaveQueueSettings(ctx, updated, "admin"); e != nil {

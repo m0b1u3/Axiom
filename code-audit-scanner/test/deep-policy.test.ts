@@ -9,6 +9,6 @@ test("native deadline precedes outer deadline, workers stay SDK default",()=>{
  assert.deepEqual(deepScanOptions({...task,deepMaxDiscoveryRuns:8,deepStopAfterNoNew:2}),{maxTimeHours:.05,maxDiscoveryRuns:8,stopAfterNoNew:2});
 });
 test("deep-only controls reject unsupported modes and invalid counts",()=>{
- for(const value of [0,-1,1.5,Infinity,NaN,1001])assert.throws(()=>deepScanOptions({...task,deepMaxDiscoveryRuns:value}));
+ for(const value of [0,-1,1.5,Infinity,NaN,Number.MAX_SAFE_INTEGER+1])assert.throws(()=>deepScanOptions({...task,deepMaxDiscoveryRuns:value}));
  assert.throws(()=>deepScanOptions({...task,scanMode:"standard",deepStopAfterNoNew:2}));
 });

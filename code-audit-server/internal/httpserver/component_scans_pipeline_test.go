@@ -98,6 +98,11 @@ func TestComponentScansPipeline(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
+	if os.Getenv("AXIOM_TEST_WEB_COMPONENT_SCANS") == "1" {
+		t.Run("sdk-parameters-web-to-sdk", func(t *testing.T) {
+			runSDKParametersWebAcceptance(t, s, agent, root, ts.URL, token, agentToken, scratch, snap.ID, plan.ID)
+		})
+	}
 	launch := func() int64 {
 		t.Helper()
 		body := map[string]any{"version": frozen.Version, "versionSha256": frozen.SHA256, "modelConfigId": cfg.ID, "workers": 2, "timeoutMinutes": 5, "maxCostUsd": 6, "maxTotalCostUsd": 10, "componentCostUsd": 2, "acknowledgeMatchingCost": true}
@@ -265,7 +270,7 @@ func TestComponentScansPipeline(t *testing.T) {
 		t.Fatal(e)
 	}
 	defer db.Close()
-	t.Run("old-node-weighted-admission-reservation-and-expired-lease", func(t *testing.T) {
+	t.Run("old-node-unbounded-admission-reservation-and-expired-lease", func(t *testing.T) {
 		id := launch()
 		second := launch()
 		old := observations
@@ -282,8 +287,8 @@ func TestComponentScansPipeline(t *testing.T) {
 		if v.ReservedMicros == nil || *v.ReservedMicros != 6000000 {
 			t.Fatal("parent grant not reserved", v)
 		}
-		if another, e := s.ClaimExecutionWithObservations(t.Context(), "fixture-component-node-2", limits, caps, results, observations); e != nil || another != nil {
-			t.Fatal("component concurrency bypassed capacity", e, another)
+		if another, e := s.ClaimExecutionWithObservations(t.Context(), "fixture-component-node-2", limits, caps, results, observations); e != nil || another == nil || another.ID != second {
+			t.Fatal("retired weighted quota blocked an independent component task", e, another)
 		}
 		if _, e = db.Exec(`UPDATE scan_tasks SET lease_expires_at='2000-01-01T00:00:00Z' WHERE id=$1`, id); e != nil {
 			t.Fatal(e)
@@ -292,7 +297,7 @@ func TestComponentScansPipeline(t *testing.T) {
 			t.Fatal(e)
 		}
 		other, e := s.ClaimExecutionWithObservations(t.Context(), "fixture-next-node", limits, caps, results, observations)
-		if e != nil || other == nil || other.ID != second {
+		if e != nil || other != nil {
 			t.Fatal(e, other)
 		}
 		expired, _ := s.Get(t.Context(), id)

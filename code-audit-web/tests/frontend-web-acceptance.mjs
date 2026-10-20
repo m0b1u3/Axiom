@@ -314,15 +314,18 @@ try {
 
   await page.goto(base + '/settings?section=account'); await page.getByRole('heading', {name: '登录会话', exact: true}).waitFor();
   await button('修改密码').click(); await button('取消', page.getByRole('dialog', {name: '修改密码', exact: true})).click();
-  for (const [section, name] of [['users', '账户管理'], ['operations', '操作日志'], ['about', '关于系统'], ['storage', '存储与清理'], ['execution', '扫描设置']]) {
+  for (const [section, name] of [['users', '账户管理'], ['operations', '操作日志'], ['about', '关于系统'], ['storage', '存储与清理'], ['execution', '扫描执行']]) {
     await button(name).click(); await page.waitForURL(url => url.searchParams.get('section') === section);
     assert.equal(await button(name).getAttribute('aria-current'), 'page');
   }
-  const limit = page.getByLabel('全局任务并发', {exact: true}); await limit.fill('3');
-  undo = await fault('/settings/execution', 'PUT', 409, 'Fixture 配置已被其他会话修改');
-  await button('保存并发配置').click(); await alert('Fixture 配置已被其他会话修改').waitFor(); assert.equal(await limit.inputValue(), '3');
-  await undo(); await button('重新加载').click(); await limit.fill('3'); await button('保存并发配置').click(); await page.getByText(/已保存，后续任务领取立即使用新上限/).waitFor();
-  checks.push('Settings deep links/tabs, password dialog dismissal, scheduler conflict preserves input and explicit reload/save');
+  await page.getByText('平台不设置全局、模型或项目并发配额。',{exact:true}).waitFor();
+  assert.equal(await page.getByLabel('全局任务并发',{exact:true}).count(),0);
+  assert.equal(await button('保存并发配置').count(),0);
+  undo = await fault('/executions/overview', 'GET', 503, 'Fixture 执行状态读取失败');
+  await button('重新加载').click();await alert('扫描执行状态读取失败').waitFor();
+  await page.getByRole('status').filter({hasText:'上次成功的执行快照'}).waitFor();
+  await undo();await button('重新加载').click();await page.getByText('平台不设置全局、模型或项目并发配额。',{exact:true}).waitFor();
+  checks.push('Settings deep links/tabs, password dismissal, retired quota controls removed and execution read failure preserves snapshot');
 
   await page.goto(base + '/projects');
   const removeProject = page.getByRole('row').filter({hasText: 'Fixture Web 用户项目'});

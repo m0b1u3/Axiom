@@ -21,3 +21,5 @@ export type {ComponentSource,ComponentPlanDocument,ComponentPlanCoverage,Compone
 export type {ComponentScanRequest,ComponentScanReceipt,ComponentScanMatching,ComponentScanSnapshot,ComponentScanResult,ComponentFindingBinding} from '../../contracts/ts/src/types.gen';
 
 export type {SDKIdentityRef,SDKIdentitySnapshot,SDKIdentityOperation,SDKTaskIdentity} from '../../contracts/ts/src/types.gen';
+
+export type {ReasoningEffort,SDKScanParameters,SDKParametersAssignment,ComponentSDKInput} from "../../contracts/ts/src/types.gen";

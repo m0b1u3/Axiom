@@ -10,7 +10,7 @@ export const VERSION='fixture-input-sdk';
 // The public estimate function is pure. Resolve from this fixture directory so
 // the runtime replacement loader does not replace the real estimator itself.
 export {DiffTarget,estimateScanCost,normalizeComponentPlan} from '../../../code-audit-scanner/node_modules/@openai/codex-security/dist/index.js';
-export async function runComponentScans(options){if(process.env.AXIOM_COMPONENT_SCAN_FIXTURE!=='1')throw new Error('Component fixtures not enabled');return actualComponentScans(options)}
+export async function runComponentScans(options){if(process.env.AXIOM_COMPONENT_SCAN_FIXTURE!=='1')throw new Error('Component fixtures not enabled');await writeFile(process.env.AXIOM_INPUT_TEST_CAPTURE+'.component-options',JSON.stringify({fixtureOnly:true,workers:options.workers,componentCount:options.components.length}));return actualComponentScans(options)}
 export async function planComponents(source,options){
   const file=process.env.AXIOM_INPUT_TEST_CAPTURE;
   if(!file)throw new Error('Component fixture requires capture path');

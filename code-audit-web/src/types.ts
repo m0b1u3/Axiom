@@ -45,6 +45,7 @@ export interface ScanAttempt {
 }
 
 export interface ScanTask {
+ sdkParameters?:import("./contracts").SDKScanParameters;
  sdkIdentity?:import("./contracts").SDKIdentityRef;
   componentScan?:import("./contracts").ComponentScanRequest;
   gitTarget?:import("./contracts").GitDiffTarget;
@@ -230,9 +231,9 @@ export interface Progress {
 }
 
 export interface QueueSettings { global: number; perModel: number; perProject: number; revision: number; updatedAt: string; updatedBy: string }
-export interface AgentPresence { agentId: string; slots: number; lastSeen: string; online: boolean; runtimeReportedAt?:string; runtime?:AgentRuntime; inputCapabilities?:InputCapabilities; resultCapabilities?:ResultCapabilities; observationCapabilities?:ObservationCapabilities }
-export interface TaskCompatibility {required:{input:number;result:number;observation:number;budget:boolean;scanInput?:boolean;sdkOperation?:boolean};profile:string;reason:string;candidates:{agentId:string;online:boolean;ready:boolean;missing:string[];diagnostic?:ContractError}[]}
+export interface AgentPresence { dispatchMode?:'bounded'|'unbounded'; agentId: string; slots: number; lastSeen: string; online: boolean; runtimeReportedAt?:string; runtime?:AgentRuntime; inputCapabilities?:InputCapabilities; resultCapabilities?:ResultCapabilities; observationCapabilities?:ObservationCapabilities }
+export interface TaskCompatibility {required:{input:number;result:number;observation:number;budget:boolean;scanInput?:boolean;sdkOperation?:boolean;sdkConcurrency?:boolean};profile:string;reason:string;candidates:{agentId:string;online:boolean;ready:boolean;missing:string[];diagnostic?:ContractError}[]}
 export interface QueueTask { compatibility?:TaskCompatibility; taskId: number; status: string; agentId: string; queuedAt: string; startedAt: string; finishedAt: string; heartbeatAt: string; leaseExpiresAt: string; position: number; reason: string; automaticRetries: number }
-export interface QueueOverview { maxRecoveries?:number; settings: QueueSettings; agents: AgentPresence[]; tasks: QueueTask[]; active: number; pending: number; onlineSlots: number; readySlots?: number; effectiveCapacity: number; serverTime: string }
+export interface QueueOverview { dispatchMode?:'unbounded'; onlineAgents?:number; readyAgents?:number; maxRecoveries?:number; settings: QueueSettings; agents: AgentPresence[]; tasks: QueueTask[]; active: number; pending: number; onlineSlots: number; readySlots?: number; effectiveCapacity: number|null; serverTime: string }
 export interface AttemptResult {contractVersion?:number;result?:ContractResult|null;completion?:ExecutionCompletion|null;archiveSha256?:string; available: boolean; findings: Finding[]; coverage?: Record<string,unknown>|null }
 export interface CoverageResponse {available:boolean;coverage:Record<string,unknown>|null;attempt:number;status?:string;source:string;reason:string}

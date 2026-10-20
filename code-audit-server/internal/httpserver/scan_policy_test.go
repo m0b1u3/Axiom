@@ -23,7 +23,7 @@ func TestDeepPolicyValidation(t *testing.T) {
 		mode string
 		runs any
 		want int
-	}{{"standard", 4, 400}, {"deep", -1, 400}, {"deep", 1001, 400}, {"deep", 1.5, 400}, {"deep", 4, 200}, {"deep", 0, 200}} {
+	}{{"standard", 4, 400}, {"deep", -1, 400}, {"deep", 1001, 200}, {"deep", 9007199254740991, 200}, {"deep", 9007199254740992, 400}, {"deep", 1.5, 400}, {"deep", 4, 200}, {"deep", 0, 400}, {"deep", nil, 200}} {
 		code, body := doJSON(t, ts.URL+"/api/v1/scans", token, map[string]any{"sourcePath": "/src", "scanMode": v.mode, "deepMaxDiscoveryRuns": v.runs, "timeoutMinutes": 3})
 		if code != v.want {
 			t.Fatalf("mode=%s runs=%v got=%d body=%s", v.mode, v.runs, code, body)

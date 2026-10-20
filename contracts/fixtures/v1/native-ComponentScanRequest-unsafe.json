@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "planVersion": {
+    "schemaVersion": 1,
+    "planId": "9",
+    "source": {
+      "snapshotId": "7",
+      "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "headCommit": null
+    },
+    "version": 1,
+    "revision": 1,
+    "document": {
+      "components": [
+        {
+          "name": "API",
+          "paths": [
+            "api"
+          ]
+        },
+        {
+          "name": "Web",
+          "paths": [
+            "web"
+          ]
+        }
+      ]
+    },
+    "coverage": {
+      "inventoryHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "fileCount": 3,
+      "coveredFileCount": 3,
+      "uncoveredPaths": [],
+      "overlapCount": 0,
+      "overlaps": [],
+      "emptyComponents": [],
+      "duplicateNames": [],
+      "valid": true
+    },
+    "origin": "manual",
+    "validationExecution": {
+      "taskId": "9007199254740993",
+      "attempt": 2
+    },
+    "resultSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "confirmedBy": "1",
+    "confirmedAt": "2026-10-17T01:00:00Z"
+  },
+  "selectedIndices": [
+    0,
+    1
+  ],
+  "workers": 9007199254740992,
+  "componentLimitMicros": 3000000,
+  "grantMicros": 4000001,
+  "acknowledgeMatchingCost": true
+}

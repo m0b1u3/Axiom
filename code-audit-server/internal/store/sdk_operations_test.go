@@ -73,13 +73,13 @@ func TestPostgresSDKOperationCapacityExpiryAndUnknownEvidence(t *testing.T) {
 	if e != nil || first == nil || first.ID != id || first.SDKOperation.Execution.Attempt != 1 {
 		t.Fatal(e, first)
 	}
-	// A normal scan competes for the same quota, not a parallel operation pool.
+	// Retired task-count quotas must not block independent ordinary work.
 	pending, e := s.InsertPending(t.Context(), Task{ScanNo: "ordinary-competes", SourcePath: "/fixture", Provider: "openai", Model: "fixture"})
 	if e != nil {
 		t.Fatal(e)
 	}
-	if next, e := s.ClaimExecution(t.Context(), "ordinary", limits); e != nil || next != nil {
-		t.Fatal("operation bypassed shared global capacity", e, next)
+	if next, e := s.ClaimExecution(t.Context(), "ordinary", limits); e != nil || next == nil || next.ID != pending {
+		t.Fatal("retired operation capacity still blocked independent work", e, next)
 	}
 	past := time.Now().Add(-time.Minute).UTC().Format(time.RFC3339)
 	if _, e = s.db.ExecContext(t.Context(), `UPDATE scan_tasks SET lease_expires_at=? WHERE id=?`, past, id); e != nil {

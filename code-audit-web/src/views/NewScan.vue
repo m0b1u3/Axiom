@@ -191,7 +191,6 @@ async function submit(operation?:"preflight"): Promise<void> {
     message.warning("请上传快照或选择已有快照");
     return;
   }
-  if(form.scanMode==='deep' && [form.deepMaxDiscoveryRuns,form.deepStopAfterNoNew].some(v=>v!==''&&(!Number.isInteger(Number(v))||Number(v)<1||Number(v)>1000))){message.warning('深度扫描次数须为 1–1000 的整数，或留空使用 SDK 默认值');return;}
   if(gitSnapshot.value&&(form.scanMode!=="standard"||includeText.value.trim())){inputError.value="Git 提交差异只支持标准扫描，不能叠加路径范围。";return;}
   submitting.value = true;
   inputError.value="";
@@ -326,7 +325,7 @@ onMounted(() => void loadOptions());
 
       </div>
       <div v-if="selConfig" class="config-info mono">
-        <span>{{ selConfig.provider }} / {{ selConfig.model }}</span>
+        <span>{{ selConfig.provider }} / {{ selConfig.model }}</span><span v-if="selConfig.reasoningEffort">推理强度 · {{selConfig.reasoningEffort}}</span>
         <span class="muted">{{ selConfig.baseUrl || "（OpenAI 官方）" }}</span>
       </div>
 
@@ -367,11 +366,11 @@ onMounted(() => void loadOptions());
       <details v-if="form.scanMode==='deep'" class="deep-options"><summary>深度扫描停止条件（可选）</summary>
         <p>达到发现时限后，引擎停止未完成的发现任务并汇总已完成结果；另留最多 10 分钟用于收尾。</p>
         <div class="params">
-          <div><label class="field-label" for="deep-max-runs">最多发现次数</label><Input id="deep-max-runs" v-model="form.deepMaxDiscoveryRuns" type="number" min="1" max="1000" step="1" placeholder="留空使用 SDK 默认值"/></div>
-          <div><label class="field-label" for="deep-stop-new">连续无新增后停止（次）</label><Input id="deep-stop-new" v-model="form.deepStopAfterNoNew" type="number" min="1" max="1000" step="1" placeholder="留空使用 SDK 默认值"/></div>
-          <div><label class="field-label" for="deep-workers">Worker 数量（可选）</label><Input id="deep-workers" v-model="form.workers" type="number" min="1" max="64" step="1" placeholder="留空使用引擎默认值"/></div>
+          <div><label class="field-label" for="deep-max-runs">最多发现次数</label><Input id="deep-max-runs" v-model="form.deepMaxDiscoveryRuns" type="number" min="1" max="9007199254740991" step="1" placeholder="留空使用 SDK 默认值"/></div>
+          <div><label class="field-label" for="deep-stop-new">连续无新增后停止（次）</label><Input id="deep-stop-new" v-model="form.deepStopAfterNoNew" type="number" min="1" max="9007199254740991" step="1" placeholder="留空使用 SDK 默认值"/></div>
+          <div><label class="field-label" for="deep-workers">Worker 数量（可选）</label><Input id="deep-workers" v-model="form.workers" type="number" min="1" max="9007199254740991" step="1" placeholder="留空使用引擎默认值"/></div>
         </div>
-        <p>每次表示一次独立审查，不是文件数量。满足任一停止条件即可进入收尾；限时结束不代表完整覆盖。</p>
+        <p>Worker 数和发现次数按 SDK 原生规则填写正安全整数，留空沿用 SDK 默认；平台不再设置数量上限。每次表示一次独立审查，不是文件数量。满足任一停止条件即可进入收尾；限时结束不代表完整覆盖。</p>
       </details>
 </div></section>
 <section class="scan-section"><header><h2>知识文档</h2><p>固定本次审计的参考资料。</p></header><div class="section-body"><KnowledgePicker v-model="knowledgeIds"/></div></section>

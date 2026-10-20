@@ -43,9 +43,6 @@ services:
       AXIOM_SNAPSHOT_DIR: /app/data/snapshots
       AXIOM_SCAN_MOCK: ${AXIOM_SCAN_MOCK:-1}
       AXIOM_AGENT_DB: /app/data/agent.db
-      AXIOM_MAX_ACTIVE_SCANS: ${AXIOM_MAX_ACTIVE_SCANS:-2}
-      AXIOM_MAX_MODEL_SCANS: ${AXIOM_MAX_MODEL_SCANS:-2}
-      AXIOM_MAX_PROJECT_SCANS: ${AXIOM_MAX_PROJECT_SCANS:-2}
       AXIOM_MAX_RECOVERIES: ${AXIOM_MAX_RECOVERIES:-0}
     volumes:
       - axiom-data:/app/data
@@ -73,7 +70,6 @@ services:
       AXIOM_DATABASE_URL: ${AXIOM_DATABASE_URL:-postgres://axiom:axiom@postgres:5432/axiom?sslmode=disable}
       AXIOM_NODE: /usr/local/bin/node
       AXIOM_AGENT_ID: ${AXIOM_AGENT_ID:-agent-local}
-      AXIOM_AGENT_CONCURRENCY: ${AXIOM_AGENT_CONCURRENCY:-2}
       AXIOM_MASTER_KEY: ${AXIOM_MASTER_KEY:-}
     volumes:
       - axiom-data:/app/data

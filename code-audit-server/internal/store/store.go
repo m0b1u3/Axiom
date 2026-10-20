@@ -27,6 +27,7 @@ type Store struct {
 }
 
 type Task struct {
+	SDKParameters       *contracts.SDKScanParameters          `json:"sdkParameters,omitempty"`
 	SDKIdentity         *contracts.SDKIdentityRef             `json:"sdkIdentity,omitempty"`
 	ComponentScan       *contracts.ComponentScanRequest       `json:"componentScan,omitempty"`
 	ComponentPlanning   *contracts.ComponentPlanningOperation `json:"componentPlanning,omitempty"`
@@ -119,6 +120,7 @@ var FindingStatuses = map[string]bool{
 }
 
 type ModelConfigRow struct {
+	ReasoningEffort string `json:"reasoningEffort,omitempty"`
 	SDKIdentityOnly bool   `json:"sdkIdentityOnly,omitempty"`
 	ID              int64  `json:"id"`
 	Name            string `json:"name"`
@@ -144,10 +146,10 @@ func (s *Store) CreateModelConfig(ctx context.Context, m ModelConfigRow) (*Model
 	now := time.Now().UTC().Format(time.RFC3339)
 	var id int64
 	err := s.db.QueryRowContext(ctx, `
-INSERT INTO model_configs (name, provider, base_url, model, api_key_encrypted, status, compatibility_status, remark, website_url, wire_api, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+INSERT INTO model_configs (name, provider, base_url, model, api_key_encrypted, status, compatibility_status, remark, website_url, wire_api, reasoning_effort, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
 		m.Name, m.Provider, m.BaseURL, m.Model, m.ApiKeyEncrypted, defaultIfEmpty(m.Status, "active"),
-		defaultIfEmpty(m.CompatibilityStatus, "experimental"), m.Remark, m.WebsiteURL, m.WireAPI, now, now).Scan(&id)
+		defaultIfEmpty(m.CompatibilityStatus, "experimental"), m.Remark, m.WebsiteURL, m.WireAPI, m.ReasoningEffort, now, now).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -158,11 +160,11 @@ func (s *Store) GetModelConfig(ctx context.Context, id int64) (*ModelConfigRow, 
 	row := s.db.QueryRowContext(ctx, `
 SELECT id, name, provider, COALESCE(base_url,''), model, COALESCE(api_key_encrypted,''),
        COALESCE(status,'active'), COALESCE(compatibility_status,'experimental'), COALESCE(enabled,0),
-       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), created_at, updated_at
+       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), COALESCE(reasoning_effort,''), created_at, updated_at
 FROM model_configs WHERE id = ?`, id)
 	var m ModelConfigRow
 	err := row.Scan(&m.ID, &m.Name, &m.Provider, &m.BaseURL, &m.Model, &m.ApiKeyEncrypted,
-		&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.CreatedAt, &m.UpdatedAt)
+		&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.ReasoningEffort, &m.CreatedAt, &m.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +175,7 @@ func (s *Store) ListModelConfigs(ctx context.Context) ([]ModelConfigRow, error) 
 	rows, err := s.db.QueryContext(ctx, `
 SELECT id, name, provider, COALESCE(base_url,''), model,
        COALESCE(status,'active'), COALESCE(compatibility_status,'experimental'), COALESCE(enabled,0),
-       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), created_at, updated_at,
+       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), COALESCE(reasoning_effort,''), created_at, updated_at,
        COALESCE(api_key_encrypted,'')
 FROM model_configs ORDER BY id`)
 	if err != nil {
@@ -184,7 +186,7 @@ FROM model_configs ORDER BY id`)
 	for rows.Next() {
 		var m ModelConfigRow
 		if err := rows.Scan(&m.ID, &m.Name, &m.Provider, &m.BaseURL, &m.Model,
-			&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.CreatedAt, &m.UpdatedAt,
+			&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.ReasoningEffort, &m.CreatedAt, &m.UpdatedAt,
 			&m.ApiKeyEncrypted); err != nil {
 			return nil, err
 		}
@@ -225,11 +227,11 @@ func (s *Store) GetEnabledModelConfig(ctx context.Context) (*ModelConfigRow, err
 	row := s.db.QueryRowContext(ctx, `
 SELECT id, name, provider, COALESCE(base_url,''), model, COALESCE(api_key_encrypted,''),
        COALESCE(status,'active'), COALESCE(compatibility_status,'experimental'), COALESCE(enabled,0),
-       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), created_at, updated_at
+       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), COALESCE(reasoning_effort,''), created_at, updated_at
 FROM model_configs WHERE enabled = 1 ORDER BY id LIMIT 1`)
 	var m ModelConfigRow
 	err := row.Scan(&m.ID, &m.Name, &m.Provider, &m.BaseURL, &m.Model, &m.ApiKeyEncrypted,
-		&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.CreatedAt, &m.UpdatedAt)
+		&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.ReasoningEffort, &m.CreatedAt, &m.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -244,11 +246,11 @@ SET name = ?, provider = ?, base_url = ?, model = ?,
     api_key_encrypted = COALESCE(?, api_key_encrypted),
     status = COALESCE(?, status),
     compatibility_status = COALESCE(?, compatibility_status),
-    remark = ?, website_url = ?, wire_api = ?,
+    remark = ?, website_url = ?, wire_api = ?, reasoning_effort = ?,
     updated_at = ?
 WHERE id = ?`,
 		m.Name, m.Provider, m.BaseURL, m.Model, nullIfEmpty(m.ApiKeyEncrypted),
-		nullIfEmpty(m.Status), nullIfEmpty(m.CompatibilityStatus), m.Remark, m.WebsiteURL, m.WireAPI, now, id)
+		nullIfEmpty(m.Status), nullIfEmpty(m.CompatibilityStatus), m.Remark, m.WebsiteURL, m.WireAPI, m.ReasoningEffort, now, id)
 	return err
 }
 
@@ -345,10 +347,18 @@ func Open(path string) (*Store, error) {
 		db.Close()
 		return nil, err
 	}
+	if err := ensureColumn(db, "model_configs", "reasoning_effort", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if err := ensureColumn(db, "scan_tasks", "sdk_parameters_json", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		db.Close()
+		return nil, err
+	}
 	// 轻量迁移：老库补列（CREATE TABLE IF NOT EXISTS 不会加列）
 	for _, col := range [][2]string{
 		{"max_cost_usd", "REAL CHECK(max_cost_usd > 0 AND max_cost_usd <= 9007199254740991)"},
-		{"workers", "INTEGER CHECK(workers BETWEEN 1 AND 64)"},
+		{"workers", "INTEGER CHECK(workers BETWEEN 1 AND 9007199254740991)"},
 		{"input_contract_version", "INTEGER NOT NULL DEFAULT 0"},
 		{"progress_diagnostic_json", "TEXT NOT NULL DEFAULT ''"},
 		{"observation_contract_version", "INTEGER NOT NULL DEFAULT 0"},
@@ -588,6 +598,9 @@ INSERT INTO scan_tasks (
 		if _, e = tx.ExecContext(ctx, `INSERT INTO task_parent_states(task_id,parent_task_id,parent_attempt,document_json) VALUES(?,?,?,?)`, id, string(t.ParentState.Execution.TaskID), t.ParentState.Execution.Attempt, string(raw)); e != nil {
 			return 0, e
 		}
+	}
+	if e := s.saveSDKParameters(ctx, tx, &t, id); e != nil {
+		return 0, e
 	}
 	if e := s.saveTaskIdentity(ctx, tx, t, id); e != nil {
 		return 0, e
@@ -960,6 +973,9 @@ WHERE t.id = ?`, id)
 		return nil, e
 	}
 	t.ScanInput = input
+	if e := s.loadSDKParameters(ctx, &t); e != nil {
+		return nil, e
+	}
 	t.GitTarget, e = s.TaskGitTarget(ctx, id)
 	if e != nil {
 		return nil, e

@@ -23,6 +23,7 @@ const (
 )
 
 type Request struct {
+	SDKParameters              *contracts.SDKParametersAssignment
 	SDKIdentity                *contracts.SDKTaskIdentity
 	DataDir, AgentID           string
 	ComponentScan              *contracts.ComponentScanRequest
@@ -118,6 +119,13 @@ func Run(ctx context.Context, req Request) (*Result, error) {
 			return nil, err
 		}
 		args = append(entryArguments(req.ScannerDir), "--job", jobPath)
+		if req.SDKParameters != nil {
+			file, e := prepareSDKParameters(ctx, req)
+			if e != nil {
+				return nil, e
+			}
+			args = append(args, "--sdk-parameters", file)
+		}
 		if req.SDKIdentity != nil {
 			caps, e := ProbeContracts(ctx, req.ScannerDir, req.NodePath)
 			if e != nil || caps.IdentityVersion != 1 {

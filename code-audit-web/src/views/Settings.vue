@@ -22,7 +22,7 @@ const {user, roleLabel, canAdmin} = useAuth();
 const { isDark, setTheme } = useTheme();
 const passwordOpen = ref(false);
 const groups = computed(() => [
- {label:'日常设置',items:[{id:'models',label:'模型与授权'},{id:'execution',label:'扫描设置'},{id:'storage',label:'存储与清理'},{id:'account',label:'账户与外观'}]},
+ {label:'日常设置',items:[{id:'models',label:'模型与授权'},{id:'execution',label:'扫描执行'},{id:'storage',label:'存储与清理'},{id:'account',label:'账户与外观'}]},
  ...(canAdmin.value?[{label:'管理员',items:[{id:'users',label:'账户管理'},{id:'operations',label:'操作日志'}]}]:[]),
  {label:'高级',items:[{id:'diagnostics',label:'高级诊断'},{id:'about',label:'关于系统'}]},
 ]);

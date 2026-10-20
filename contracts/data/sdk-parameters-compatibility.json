@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "parametersVersion": 1,
+  "assignmentVersion": 1,
+  "descriptionVersion": 11,
+  "controlAPI": 4,
+  "sdkVersion": "0.1.25",
+  "history": "preserve strict model, assignment and job schemas; optional sidecar only"
+}

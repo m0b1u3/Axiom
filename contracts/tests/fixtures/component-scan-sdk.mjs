@@ -6,7 +6,7 @@ const requireFixture=()=>{if(process.env.AXIOM_COMPONENT_SCAN_FIXTURE!=='1'||!pr
 export async function runComponentFixture(source,options,config){
  requireFixture();const index=Number(path.basename(path.dirname(source))),scenario=process.env.AXIOM_COMPONENT_SCAN_SCENARIO??'normal';
  const capture=process.env.AXIOM_INPUT_TEST_CAPTURE;await mkdir(path.dirname(capture),{recursive:true});
- const evidence={fixtureOnly:true,kind:'component_scan',index,source,options:{mode:options.mode,target:options.target,maxCostUsd:options.maxCostUsd,outputDir:options.outputDir},config,credentialPresent:!!process.env.OPENAI_API_KEY,leakedServerCredentials:['AXIOM_DATABASE_URL','AXIOM_AGENT_TOKEN','AXIOM_MASTER_KEY','AXIOM_JWT_SECRET'].some(n=>process.env[n]!==undefined)};
+ const evidence={fixtureOnly:true,kind:'component_scan',index,source,options:{mode:options.mode,target:options.target,maxCostUsd:options.maxCostUsd,outputDir:options.outputDir,scanPrompt:options.scanPrompt,postScanPrompt:options.postScanPrompt,knowledgeBasePaths:options.knowledgeBasePaths},knowledge:await Promise.all((options.knowledgeBasePaths??[]).map(async file=>({path:file,content:await readFile(file,'utf8')}))),config,credentialPresent:!!process.env.OPENAI_API_KEY,leakedServerCredentials:['AXIOM_DATABASE_URL','AXIOM_AGENT_TOKEN','AXIOM_MASTER_KEY','AXIOM_JWT_SECRET'].some(n=>process.env[n]!==undefined)};
  await appendFile(capture+'.component-calls',JSON.stringify(evidence)+'\n');await writeFile(capture,JSON.stringify(evidence));
  options.onProgress?.({phase:'discovery',filesCompleted:0,filesTotal:1});
  options.onActivity?.({id:'fixture-inspect-'+index,kind:'tool',status:'running',description:'Fixtures / Mock：读取组件源码',paths:options.target,worker:1});

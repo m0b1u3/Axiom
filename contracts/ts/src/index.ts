@@ -9,6 +9,7 @@ import type {ContractKind, ContractTypes, ExecutionRef, ErrorCode, TerminalStatu
 export * from './types.gen.js';
 export * from './matrix.gen.js';
 export * from './component-scan.js';
+export * from './sdk-concurrency.gen.js';
 import {componentAllocations,componentReserved} from './component-scan.js';
 
 export class ContractValidationError extends Error {

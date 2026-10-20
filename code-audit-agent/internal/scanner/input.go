@@ -38,6 +38,8 @@ func entryArguments(directory string) []string {
 
 // Probe does not supply scan credentials and must not load or start the SDK.
 type Capabilities struct {
+	ConcurrencyVersion int
+	ParametersVersion  int
 	IdentityVersion    int
 	DescriptionVersion int
 	Build              string
@@ -71,6 +73,18 @@ func parseDescription(raw []byte) (Capabilities, error) {
 	}
 	var value any
 	switch h.SchemaVersion {
+	case 12:
+		v, e := contracts.DecodeScannerDescriptionV12(raw, nil)
+		if e != nil {
+			return Capabilities{}, e
+		}
+		value = v
+	case 11:
+		v, e := contracts.DecodeScannerDescriptionV11(raw, nil)
+		if e != nil {
+			return Capabilities{}, e
+		}
+		value = v
 	case 10:
 		v, e := contracts.DecodeScannerDescriptionV10(raw, nil)
 		if e != nil {
@@ -139,9 +153,11 @@ func parseDescription(raw []byte) (Capabilities, error) {
 		return Capabilities{}, e
 	}
 	var d struct {
-		IdentityVersion int    `json:"sdkIdentityVersion"`
-		Version         string `json:"version"`
-		Runtime         struct {
+		ConcurrencyVersion int    `json:"sdkConcurrencyVersion"`
+		ParametersVersion  int    `json:"sdkParametersVersion"`
+		IdentityVersion    int    `json:"sdkIdentityVersion"`
+		Version            string `json:"version"`
+		Runtime            struct {
 			Versions struct{ Assignment, Job, Progress, Event, Result, Completion []int64 } `json:"versions"`
 		} `json:"runtime"`
 		Capabilities struct {
@@ -155,7 +171,7 @@ func parseDescription(raw []byte) (Capabilities, error) {
 	if e = json.Unmarshal(canonical, &d); e != nil {
 		return Capabilities{}, e
 	}
-	c := Capabilities{IdentityVersion: d.IdentityVersion, DescriptionVersion: h.SchemaVersion, Build: d.Version, Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}, MaxCostUSD: d.Capabilities.MaxCostUSD}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
+	c := Capabilities{ConcurrencyVersion: d.ConcurrencyVersion, ParametersVersion: d.ParametersVersion, IdentityVersion: d.IdentityVersion, DescriptionVersion: h.SchemaVersion, Build: d.Version, Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}, MaxCostUSD: d.Capabilities.MaxCostUSD}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
 	if h.SchemaVersion >= 2 && d.Capabilities.JobFile {
 		for _, v := range d.Runtime.Versions.Assignment {
 			if v == 1 {

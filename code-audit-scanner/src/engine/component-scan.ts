@@ -1,3 +1,4 @@
+import {sdkScanInputOptions} from '../contract/sdk-scan-input.js';
 import {selectedSDKAuth} from "../runtime/sdk-identity.js";
 import {CodexSecurity,runComponentScans,VERSION,type ComponentScanOptions,type ComponentScanResult as NativeSummary,type ScanResult as NativeResult} from '@openai/codex-security';
 import {componentAllocations,componentReserved,validate,type ComponentScanResult,type ComponentScanSnapshot,type ComponentScanReceipt,type ArtifactRef,type JsonObject,type ComponentFindingBinding} from '@axiom/contracts';
@@ -103,7 +104,9 @@ export async function runComponentAudit(task:ScanTask,signal:AbortSignal,deps:De
     finally{if(verified)await rm(source,{recursive:true,force:true}).catch(()=>{queue(()=>sink.warning('组件临时副本未能释放；保留产物以便检查。'))});snapshot(`组件 ${version.document.components[row.index]!.name}：${row.status}`,row.index)}
    }};
   };
-  await withIsolatedScanEnvironment(task,async()=>{summary=await (deps.run??runComponentScans)({repository:task.sourcePath,outputDir:sdkDir,components:request.selectedIndices.map(i=>version.document.components[i]!),workers:Math.min(request.workers,receipts.length),config:overrides?{codexOverrides:overrides}:{},environment:process.env,signal:combined,scanOptions:{...(nativeOpenAI(task)?{auth:selectedSDKAuth(task)}:{})},createSecurity,
+  const componentInput=task.sdkParameters?.parameters.componentInput;
+ const componentOptions=componentInput?await sdkScanInputOptions({...task,scanInput:componentInput}):{};
+ await withIsolatedScanEnvironment(task,async()=>{summary=await (deps.run??runComponentScans)({repository:task.sourcePath,outputDir:sdkDir,components:request.selectedIndices.map(i=>version.document.components[i]!),workers:request.workers,config:overrides?{codexOverrides:overrides}:{},environment:process.env,signal:combined,scanOptions:{...componentOptions,...(nativeOpenAI(task)?{auth:selectedSDKAuth(task)}:{})},createSecurity,
    onScanEvent:event=>{
     const row=receipt(event.componentId),name=version.document.components[row.index]!.name;
     if(event.type==='cost')observed(row,event.value.estimatedUsd);

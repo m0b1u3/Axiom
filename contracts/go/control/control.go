@@ -49,15 +49,29 @@ type ContractLease struct {
 	ResultContractVersion int `json:"resultContractVersion"`
 }
 type ObservationClaimRequest struct {
-	SDKIdentityVersion int `json:"sdkIdentityVersion,omitempty"`
+	SDKConcurrencyVersion int `json:"sdkConcurrencyVersion,omitempty"`
+	SDKParametersVersion  int `json:"sdkParametersVersion,omitempty"`
+	SDKIdentityVersion    int `json:"sdkIdentityVersion,omitempty"`
 	ContractClaimRequest
 	ObservationCapabilities contracts.ObservationCapabilities `json:"observationCapabilities"`
 }
 type ObservationPresence struct {
 	ObservationClaimRequest
-	Slots int `json:"slots"`
+	// Zero slots is meaningful only with the explicitly negotiated unbounded mode.
+	DispatchMode string `json:"dispatchMode,omitempty"`
+	Slots        int    `json:"slots"`
 }
+
+const DispatchUnbounded = "unbounded"
+const DispatchBounded = "bounded"
+
+func ValidDispatchPresence(mode string, slots int) bool {
+	return (mode == DispatchUnbounded && slots == 0) || ((mode == "" || mode == DispatchBounded) && slots >= 1 && int64(slots) <= contracts.SDKMaxSafeInteger)
+}
+
 type ObservationLease struct {
+	SDKParametersVersion int                                   `json:"sdkParametersVersion,omitempty"`
+	SDKParameters        *contracts.SDKParametersAssignment    `json:"sdkParameters,omitempty"`
 	SDKIdentity          *contracts.SDKTaskIdentity            `json:"sdkIdentity,omitempty"`
 	ComponentScan        *contracts.ComponentScanRequest       `json:"componentScan,omitempty"`
 	ComponentPlanning    *contracts.ComponentPlanningOperation `json:"componentPlanning,omitempty"`

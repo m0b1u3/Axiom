@@ -18,7 +18,7 @@ test('unset budget stays null; unset worker and deep counts stay absent',()=>{
 test('invalid budgets, workers and scopes fail before a Web request is made',()=>{
  for(const budget of ['0','-1','NaN','Infinity','1e400'])assert.throws(()=>optionalBudget(budget),/预算/);
  assert.throws(()=>optionalBudget(0),/预算/);assert.equal(optionalBudget(4.25),4.25);
- for(const workers of ['0','1.5','65'])assert.throws(()=>scanInput({...form,mode:'deep',validationMode:'default',workers}),/Worker/);
+ for(const workers of ['0','-1','1.5','9007199254740992','Infinity','NaN'])assert.throws(()=>scanInput({...form,mode:'deep',validationMode:'default',workers}),/Worker/);
  for(const includeText of ['/etc/passwd','C:\\repo','../outside','src/../outside','a\na'])assert.throws(()=>scanInput({...form,includeText}),/范围/);
 });
 test('task budget is separate from the single-run cap and rejects unknown/oversized precision',()=>{
@@ -27,4 +27,12 @@ test('task budget is separate from the single-run cap and rejects unknown/oversi
  for(const totalBudget of ['0','-1','Infinity','NaN','0.0000001','1e-200','1.1234567','9007199255'])assert.throws(()=>scanInput({...form,totalBudget}),/任务总预算/);
  assert.throws(()=>scanInput({...form,totalBudget:'5',budget:'0.00000001'}),/单次上限/);
  assert.equal(scanInput({...form,totalBudget:'0.000001',budget:''}).maxTotalCostUsd,0.000001);
+});
+test('SDK native safe integers replace platform Worker and discovery ceilings',()=>{
+ for(const value of ['65','1001','9007199254740991']){
+  const v=scanInput({...form,mode:'deep',validationMode:'default',workers:value,deepMaxDiscoveryRuns:value,deepStopAfterNoNew:value});
+  assert.equal(v.workers,Number(value));assert.equal(v.deepMaxDiscoveryRuns,Number(value));assert.equal(v.deepStopAfterNoNew,Number(value));
+  assert.equal(v.timeoutMinutes,47);assert.equal(v.maxCostUsd,4.25);assert.deepEqual(v.includePaths,['src/a,b.ts','源码/测试.ts']);
+ }
+ for(const value of ['0','-1','1.5','9007199254740992','Infinity','NaN'])for(const key of ['deepMaxDiscoveryRuns','deepStopAfterNoNew'])assert.throws(()=>scanInput({...form,mode:'deep',validationMode:'default',[key]:value}));
 });

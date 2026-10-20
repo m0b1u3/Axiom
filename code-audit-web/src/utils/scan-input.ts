@@ -28,7 +28,7 @@ export function optionalTotalBudget(text: string): number | null {
 export function optionalWorkers(text: string): number | undefined {
   if(String(text).trim()==="")return undefined;
   const value=Number(text);
-  if(!Number.isInteger(value)||value<1||value>64)throw new Error("Worker 数量须为 1–64 的整数，或留空使用引擎默认值。");
+  if(!Number.isSafeInteger(value)||value<1)throw new Error("Worker 数量须为正安全整数（最高 9007199254740991），或留空使用 SDK 默认值。");
   return value;
 }
 
@@ -76,7 +76,7 @@ export function scanInput(form: ScanFormInput): CreateScanInput {
     for(const [key,text] of [['deepMaxDiscoveryRuns',form.deepMaxDiscoveryRuns],['deepStopAfterNoNew',form.deepStopAfterNoNew]] as const){
       if(String(text).trim()==='')continue;
       const value=Number(text);
-      if(!Number.isInteger(value)||value<1||value>1000)throw new Error("深度扫描次数须为 1–1000 的整数，或留空使用引擎默认值。");
+      if(!Number.isSafeInteger(value)||value<1)throw new Error("深度扫描次数须为正安全整数（最高 9007199254740991），或留空使用 SDK 默认值。");
       input[key]=value;
     }
   }

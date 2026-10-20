@@ -23,13 +23,24 @@ func (c *Client) HeartbeatContract(ctx context.Context, h contracts.ExecutionHea
 }
 func (c *Client) claimObservations(ctx context.Context, id string) (*Lease, error) {
 	var v control.ObservationLease
-	e := c.callAt(ctx, "/api/internal/v4/executions/", "claim", control.ObservationClaimRequest{SDKIdentityVersion: c.SDKIdentityVersion, ContractClaimRequest: control.ContractClaimRequest{AgentID: id, InputCapabilities: c.capabilities().Input, ResultCapabilities: c.capabilities().Result}, ObservationCapabilities: c.capabilities().Observation}, &v)
+	e := c.callAt(ctx, "/api/internal/v4/executions/", "claim", control.ObservationClaimRequest{SDKConcurrencyVersion: c.SDKConcurrencyVersion, SDKParametersVersion: c.SDKParametersVersion, SDKIdentityVersion: c.SDKIdentityVersion, ContractClaimRequest: control.ContractClaimRequest{AgentID: id, InputCapabilities: c.capabilities().Input, ResultCapabilities: c.capabilities().Result}, ObservationCapabilities: c.capabilities().Observation}, &v)
 	if e != nil {
 		return nil, e
 	}
 	lease, e := leaseFromInput(v.InputLease, id)
 	if e != nil {
 		return nil, e
+	}
+	if (v.SDKParametersVersion == 1) != (v.SDKParameters != nil) || (v.SDKParametersVersion != 0 && v.SDKParametersVersion != 1) {
+		return nil, errors.New("missing or unsupported SDK parameters sidecar")
+	}
+	if v.SDKParameters != nil {
+		raw, _ := contracts.EncodeJSON(v.SDKParameters)
+		value, e := contracts.DecodeSDKParametersAssignment(raw, &lease.Execution)
+		if e != nil || c.SDKParametersVersion != 1 {
+			return nil, errors.New("SDK parameter execution or capability mismatch")
+		}
+		lease.SDKParameters = &value
 	}
 	if v.SDKIdentity != nil {
 		raw, _ := contracts.EncodeJSON(v.SDKIdentity)

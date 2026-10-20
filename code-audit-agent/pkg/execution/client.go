@@ -17,6 +17,9 @@ import (
 var ErrUnauthorized = errors.New("agent authentication rejected")
 
 type Client struct {
+	SDKConcurrencyVersion   int
+	DispatchMode            string
+	SDKParametersVersion    int
 	SDKIdentityVersion      int
 	URL, Token              string
 	HTTP                    *http.Client
@@ -165,7 +168,7 @@ func (c *Client) CompleteContract(ctx context.Context, v contracts.ExecutionComp
 
 func (c *Client) Presence(ctx context.Context, id string, slots int) error {
 	if c.selectedAPI() == 4 {
-		return c.callAt(ctx, "/api/internal/v4/executions/", "presence", control.ObservationPresence{ObservationClaimRequest: control.ObservationClaimRequest{ContractClaimRequest: control.ContractClaimRequest{AgentID: id, InputCapabilities: c.capabilities().Input, ResultCapabilities: c.capabilities().Result}, ObservationCapabilities: c.capabilities().Observation}, Slots: slots}, nil)
+		return c.callAt(ctx, "/api/internal/v4/executions/", "presence", control.ObservationPresence{ObservationClaimRequest: control.ObservationClaimRequest{ContractClaimRequest: control.ContractClaimRequest{AgentID: id, InputCapabilities: c.capabilities().Input, ResultCapabilities: c.capabilities().Result}, ObservationCapabilities: c.capabilities().Observation}, DispatchMode: c.DispatchMode, Slots: slots}, nil)
 	}
 	if c.selectedAPI() == 3 {
 		return c.callAt(ctx, "/api/internal/v3/executions/", "presence", control.ContractPresence{ContractClaimRequest: control.ContractClaimRequest{AgentID: id, InputCapabilities: c.capabilities().Input, ResultCapabilities: c.capabilities().Result}, Slots: slots}, nil)

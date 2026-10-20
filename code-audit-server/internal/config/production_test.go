@@ -21,7 +21,7 @@ func TestProductionRejectsUnsafeConfiguration(t *testing.T) {
 		{"AXIOM_ADMIN_PASSWORD", "密码不足十二字符"}, {"AXIOM_ADMIN_PASSWORD", strings.Repeat("a", 1025)},
 		{"AXIOM_MASTER_KEY", ""}, {"AXIOM_MASTER_KEY", base64.RawURLEncoding.EncodeToString(make([]byte, 32))},
 		{"AXIOM_MASTER_KEY", base64.RawURLEncoding.EncodeToString([]byte("0123456789abcdef0123456789abcdef"))},
-		{"AXIOM_DATABASE_URL", "/tmp/agent.db"}, {"AXIOM_MAX_ACTIVE_SCANS", "0"}, {"AXIOM_MAX_MODEL_SCANS", "65"}, {"AXIOM_SCAN_MOCK", "yes"},
+		{"AXIOM_DATABASE_URL", "/tmp/agent.db"}, {"AXIOM_SCAN_MOCK", "yes"},
 	} {
 		t.Run(bad.name+"-"+bad.value[:min(8, len(bad.value))], func(t *testing.T) {
 			e := ValidateEnvironment(func(k string) string {

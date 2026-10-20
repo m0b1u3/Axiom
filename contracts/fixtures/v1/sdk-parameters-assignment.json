@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "parameters": {
+    "schemaVersion": 1,
+    "reasoningEffort": "xhigh",
+    "componentInput": {
+      "schemaVersion": 1,
+      "knowledge": [
+        {
+          "versionId": "17",
+          "title": "合成知识文档",
+          "sha256": "db9dff596247e19522f64dc7c082077a4b751674fb2b37792b9b7b60ef2361b5",
+          "content": "# Synthetic knowledge\n用户提供的参考资料，不是已确认事实。\n"
+        }
+      ],
+      "scanPrompt": "合成扫描补充\n第二行",
+      "postScanPrompt": "合成后处理"
+    }
+  }
+}

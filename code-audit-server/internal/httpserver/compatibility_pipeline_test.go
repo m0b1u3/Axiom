@@ -96,9 +96,9 @@ func TestCompatibilityVersionPipeline(t *testing.T) {
 		server, description, profile int
 		want                         string
 	}{
-		{"old-server-v1", 1, 4, 0, "completed"},
-		{"old-server-v2", 2, 4, 1, "completed"},
-		{"old-server-v3", 3, 4, 2, "completed"},
+		{"old-server-v1", 1, 4, 0, "blocked-policy"},
+		{"old-server-v2", 2, 4, 1, "blocked-policy"},
+		{"old-server-v3", 3, 4, 2, "blocked-policy"},
 		{"legacy-scanner", 4, 1, 0, "completed"},
 		{"input-scanner", 4, 2, 1, "completed"},
 		{"result-scanner", 4, 3, 2, "completed"},
@@ -161,7 +161,7 @@ func TestCompatibilityVersionPipeline(t *testing.T) {
 			cmd := inputAgentCommand(ctx, agent, root, old.URL, agentToken, capture)
 			cmd.Env = append(cmd.Env, "AXIOM_SCANNER_DIR="+wrapped)
 			out, runErr := cmd.CombinedOutput()
-			if (runErr != nil) != (c.want == "blocked") {
+			if (runErr != nil) != (c.want == "blocked" || c.want == "blocked-policy") {
 				t.Fatalf("Agent compatibility run: %v %s", runErr, out)
 			}
 			task, e := s.Get(t.Context(), id)
@@ -185,6 +185,15 @@ func TestCompatibilityVersionPipeline(t *testing.T) {
 			}
 			if _, e = os.Stat(capture); !os.IsNotExist(e) {
 				t.Fatal("incompatible combination launched the SDK")
+			}
+			if c.want == "blocked-policy" {
+				if !strings.Contains(string(out), "无配额调度") {
+					t.Fatal("missing dispatch policy compatibility error", string(out))
+				}
+				if code, body := doJSON(t, web.URL+fmt.Sprintf("/api/v1/scans/%d/cancel", id), token, map[string]any{}); code != 200 {
+					t.Fatal("Web cancellation", code, body)
+				}
+				return
 			}
 			q, e := s.QueueOverview(t.Context(), limits, id)
 			if e != nil || len(q.Tasks) != 1 || q.Tasks[0].Compatibility == nil || q.Tasks[0].Compatibility.Reason == "" {

@@ -51,7 +51,9 @@ const editingId = ref(0);
 const saving = ref(false);
 const enablingId = ref(0);
 
-const form = reactive({
+const reasoningOptions=[{value:"sdk-default",label:"沿用 SDK 默认"},...["none","minimal","low","medium","high","xhigh"].map(value=>({value,label:value}))];
+ const form = reactive({
+ reasoningEffort:"sdk-default",
  sdkIdentityOnly:false,
   name: "",
   remark: "",
@@ -196,7 +198,7 @@ function openCreate(): void {
   editing.value = false;
   editingId.value = 0;
   editingKeyHint.value = "";
-  Object.assign(form, { sdkIdentityOnly:false,name: "", remark: "", provider: "", websiteUrl: "", apiKey: "", baseUrl: "", model: "", wireApi: "" });
+  Object.assign(form, { sdkIdentityOnly:false,name: "", remark: "", provider: "", websiteUrl: "", apiKey: "", baseUrl: "", model: "", wireApi: "", reasoningEffort:"sdk-default" });
   fetchedModels.value = [];
   probeResult.value = null;
   dialogOpen.value = true;
@@ -218,6 +220,7 @@ function openEdit(row: ModelConfig): void {
     baseUrl: row.baseUrl,
     model: row.model,
     wireApi: row.wireApi ?? "",
+ reasoningEffort:row.reasoningEffort??"sdk-default",
   });
   fetchedModels.value = [];
   probeResult.value = null;
@@ -250,6 +253,7 @@ async function save(): Promise<void> {
       remark: form.remark.trim(),
       websiteUrl: form.websiteUrl.trim(),
       wireApi: form.wireApi,
+ reasoningEffort:form.reasoningEffort==="sdk-default"?"":form.reasoningEffort,
       ...(form.apiKey ? { apiKey: form.apiKey } : {}),
     };
     if (editing.value) {
@@ -308,7 +312,7 @@ const columns: ColumnDef<ModelConfig>[] = [
     accessorKey: "model",
     header: "模型",
     cell: (c) =>
-      h("span", { class: "mono", style: { fontSize: "11px", color: "var(--text-secondary)" }, title: c.getValue<string>() }, c.getValue<string>()),
+      h("div",{class:"model-identity-copy"},[h("span",{class:"mono"},c.getValue<string>()),h("small",`推理强度 · ${c.row.original.reasoningEffort??"SDK 默认"}`)]),
   },
   { accessorKey:"updatedAt", header:"更新时间", size:150, cell:c=>h("span",{class:"model-time"}, new Date(c.getValue<string>()).toLocaleString("zh-CN",{hour12:false})) },
   {
@@ -462,7 +466,8 @@ onMounted(() => {
           <span v-else class="hint">填写服务商提供的模型 ID。</span>
         </label>
 
-        <div class="split full">
+        <label class="field full" for="model-reasoning-effort"><span class="lab">推理强度</span><Select id="model-reasoning-effort" v-model="form.reasoningEffort" :options="reasoningOptions" :disabled="saving" placeholder="沿用 SDK 默认" aria-label="推理强度"/><span class="hint">沿用默认时不覆盖 SDK 配置。供应商和模型须支持所选强度；连接测试不验证其生效情况。</span></label>
+ <div class="split full">
           <label class="field">
             <span class="lab">官网</span>
             <Input v-model="form.websiteUrl" placeholder="https://" />

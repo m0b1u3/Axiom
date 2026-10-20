@@ -15,6 +15,7 @@ export type ScanProvider = string;
 export type ScanMode = "standard" | "deep";
 
 export interface ScanTask {
+ sdkParameters?:import("@axiom/contracts").SDKParametersAssignment;
  sdkIdentity?:SDKTaskIdentity;
   componentScan?:import("@axiom/contracts").ComponentScanRequest;
   componentPlanning?:import("@axiom/contracts").ComponentPlanningOperation;

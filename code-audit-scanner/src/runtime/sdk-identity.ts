@@ -1,4 +1,5 @@
-import {lstat,mkdir,readFile,realpath,writeFile,rm,rename,mkdtemp} from 'node:fs/promises';
+import {lstat,mkdir,readFile,realpath,writeFile,rm} from 'node:fs/promises';
+import {snapshotIdentitySession,commitIdentitySession} from './identity-session.js';
 import path from 'node:path';
 import {decode,validate,type SDKIdentityClaim,type SDKIdentityReport,type SDKTaskIdentity,type SDKIdentityRef} from '@axiom/contracts';
 import type {ScanTask} from '../contract/scan-task.js';
@@ -17,6 +18,7 @@ export async function loadTaskIdentity(file:string,task:ScanTask):Promise<void>{
  if(binding.identity.kind==='chatgpt'&&Object.keys(process.env).some(n=>credentialName(n)&&n!=='CODEX_HOME'))throw new Error('ChatGPT identity cannot inherit API credentials');
  if(binding.identity.kind==='api_key'&&!process.env.OPENAI_API_KEY)throw new Error('Selected API identity is unavailable');
  task.sdkIdentity=binding;
+ if(binding.identity.kind==='chatgpt')process.env.CODEX_HOME=await snapshotIdentitySession(task,home,root);
 }
 export function selectedSDKAuth(task:ScanTask):'api-key'|'chatgpt'{return task.sdkIdentity?.identity.kind==='chatgpt'?'chatgpt':'api-key'}
 
@@ -59,26 +61,11 @@ export async function runIdentityOperation(file:string):Promise<void>{
  }finally{clearTimeout(timer);process.off('SIGTERM',abort);process.off('SIGINT',abort);await security.close();}
 }
 
-/** Preserve refreshed credentials using the SDK's public opaque copy helper.
- * The Server serializes top-level executions for one identity, so no parallel
- * task can overwrite a newer session. Workbench and source data stay per task.
- */
+/** Parallel tasks own independent credential snapshots. Only opaque auth-file
+ * writeback is serialized and fenced against a superseded session. */
 export async function persistTaskIdentity(task:ScanTask):Promise<void>{
  if(task.sdkIdentity?.identity.kind!=='chatgpt')return;
  const home=process.env.AXIOM_SDK_IDENTITY_HOME,root=process.env.CODEX_SECURITY_STATE_DIR;
  if(!home||!root||await realpath(home)!==path.resolve(home)||!path.resolve(root).startsWith(path.join(home,'executions')+path.sep))throw new Error('SDK session persistence boundary differs');
- const marker=decode('SDKIdentityRef',await readFile(path.join(home,'session.json'),'utf8'));
- if(!sameIdentity(marker,task.sdkIdentity.identity))throw new Error('SDK session generation changed');
- const directory=path.join(home,'sdk');await mkdir(directory,{recursive:true,mode:0o700});
- const next=await mkdtemp(path.join(directory,'.session-next-')),current=path.join(directory,'codex-home'),previous=next+'-previous';let moved=false;
- try{
-  const {importAmbientAuth}=await import('@openai/codex-security');
-  if(!await importAmbientAuth(path.join(root,'codex-home'),next))return;
-  await rename(current,previous);moved=true;
-  try{await rename(next,current)}catch(error){await rename(previous,current);moved=false;throw error}
-  await rm(previous,{recursive:true,force:true});moved=false;
- }catch{
-  // Unknown persistence never silently uses an unrelated or stale credential.
-  await rm(path.join(home,'session.json'),{force:true});throw new Error('SDK 会话刷新保存未确认，请在 Web 查询账户状态或重新创建登录');
- }finally{await rm(next,{recursive:true,force:true});if(moved)await rm(previous,{recursive:true,force:true});}
+ await commitIdentitySession(task,home,root);
 }

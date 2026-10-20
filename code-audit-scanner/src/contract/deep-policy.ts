@@ -11,7 +11,7 @@ export function deepScanOptions(task: ScanTask): {maxTimeHours?: number; maxDisc
     return {};
   }
   for (const n of [task.deepMaxDiscoveryRuns, task.deepStopAfterNoNew]) {
-    if (n !== undefined && (!Number.isInteger(n) || n < 1 || n > 1000)) throw new Error("Deep scan counts must be integers between 1 and 1000");
+    if (n !== undefined && (!Number.isSafeInteger(n) || n < 1)) throw new Error("Deep scan counts must be positive safe integers");
   }
   return {maxTimeHours: task.timeoutMinutes / 60,
     ...(task.deepMaxDiscoveryRuns !== undefined ? {maxDiscoveryRuns: task.deepMaxDiscoveryRuns} : {}),

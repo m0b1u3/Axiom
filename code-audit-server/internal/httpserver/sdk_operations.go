@@ -94,6 +94,14 @@ func (s *Server) createSDKOperation(w http.ResponseWriter, r *http.Request, _ *s
 		t.DeepMaxDiscoveryRuns = 0
 		t.DeepStopAfterNoNew = 0
 		t.ScanInput = nil
+		if t.SDKParameters != nil {
+			params := *t.SDKParameters
+			params.ComponentInput = contracts.Optional[contracts.ComponentSDKInput]{}
+			t.SDKParameters = nil
+			if params.ReasoningEffort.Present {
+				t.SDKParameters = &params
+			}
+		}
 		t.ParentState = nil
 	default:
 		httputil.Error(w, 400, 40000, "SDK 操作须为 preflight 或 validate")

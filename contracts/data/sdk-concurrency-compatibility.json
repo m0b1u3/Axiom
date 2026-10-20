@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "concurrencyVersion": 1,
+  "descriptionVersion": 12,
+  "controlAPI": 4,
+  "sdkVersion": "0.1.25",
+  "maxSafeInteger": 9007199254740991,
+  "legacy": {
+    "workers": 64,
+    "subagents": 64,
+    "componentWorkers": 8,
+    "deepCounts": 1000
+  },
+  "history": "widen numeric validation only; preserve historical fields and readers; require explicit capability for values beyond legacy bounds"
+}

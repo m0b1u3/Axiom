@@ -353,13 +353,10 @@ func TestSDKIdentitiesPipeline(t *testing.T) {
 			t.Fatal("account false became authenticated")
 		}
 	})
-	t.Run("runtime-storage-and-global-admission-before-secret-delivery", func(t *testing.T) {
+	t.Run("runtime-and-storage-admission-before-secret-delivery", func(t *testing.T) {
 		v := create("Fixtures / Mock guarded claim", "api_key")
 		op := start(v, "login_api_key")
-		globalIdentity := create("Fixtures / Mock global slot", "chatgpt")
-		var globalOperation contracts.SDKIdentityOperation
-		var previousGlobal int
-		for _, guard := range []string{"stale-runtime", "blocked-runtime", "old-scanner", "storage", "global"} {
+		for _, guard := range []string{"stale-runtime", "blocked-runtime", "old-scanner", "storage"} {
 			var runtimeJSON string
 			var seen time.Time
 			if e := db.QueryRow(`SELECT runtime_json,runtime_seen_at FROM execution_agents WHERE agent_id='fixture-input-agent'`).Scan(&runtimeJSON, &seen); e != nil {
@@ -375,20 +372,11 @@ func TestSDKIdentitiesPipeline(t *testing.T) {
 				db.Exec(`UPDATE execution_agents SET runtime_json=jsonb_set(runtime_json::jsonb,'{scannerDescriptionVersion}','9')::text WHERE agent_id='fixture-input-agent'`)
 			case "storage":
 				l.StorageCheck = func(context.Context) string { return "fixture-capacity-blocked" }
-			case "global":
-				globalOperation = start(globalIdentity, "account")
-				db.QueryRow(`SELECT global_limit FROM execution_settings WHERE id=1`).Scan(&previousGlobal)
-				db.Exec(`UPDATE execution_settings SET global_limit=1 WHERE id=1`)
-				if _, e := db.Exec(`UPDATE sdk_identity_operations SET status='running',lease_until=$1 WHERE id=$2`, time.Now().UTC().Add(time.Minute).Format(time.RFC3339), globalOperation.ID); e != nil {
-					t.Fatal(e)
-				}
+
 			}
 			claim, secret, e := s.ClaimSDKIdentity(t.Context(), "fixture-input-agent", l)
 			db.Exec(`UPDATE execution_agents SET runtime_json=$1,runtime_seen_at=$2 WHERE agent_id='fixture-input-agent'`, runtimeJSON, seen)
-			if guard == "global" {
-				db.Exec(`UPDATE sdk_identity_operations SET status='canceled',lease_until=NULL WHERE id=$1`, globalOperation.ID)
-				db.Exec(`UPDATE execution_settings SET global_limit=$1 WHERE id=1`, previousGlobal)
-			}
+
 			if e != nil || claim != nil || secret != "" {
 				t.Fatalf("%s delivered credential: %v", guard, e)
 			}
@@ -425,15 +413,24 @@ func TestSDKIdentitiesPipeline(t *testing.T) {
 		}
 		waitIdentity(t, func() bool { _, e := os.Stat(capture + ".processes"); return e == nil })
 		pending := launch(v)
-		run("normal")
-		queued, _ := s.Get(t.Context(), pending.ID)
-		if queued.Attempt != 0 {
-			t.Fatal("one identity was used by simultaneous top-level tasks")
+		parallelCapture := filepath.Join(scratch, "parallel-active-revoke.json")
+		parallel := inputAgentCommand(ctx, agent, root, ts.URL, agentToken, parallelCapture)
+		if e := parallel.Start(); e != nil {
+			t.Fatal(e)
+		}
+		waitIdentity(t, func() bool { _, e := os.Stat(parallelCapture + ".processes"); return e == nil })
+		for _, id := range []int64{task.ID, pending.ID} {
+			active, e := s.Get(t.Context(), id)
+			if e != nil || active.Attempt != 1 || (active.Status != "claimed" && active.Status != "scanning") {
+				t.Fatal("shared identity was not executing concurrently", active, e)
+			}
 		}
 		start(v, "logout")
-		active, _ := s.Get(t.Context(), task.ID)
-		if active.Status != "cancel_requested" {
-			t.Fatal("revoke did not request task stop")
+		for _, id := range []int64{task.ID, pending.ID} {
+			active, _ := s.Get(t.Context(), id)
+			if active.Status != "cancel_requested" {
+				t.Fatal("revoke did not stop every parallel task", active)
+			}
 		}
 		claim, _, e := s.ClaimSDKIdentity(t.Context(), "fixture-input-agent", limits)
 		if e != nil || claim != nil {
@@ -442,12 +439,14 @@ func TestSDKIdentitiesPipeline(t *testing.T) {
 		if e := cmd.Wait(); e != nil {
 			t.Fatal(e)
 		}
+		if e := parallel.Wait(); e != nil {
+			t.Fatal(e)
+		}
 		t.Setenv("AXIOM_RESULT_TEST_SCENARIO", "")
 		run("normal")
 		if fresh(v.Identity.ID).CleanupPending {
 			t.Fatal("cleanup not confirmed")
 		}
-		s.RequestCancel(t.Context(), pending.ID)
 		if _, e := os.Stat(identityRoot); !os.IsNotExist(e) {
 			t.Fatal("old identity generations retained")
 		}
@@ -515,7 +514,11 @@ func TestSDKIdentitiesPipeline(t *testing.T) {
 		}
 		settings := exec.Command("node", filepath.Join(root, "code-audit-web/tests/settings-web-acceptance.mjs"))
 		settings.Dir = root
-		settings.Env = append(os.Environ(), "AXIOM_TEST_WEB_URL="+ts.URL, "AXIOM_SETTINGS_TEST_FIXTURE=1", "AXIOM_TEST_SETTINGS_REPORT_DIR="+filepath.Join(root, "output/playwright/settings"))
+		settingsReport := os.Getenv("AXIOM_TEST_SETTINGS_REPORT_DIR")
+		if settingsReport == "" {
+			settingsReport = filepath.Join(root, "output/playwright/settings")
+		}
+		settings.Env = append(os.Environ(), "AXIOM_TEST_WEB_URL="+ts.URL, "AXIOM_SETTINGS_TEST_FIXTURE=1", "AXIOM_TEST_SETTINGS_REPORT_DIR="+settingsReport)
 		if out, err := settings.CombinedOutput(); err != nil {
 			t.Fatal(err, string(out))
 		} else {

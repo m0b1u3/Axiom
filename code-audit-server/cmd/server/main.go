@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -75,7 +74,7 @@ func main() {
 		SnapshotDir:          snapshotsDir,
 		Limits:               snapshot.DefaultLimits(),
 		AgentToken:           os.Getenv("AXIOM_AGENT_TOKEN"),
-		QueueLimits:          store.ClaimLimits{Global: positiveEnv("AXIOM_MAX_ACTIVE_SCANS", 2), PerModel: positiveEnv("AXIOM_MAX_MODEL_SCANS", 2), PerProject: positiveEnv("AXIOM_MAX_PROJECT_SCANS", 2), Lease: 60 * time.Second, OutputRoot: filepath.Join(dataDir, "scans"), MaxRecoveries: config.MaxRecoveries(os.Getenv)},
+		QueueLimits:          store.ClaimLimits{Lease: 60 * time.Second, OutputRoot: filepath.Join(dataDir, "scans"), MaxRecoveries: config.MaxRecoveries(os.Getenv)},
 	}
 	addr := os.Getenv("AXIOM_HTTP_ADDR")
 	if addr == "" {
@@ -112,12 +111,4 @@ func readyCheck() bool {
 	}
 	defer response.Body.Close()
 	return response.StatusCode == http.StatusOK
-}
-
-func positiveEnv(key string, fallback int) int {
-	n, err := strconv.Atoi(os.Getenv(key))
-	if err != nil || n < 1 || n > 64 {
-		return fallback
-	}
-	return n
 }

@@ -277,25 +277,13 @@ func (s *Store) ClaimSDKIdentity(ctx context.Context, agent string, limits Claim
 		return nil, "", tx.Commit()
 	}
 	runtime, e := contracts.DecodeAgentRuntime([]byte(runtimeJSON), nil)
-	if e != nil || runtime.State != contracts.AgentRuntimeStateReady || runtime.ControlAPI != 4 || runtime.MatrixHash != control.MatrixHash || runtime.ScannerDescriptionVersion == nil || *runtime.ScannerDescriptionVersion != contracts.SDKIdentityDescriptionVersion {
+	if e != nil || runtime.State != contracts.AgentRuntimeStateReady || runtime.ControlAPI != 4 || runtime.MatrixHash != control.MatrixHash || runtime.ScannerDescriptionVersion == nil || !contracts.DescriptionSupportsSDKIdentity(*runtime.ScannerDescriptionVersion) {
 		return nil, "", tx.Commit()
 	}
 	if limits.StorageCheck != nil && limits.StorageCheck(ctx) != "" {
 		return nil, "", tx.Commit()
 	}
-	settings, e := readSettings(ctx, tx, limits)
-	if e != nil {
-		return nil, "", e
-	}
 	stamp := identityStamp()
-	var active int
-	e = tx.QueryRowContext(ctx, `SELECT (SELECT count(*) FROM sdk_identity_operations WHERE status IN ('running','waiting') AND lease_until>=?)+(SELECT COALESCE(SUM(CASE WHEN t.input_contract_version=6 THEN COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=t.id),1) ELSE 1 END),0) FROM scan_tasks t WHERE status IN ('claimed','scanning','cancel_requested') AND lease_expires_at>=?)`, stamp, stamp).Scan(&active)
-	if e != nil {
-		return nil, "", e
-	}
-	if active >= settings.Global {
-		return nil, "", tx.Commit()
-	}
 	row := tx.QueryRowContext(ctx, `SELECT `+identityOperationColumns+` FROM sdk_identity_operations o WHERE status='queued' AND reference_json::jsonb->>'agentId'=? AND NOT EXISTS(SELECT 1 FROM scan_tasks t JOIN task_sdk_identities b ON b.task_id=t.id WHERE b.identity_id=o.identity_id AND t.status IN ('claimed','scanning','cancel_requested') AND t.lease_expires_at>=?) AND NOT EXISTS(SELECT 1 FROM sdk_identity_operations old WHERE old.identity_id=o.identity_id AND old.id<>o.id AND old.status='canceled' AND old.lease_until>=?) ORDER BY id LIMIT 1 FOR UPDATE`, agent, stamp, stamp)
 	op, e := scanIdentityOperation(row)
 	if errors.Is(e, sql.ErrNoRows) {

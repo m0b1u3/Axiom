@@ -3,8 +3,8 @@ package httpserver
 import (
 	"axiom/code-audit-server/internal/httputil"
 	"axiom/code-audit-server/internal/store"
+	"axiom/contracts"
 	"axiom/contracts/control"
-	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -23,7 +23,7 @@ func (s *Server) reportAgent(w http.ResponseWriter, r *http.Request) {
 	if !decodeAgent(w, r, &v) {
 		return
 	}
-	if strings.TrimSpace(v.AgentID) == "" || len(v.AgentID) > 128 || v.Slots < 1 || v.Slots > 64 {
+	if strings.TrimSpace(v.AgentID) == "" || len(v.AgentID) > 128 || v.Slots < 1 || int64(v.Slots) > contracts.SDKMaxSafeInteger {
 		httputil.Error(w, 400, 40000, "invalid agent presence")
 		return
 	}
@@ -68,7 +68,7 @@ func (s *Server) queueSettings(w http.ResponseWriter, r *http.Request, u *store.
 		httputil.Error(w, 503, 50300, "settings history unavailable")
 		return
 	}
-	httputil.OK(w, map[string]any{"settings": v, "canEdit": s.admin(u), "history": history})
+	httputil.OK(w, map[string]any{"dispatchMode": control.DispatchUnbounded, "settings": v, "canEdit": false, "history": history})
 }
 func (s *Server) saveQueueSettings(w http.ResponseWriter, r *http.Request, u *store.User) {
 	if !s.admin(u) {
@@ -78,24 +78,7 @@ func (s *Server) saveQueueSettings(w http.ResponseWriter, r *http.Request, u *st
 	if !s.pgOnly(w) {
 		return
 	}
-	var v store.QueueSettings
-	if !decodeAgent(w, r, &v) {
-		return
-	}
-	if !v.Valid() || v.Revision < 1 {
-		httputil.Error(w, 400, 40000, "limits must be integers between 1 and 64 with a valid revision")
-		return
-	}
-	result, e := s.Store.SaveQueueSettings(r.Context(), v, u.Username)
-	if errors.Is(e, store.ErrSettingsConflict) {
-		httputil.Error(w, 409, 40904, "配置已被其他会话修改，请重新加载后保存")
-		return
-	}
-	if e != nil {
-		httputil.Error(w, 503, 50300, "queue settings save failed")
-		return
-	}
-	httputil.OK(w, result)
+	httputil.Error(w, http.StatusGone, 41000, "平台并发配额已停用；旧配置仅保留历史读取，不再参与任务调度。")
 }
 func (s *Server) attemptResult(w http.ResponseWriter, r *http.Request, u *store.User) {
 	id, ok := pathID(r, "id")

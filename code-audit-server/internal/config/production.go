@@ -38,14 +38,6 @@ func ValidateEnvironment(getenv func(string) string) error {
 	if err != nil || (u.Scheme != "postgres" && u.Scheme != "postgresql") || u.Hostname() == "" || strings.Trim(u.Path, "/") == "" {
 		return fmt.Errorf("AXIOM_DATABASE_URL must point to PostgreSQL in production")
 	}
-	for _, name := range []string{"AXIOM_MAX_ACTIVE_SCANS", "AXIOM_MAX_MODEL_SCANS", "AXIOM_MAX_PROJECT_SCANS"} {
-		if v := getenv(name); v != "" {
-			n, err := strconv.Atoi(v)
-			if err != nil || n < 1 || n > 64 {
-				return fmt.Errorf("%s must be between 1 and 64", name)
-			}
-		}
-	}
 	if v := getenv("AXIOM_SCAN_MOCK"); v != "" && v != "0" && v != "1" {
 		return fmt.Errorf("AXIOM_SCAN_MOCK must be 0 or 1")
 	}

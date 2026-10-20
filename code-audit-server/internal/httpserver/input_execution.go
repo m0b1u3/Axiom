@@ -25,7 +25,7 @@ func (s *Server) reportInputAgent(w http.ResponseWriter, r *http.Request) {
 	if !decodeAgent(w, r, &v) {
 		return
 	}
-	if !validInputAgent(v.AgentID, v.Capabilities) || v.Slots < 1 || v.Slots > 64 {
+	if !validInputAgent(v.AgentID, v.Capabilities) || v.Slots < 1 || int64(v.Slots) > contracts.SDKMaxSafeInteger {
 		httputil.Error(w, 400, 40000, "invalid input capabilities or agent presence")
 		return
 	}

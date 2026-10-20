@@ -674,6 +674,7 @@ func friendlyHTTPStatus(status int, modelsURL string) string {
 
 func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *store.User) {
 	var body struct {
+		ReasoningEffort string `json:"reasoningEffort"`
 		SDKIdentityOnly bool   `json:"sdkIdentityOnly"`
 		Name            string `json:"name"`
 		Provider        string `json:"provider"`
@@ -686,6 +687,10 @@ func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 	}
 	if err := httputil.Decode(r, &body); err != nil || strings.TrimSpace(body.Name) == "" || (body.ApiKey == "" && !body.SDKIdentityOnly) {
 		httputil.Error(w, http.StatusBadRequest, 40000, "name and apiKey required")
+		return
+	}
+	if !validReasoningEffort(body.ReasoningEffort) {
+		httputil.Error(w, 400, 40000, "推理强度无效，请选择支持的值或沿用 SDK 默认")
 		return
 	}
 	// Provider 走注册表校验（解耦：新 provider 只改 providers.json）。
@@ -725,6 +730,7 @@ func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 	}
 	row, err := s.Store.CreateModelConfig(r.Context(), store.ModelConfigRow{
 		SDKIdentityOnly: body.SDKIdentityOnly,
+		ReasoningEffort: body.ReasoningEffort,
 		Name:            strings.TrimSpace(body.Name),
 		Provider:        strings.TrimSpace(body.Provider),
 		BaseURL:         normalizeModelBaseURL(body.BaseURL),
@@ -748,16 +754,17 @@ func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		return
 	}
 	var body struct {
-		Name                string `json:"name"`
-		Provider            string `json:"provider"`
-		BaseURL             string `json:"baseUrl"`
-		Model               string `json:"model"`
-		ApiKey              string `json:"apiKey"`
-		Status              string `json:"status"`
-		CompatibilityStatus string `json:"compatibilityStatus"`
-		Remark              string `json:"remark"`
-		WebsiteURL          string `json:"websiteUrl"`
-		WireAPI             string `json:"wireApi"`
+		ReasoningEffort     *string `json:"reasoningEffort"`
+		Name                string  `json:"name"`
+		Provider            string  `json:"provider"`
+		BaseURL             string  `json:"baseUrl"`
+		Model               string  `json:"model"`
+		ApiKey              string  `json:"apiKey"`
+		Status              string  `json:"status"`
+		CompatibilityStatus string  `json:"compatibilityStatus"`
+		Remark              string  `json:"remark"`
+		WebsiteURL          string  `json:"websiteUrl"`
+		WireAPI             string  `json:"wireApi"`
 	}
 	if err := httputil.Decode(r, &body); err != nil || strings.TrimSpace(body.Name) == "" {
 		httputil.Error(w, http.StatusBadRequest, 40000, "name required")
@@ -765,6 +772,19 @@ func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 	}
 	if body.WireAPI != "" && body.WireAPI != "responses" && body.WireAPI != "chat" {
 		httputil.Error(w, http.StatusBadRequest, 40006, "wireApi must be responses or chat")
+		return
+	}
+	previous, e := s.Store.GetModelConfig(r.Context(), id)
+	if e != nil {
+		httputil.Error(w, 404, 40002, "model config not found")
+		return
+	}
+	effort := previous.ReasoningEffort
+	if body.ReasoningEffort != nil {
+		effort = *body.ReasoningEffort
+	}
+	if !validReasoningEffort(effort) {
+		httputil.Error(w, 400, 40000, "推理强度无效，请选择支持的值或沿用 SDK 默认")
 		return
 	}
 	enc := ""
@@ -777,6 +797,7 @@ func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		}
 	}
 	if err := s.Store.UpdateModelConfig(r.Context(), id, store.ModelConfigRow{
+		ReasoningEffort:     effort,
 		Name:                strings.TrimSpace(body.Name),
 		Provider:            strings.TrimSpace(body.Provider),
 		BaseURL:             normalizeModelBaseURL(body.BaseURL),

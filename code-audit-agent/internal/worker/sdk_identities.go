@@ -15,6 +15,10 @@ func (w *Worker) executeIdentity(ctx context.Context, c *execution.Client) (bool
 	if e != nil || claim == nil {
 		return false, e
 	}
+	return w.executeIdentityClaim(ctx, c, claim)
+}
+
+func (w *Worker) executeIdentityClaim(ctx context.Context, c *execution.Client, claim *contracts.SDKIdentityClaim) (bool, error) {
 	deadline, e := time.Parse(time.RFC3339, claim.Operation.Deadline)
 	if e != nil {
 		return true, e
@@ -28,8 +32,8 @@ func (w *Worker) executeIdentity(ctx context.Context, c *execution.Client) (bool
 	interval, reserve := renewalTiming(lease)
 	stopped := make(chan struct{})
 	done := make(chan struct{})
-	// The same worker slot and storage/global admission gate are used for login
-	// and scans. A lost lease stops the native login; it is never auto-replayed.
+	// Identity-specific exclusion and storage admission remain in the Server.
+	// A lost lease stops the native login; it is never auto-replayed.
 	send := func(v contracts.SDKIdentityReport) error {
 		// Use the Server's lease, not local configuration. A blocked request must
 		// leave enough time to cancel the SDK before another operation can start.

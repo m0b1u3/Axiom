@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/sdk-scan-parameters.schema.json",
+  "$defs": {
+    "ReasoningEffort": {
+      "type": "string",
+      "enum": [
+        "none",
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "ComponentSDKInput": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "knowledge": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/scan-input.schema.json#/$defs/KnowledgeDocument"
+          },
+          "maxItems": 8
+        },
+        "scanPrompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16000,
+          "pattern": "^[^\u0000]+$"
+        },
+        "postScanPrompt": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16000,
+          "pattern": "^[^\u0000]+$"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "knowledge"
+      ],
+      "additionalProperties": false
+    },
+    "SDKScanParameters": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "reasoningEffort": {
+          "$ref": "#/$defs/ReasoningEffort"
+        },
+        "componentInput": {
+          "$ref": "#/$defs/ComponentSDKInput"
+        }
+      },
+      "required": [
+        "schemaVersion"
+      ],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "reasoningEffort"
+          ]
+        },
+        {
+          "required": [
+            "componentInput"
+          ]
+        }
+      ]
+    },
+    "SDKParametersAssignment": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "parameters": {
+          "$ref": "#/$defs/SDKScanParameters"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "parameters"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "title": "SDKScanParameters",
+  "$ref": "#/$defs/SDKScanParameters"
+}

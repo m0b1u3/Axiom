@@ -217,7 +217,7 @@ const CHAT_PASSTHROUGH = [
   "stop",
 ] as const;
 
-export function convertResponsesRequestToChat(body: Json): Json {
+export function convertResponsesRequestToChat(body: Json, explicitReasoningEffort?:string): Json {
   const result: Json = {};
   if (body["model"] !== undefined) result["model"] = body["model"];
 
@@ -231,8 +231,9 @@ export function convertResponsesRequestToChat(body: Json): Json {
   for (const key of ["temperature", "top_p", "stream"] as const) {
     if (body[key] !== undefined) result[key] = body[key];
   }
-  // reasoning.effort 不映射 —— chat 上游对该字段支持参差（cc 按模型白名单门控），
-  // v1 一律不下发，避免 400；M0 若确认 kimi 支持 reasoning_effort 再开。
+  // Preserve historical defaults. Explicit Web selection must never disappear
+  // in the Responses→Chat adapter; unsupported upstreams return their own error.
+  if(explicitReasoningEffort!==undefined)result["reasoning_effort"]=(body["reasoning"] as Json|undefined)?.["effort"]??explicitReasoningEffort;
 
   const format = (body["text"] as Json | undefined)?.["format"] as Json | undefined;
   if (format?.["type"] === "json_schema") {
@@ -604,7 +605,7 @@ function writeSse(res: import("node:http").ServerResponse, event: string, data: 
  * 只接受路径以 /responses 结尾的 POST；Authorization 头原样转发给上游
  * （Codex 侧 env_key 已注入真实 key，代理不持有凭证）。
  */
-export async function startChatShim(upstreamBaseUrl: string): Promise<ChatShim> {
+export async function startChatShim(upstreamBaseUrl: string, explicitReasoningEffort?:string): Promise<ChatShim> {
   const upstream = upstreamBaseUrl.replace(/\/+$/, "");
   const server: Server = createServer((req, res) => {
     void (async () => {
@@ -628,7 +629,7 @@ export async function startChatShim(upstreamBaseUrl: string): Promise<ChatShim> 
         return;
       }
 
-      const chatBody = convertResponsesRequestToChat(body);
+      const chatBody = convertResponsesRequestToChat(body,explicitReasoningEffort);
       chatBody["stream"] = true; // Codex 侧恒流式
       const headers: Record<string, string> = { "content-type": "application/json", accept: "text/event-stream" };
       const auth = req.headers["authorization"];

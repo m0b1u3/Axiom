@@ -15,7 +15,7 @@ import (
 var AgentBuild = "development"
 
 func (c *Client) capabilities() control.Capabilities {
-	v := control.Capabilities{Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
+	v := control.Capabilities{SDKConcurrency: c.SDKConcurrencyVersion == 1, SDKParameters: c.SDKParametersVersion == 1, Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
 	if c.InputCapabilities != nil {
 		v.Input = *c.InputCapabilities
 	}
@@ -83,6 +83,15 @@ func (c *Client) Negotiate(ctx context.Context, id string, slots int) error {
 		if max == 0 {
 			return errors.New("Server declares no supported control API")
 		}
+		if c.DispatchMode == control.DispatchUnbounded && (v.Data.TaskDispatch != control.DispatchUnbounded || max != 4) {
+			return &ProtocolError{Code: contracts.ErrorCodeProtocolVersionUnsupported, Origin: contracts.ErrorOriginAgent, Message: "Server 尚不支持无配额调度，请同步更新 Server 与 Agent；模型尚未启动。", Retryable: false}
+		}
+		if v.Data.SDKConcurrencyVersion != 1 {
+			c.SDKConcurrencyVersion = 0
+		}
+		if v.Data.SDKParametersVersion != 1 {
+			c.SDKParametersVersion = 0
+		}
 		if v.Data.SDKIdentityVersion != 1 {
 			c.SDKIdentityVersion = 0
 		}
@@ -102,7 +111,12 @@ func (c *Client) Negotiate(ctx context.Context, id string, slots int) error {
 	if r.StatusCode != 404 && r.StatusCode != 405 {
 		return errors.New("Server capability discovery failed")
 	}
+	if c.DispatchMode == control.DispatchUnbounded {
+		return &ProtocolError{Code: contracts.ErrorCodeProtocolVersionUnsupported, Origin: contracts.ErrorOriginAgent, Message: "Server 未声明无配额调度能力，请同步更新配套组件。", Retryable: false}
+	}
 	c.SDKIdentityVersion = 0
+	c.SDKParametersVersion = 0
+	c.SDKConcurrencyVersion = 0
 	// An old Server has no descriptor. Probe known presence payloads, without
 	// scan credentials or task claims. Never fall back on auth/network failures.
 	apis := control.ControlAPIs()
@@ -124,7 +138,7 @@ func (c *Client) validateLease(l *Lease) (*Lease, error) {
 	if !l.HasTask() {
 		return l, nil
 	}
-	v := control.Requirements{SDKOperation: l.SDKOperation != nil, ScanInput: l.ScanInput != nil, Result: l.ResultContractVersion, Observation: l.ObservationContractVersion}
+	v := control.Requirements{SDKParameters: l.SDKParameters != nil, SDKOperation: l.SDKOperation != nil, ScanInput: l.ScanInput != nil, Result: l.ResultContractVersion, Observation: l.ObservationContractVersion}
 	if l.Assignment != nil {
 		v.Input = int(l.Assignment.SchemaVersion)
 		if l.ScanInput != nil {
@@ -142,6 +156,11 @@ func (c *Client) validateLease(l *Lease) (*Lease, error) {
 		if l.GitDiff != nil {
 			v.Input = contracts.GitDiffInputVersion
 		}
+		var input *contracts.ScanInput
+		if l.ScanInput != nil {
+			input = &l.ScanInput.Input
+		}
+		v.SDKConcurrency = contracts.NeedsSDKConcurrency(l.Assignment.Policy, input, l.ComponentScan)
 		v.Budget = l.Assignment.Policy.MaxCostUSD.Present
 	}
 	if l.Legacy != nil {

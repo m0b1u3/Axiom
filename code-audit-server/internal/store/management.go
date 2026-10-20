@@ -29,6 +29,16 @@ func (v QueueSettings) Valid() bool {
 }
 func readSettings(ctx context.Context, tx *transaction, defaults ClaimLimits) (QueueSettings, error) {
 	var v QueueSettings
+	// Retained solely for historical readers. New services no longer configure quotas.
+	if defaults.Global < 1 || defaults.Global > 64 {
+		defaults.Global = 2
+	}
+	if defaults.PerModel < 1 || defaults.PerModel > 64 {
+		defaults.PerModel = 2
+	}
+	if defaults.PerProject < 1 || defaults.PerProject > 64 {
+		defaults.PerProject = 2
+	}
 	_, e := tx.ExecContext(ctx, `INSERT INTO execution_settings(id,global_limit,model_limit,project_limit) VALUES(1,?,?,?) ON CONFLICT(id) DO NOTHING`, defaults.Global, defaults.PerModel, defaults.PerProject)
 	if e != nil {
 		return v, e
@@ -48,6 +58,9 @@ func (s *Store) QueueSettings(ctx context.Context, defaults ClaimLimits) (QueueS
 	}
 	return v, tx.Commit()
 }
+
+// SaveQueueSettings retains legacy import/fixture support. These values never
+// govern admission; the public mutation endpoint is retired.
 func (s *Store) SaveQueueSettings(ctx context.Context, v QueueSettings, actor string) (QueueSettings, error) {
 	if !v.Valid() {
 		return v, errors.New("limits must be integers between 1 and 64")
@@ -57,7 +70,7 @@ func (s *Store) SaveQueueSettings(ctx context.Context, v QueueSettings, actor st
 		return v, e
 	}
 	defer tx.Rollback()
-	// Same admission lock: a claim observes either the whole old or whole new policy.
+	// Keep the historical record and revision atomic for legacy readers.
 	if _, e = tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(740919)`); e != nil {
 		return v, e
 	}
@@ -91,6 +104,7 @@ func (s *Store) QueueSettingHistory(ctx context.Context) ([]QueueSettings, error
 }
 
 type AgentPresence struct {
+	DispatchMode            string                            `json:"dispatchMode"`
 	RuntimeReportedAt       *time.Time                        `json:"runtimeReportedAt,omitempty"`
 	Runtime                 *contracts.AgentRuntime           `json:"runtime,omitempty"`
 	ObservationCapabilities contracts.ObservationCapabilities `json:"observationCapabilities"`
@@ -113,6 +127,12 @@ func (s *Store) ReportAgentWithContracts(ctx context.Context, id string, slots i
 	return s.ReportAgentWithObservations(ctx, id, slots, c, results, contracts.NoObservationCapabilities())
 }
 func (s *Store) ReportAgentWithObservations(ctx context.Context, id string, slots int, c contracts.InputCapabilities, results contracts.ResultCapabilities, observations contracts.ObservationCapabilities) error {
+	return s.ReportAgentWithDispatch(ctx, id, control.DispatchBounded, slots, c, results, observations)
+}
+func (s *Store) ReportAgentWithDispatch(ctx context.Context, id, mode string, slots int, c contracts.InputCapabilities, results contracts.ResultCapabilities, observations contracts.ObservationCapabilities) error {
+	if !control.ValidDispatchPresence(mode, slots) {
+		return errors.New("invalid execution dispatch mode")
+	}
 	raw, e := json.Marshal(c)
 	if e != nil {
 		return e
@@ -139,9 +159,10 @@ func (s *Store) ReportAgentWithObservations(ctx context.Context, id string, slot
 }
 
 type QueueTask struct {
-	capacityUnits      int
+	sdkConcurrency     bool
 	sdkOperation       bool
 	scanInput          bool
+	sdkParameters      bool
 	TaskID             int64              `json:"taskId"`
 	Status             string             `json:"status"`
 	AgentID            string             `json:"agentId"`
@@ -166,6 +187,9 @@ type QueueTask struct {
 	budget             bool
 }
 type QueueOverview struct {
+	DispatchMode      string          `json:"dispatchMode"`
+	OnlineAgents      int             `json:"onlineAgents"`
+	ReadyAgents       int             `json:"readyAgents"`
 	Settings          QueueSettings   `json:"settings"`
 	Agents            []AgentPresence `json:"agents"`
 	Tasks             []QueueTask     `json:"tasks"`
@@ -173,13 +197,13 @@ type QueueOverview struct {
 	Pending           int             `json:"pending"`
 	OnlineSlots       int             `json:"onlineSlots"`
 	ReadySlots        int             `json:"readySlots"`
-	EffectiveCapacity int             `json:"effectiveCapacity"`
+	EffectiveCapacity *int            `json:"effectiveCapacity"`
 	ServerTime        time.Time       `json:"serverTime"`
 	MaxRecoveries     int             `json:"maxRecoveries"`
 }
 
 func (s *Store) QueueOverview(ctx context.Context, defaults ClaimLimits, taskID int64) (QueueOverview, error) {
-	v := QueueOverview{Agents: []AgentPresence{}, Tasks: []QueueTask{}, ServerTime: time.Now().UTC(), MaxRecoveries: defaults.MaxRecoveries}
+	v := QueueOverview{DispatchMode: control.DispatchUnbounded, Agents: []AgentPresence{}, Tasks: []QueueTask{}, ServerTime: time.Now().UTC(), MaxRecoveries: defaults.MaxRecoveries}
 	settings, e := s.QueueSettings(ctx, defaults)
 	if e != nil {
 		return v, e
@@ -212,9 +236,15 @@ func (s *Store) QueueOverview(ctx context.Context, defaults ClaimLimits, taskID 
 			}
 		}
 		a.Online = v.ServerTime.Sub(a.LastSeen) < 30*time.Second
+		a.DispatchMode = control.DispatchBounded
+		if a.Slots == 0 {
+			a.DispatchMode = control.DispatchUnbounded
+		}
 		if a.Online {
+			v.OnlineAgents++
 			v.OnlineSlots += a.Slots
 			if a.Runtime == nil || (a.Runtime.State == contracts.AgentRuntimeStateReady && a.Runtime.MatrixHash == control.MatrixHash) {
+				v.ReadyAgents++
 				v.ReadySlots += a.Slots
 			}
 		}
@@ -225,14 +255,14 @@ func (s *Store) QueueOverview(ctx context.Context, defaults ClaimLimits, taskID 
 	if e != nil {
 		return v, e
 	}
-	rows, e = tx.QueryContext(ctx, `SELECT COALESCE((SELECT workers FROM component_scans c WHERE c.task_id=scan_tasks.id),1),EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id),EXISTS(SELECT 1 FROM task_scan_inputs si WHERE si.task_id=scan_tasks.id),id,status,COALESCE(agent_id,''),queued_at,COALESCE(started_at,''),COALESCE(finished_at,''),COALESCE(heartbeat_at,''),COALESCE(lease_expires_at,''),automatic_retries,COALESCE(model_config_id,0),COALESCE(project_id,0),provider,input_contract_version,result_contract_version,observation_contract_version,(max_cost_usd IS NOT NULL OR EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=scan_tasks.id AND b.total_micros IS NOT NULL)),(SELECT total_micros FROM task_budgets b WHERE b.task_id=scan_tasks.id),EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=scan_tasks.id AND c.state='unknown'),(SELECT LEAST(COALESCE(SUM(c.booked_micros),0),9007199254740991)::bigint FROM task_cost_attempts c WHERE c.task_id=scan_tasks.id) FROM scan_tasks WHERE status IN ('pending','claimed','scanning','cancel_requested') OR id=? ORDER BY queued_at,id`, taskID)
+	rows, e = tx.QueryContext(ctx, `SELECT `+s.needsSDKConcurrencySQL("scan_tasks")+`,COALESCE(sdk_parameters_json,'')<>'',EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=scan_tasks.id),EXISTS(SELECT 1 FROM task_scan_inputs si WHERE si.task_id=scan_tasks.id),id,status,COALESCE(agent_id,''),queued_at,COALESCE(started_at,''),COALESCE(finished_at,''),COALESCE(heartbeat_at,''),COALESCE(lease_expires_at,''),automatic_retries,COALESCE(model_config_id,0),COALESCE(project_id,0),provider,input_contract_version,result_contract_version,observation_contract_version,(max_cost_usd IS NOT NULL OR EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=scan_tasks.id AND b.total_micros IS NOT NULL)),(SELECT total_micros FROM task_budgets b WHERE b.task_id=scan_tasks.id),EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=scan_tasks.id AND c.state='unknown'),(SELECT LEAST(COALESCE(SUM(c.booked_micros),0),9007199254740991)::bigint FROM task_cost_attempts c WHERE c.task_id=scan_tasks.id) FROM scan_tasks WHERE status IN ('pending','claimed','scanning','cancel_requested') OR id=? ORDER BY queued_at,id`, taskID)
 	if e != nil {
 		return v, e
 	}
 	all := []QueueTask{}
 	for rows.Next() {
 		var t QueueTask
-		if e = rows.Scan(&t.capacityUnits, &t.sdkOperation, &t.scanInput, &t.TaskID, &t.Status, &t.AgentID, &t.QueuedAt, &t.StartedAt, &t.FinishedAt, &t.HeartbeatAt, &t.LeaseExpiresAt, &t.AutomaticRetries, &t.modelID, &t.projectID, &t.provider, &t.inputVersion, &t.resultVersion, &t.observationVersion, &t.budget, &t.budgetTotal, &t.budgetUnknown, &t.budgetUsed); e != nil {
+		if e = rows.Scan(&t.sdkConcurrency, &t.sdkParameters, &t.sdkOperation, &t.scanInput, &t.TaskID, &t.Status, &t.AgentID, &t.QueuedAt, &t.StartedAt, &t.FinishedAt, &t.HeartbeatAt, &t.LeaseExpiresAt, &t.AutomaticRetries, &t.modelID, &t.projectID, &t.provider, &t.inputVersion, &t.resultVersion, &t.observationVersion, &t.budget, &t.budgetTotal, &t.budgetUnknown, &t.budgetUsed); e != nil {
 			rows.Close()
 			return v, e
 		}
@@ -243,33 +273,20 @@ func (s *Store) QueueOverview(ctx context.Context, defaults ClaimLimits, taskID 
 	if e != nil {
 		return v, e
 	}
-	type modelKey struct {
-		id       int64
-		provider string
-	}
-	models := map[modelKey]int{}
-	projects := map[int64]int{}
-	activeUnits := 0
 	stamp := v.ServerTime.Format(time.RFC3339)
 	if s.IsPostgres() {
-		// Native login waits occupy real worker slots, even though they are
-		// independent of scan tasks and do not call a model.
+		// Identity operations are visible work, independently of scan tasks.
 		var identities int
 		if e = tx.QueryRowContext(ctx, `SELECT count(*) FROM sdk_identity_operations WHERE status IN ('running','waiting') AND lease_until>=? AND deadline>=?`, stamp, stamp).Scan(&identities); e != nil {
 			return v, e
 		}
-		activeUnits += identities
 		v.Active += identities
 	}
 	for _, t := range all {
 		if t.Status != "pending" && IsRunningStatus(t.Status) && t.LeaseExpiresAt >= stamp {
 			v.Active++
-			activeUnits += t.capacityUnits
-			models[modelKey{t.modelID, t.provider}] += t.capacityUnits
-			projects[t.projectID] += t.capacityUnits
 		}
 	}
-	v.EffectiveCapacity = min(v.Settings.Global, v.ReadySlots)
 	storageReason := ""
 	if defaults.StorageCheck != nil {
 		storageReason = defaults.StorageCheck(ctx)
@@ -286,18 +303,10 @@ func (s *Store) QueueOverview(ctx context.Context, defaults ClaimLimits, taskID 
 				t.Reason = "budget_exhausted"
 			case storageReason != "":
 				t.Reason = storageReason
-			case v.OnlineSlots == 0:
+			case v.OnlineAgents == 0:
 				t.Reason = "agent_offline"
 			case t.Compatibility.Reason != "":
 				t.Reason = t.Compatibility.Reason
-			case activeUnits+t.capacityUnits > settings.Global:
-				t.Reason = "global_limit"
-			case models[modelKey{t.modelID, t.provider}]+t.capacityUnits > settings.PerModel:
-				t.Reason = "model_limit"
-			case projects[t.projectID]+t.capacityUnits > settings.PerProject:
-				t.Reason = "project_limit"
-			case v.Active >= v.OnlineSlots:
-				t.Reason = "agent_capacity"
 			default:
 				t.Reason = "awaiting_dispatch"
 			}

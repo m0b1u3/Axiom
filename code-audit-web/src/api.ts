@@ -29,6 +29,7 @@ export interface SnapshotQuery extends CatalogQuery { usage?: string; id?: numbe
 export interface FindingQuery extends CatalogQuery { severity?: string; status?: string; sourceSnapshotId?: string | number; sourcePath?: string }
 
 export interface ModelConfig {
+ reasoningEffort?:import("./contracts").ReasoningEffort;
  sdkIdentityOnly?:boolean;
   id: number;
   name: string;
@@ -69,6 +70,7 @@ export interface ProviderPreset {
 
 /** 模型配置的写载荷：API Key 留空 = 不修改（仅 update） */
 export interface ModelConfigPayload {
+ reasoningEffort?:string;
  sdkIdentityOnly?:boolean;
   name: string;
   provider: string;
@@ -173,7 +175,7 @@ export const api = {
  async sdkIdentityOperations(id:string):Promise<import('./contracts').SDKIdentityOperation[]>{return http.get('/sdk-identities/'+id+'/operations') as never;},
  async startSDKIdentityOperation(id:string,value:{generation:number;action:string;apiKey?:string}):Promise<import('./contracts').SDKIdentityOperation>{return http.post('/sdk-identities/'+id+'/operations',value) as never;},
  async cancelSDKIdentityOperation(id:string):Promise<void>{return http.post('/sdk-identity-operations/'+id+'/cancel') as never;},
- async createComponentScan(id:string,value:{sdkIdentityId?:string;version:number;versionSha256:string;modelConfigId:number;workers:number;timeoutMinutes:number;maxCostUsd:number;maxTotalCostUsd:number;componentCostUsd:number;acknowledgeMatchingCost:boolean}):Promise<{id:number}>{return http.post('/component-plans/'+id+'/scans',value) as never;},
+ async createComponentScan(id:string,value:{knowledgeVersionIds?:number[];scanPrompt?:string;postScanPrompt?:string;sdkIdentityId?:string;version:number;versionSha256:string;modelConfigId:number;workers:number;timeoutMinutes:number;maxCostUsd:number;maxTotalCostUsd:number;componentCostUsd:number;acknowledgeMatchingCost:boolean}):Promise<{id:number}>{return http.post('/component-plans/'+id+'/scans',value) as never;},
  async componentExecutions(id:number):Promise<import('./utils/component-scans').ComponentExecutionsView>{return http.get('/scans/'+id+'/component-executions') as never;},
  async retryComponents(id:number,value:{attempt:number;expectedStatus:string;indices:number[];acknowledgeReexecution:boolean}):Promise<unknown>{return http.post('/scans/'+id+'/component-executions/retry',value) as never;},
  async componentPlans(snapshotId:number,page=1):Promise<CatalogPage<import('./contracts').ComponentPlanSnapshot>>{return http.get('/component-plans',{params:{snapshotId,page}}) as never;},
@@ -254,8 +256,7 @@ export const api = {
     return http.get(`/scans/${scanId}/findings`) as Promise<Finding[]>;
   },
   async queueOverview(taskId?: number): Promise<QueueOverview> { return http.get('/executions/overview', { params: { taskId } }) as Promise<QueueOverview>; },
-  async executionSettings(): Promise<{ settings: QueueSettings; canEdit: boolean; history: QueueSettings[] }> { return http.get('/settings/execution') as Promise<{ settings: QueueSettings; canEdit: boolean; history: QueueSettings[] }>; },
-  async saveExecutionSettings(v: QueueSettings): Promise<QueueSettings> { return http.put('/settings/execution', {global:v.global,perModel:v.perModel,perProject:v.perProject,revision:v.revision}) as Promise<QueueSettings>; },
+  async executionSettings(): Promise<{ dispatchMode?:string; settings: QueueSettings; canEdit: boolean; history: QueueSettings[] }> { return http.get('/settings/execution') as Promise<{ dispatchMode?:string; settings: QueueSettings; canEdit: boolean; history: QueueSettings[] }>; },
   async resultArtifact(id:number,attempt:number,path:string):Promise<Blob>{return http.get(`/scans/${id}/attempts/${attempt}/artifacts`,{params:{path},responseType:'blob'}) as Promise<Blob>;},
   async findingEvidenceGraph(id:number,attempt:number,fingerprint:string):Promise<import('./contracts').EvidenceGraph>{return http.get(`/scans/${id}/attempts/${attempt}/evidence-graph`,{params:{fingerprint}}) as Promise<import('./contracts').EvidenceGraph>;},
   async createSDKOperation(id:number,payload:{kind:'preflight'|'validate';findingId?:string;originAttempt?:number;acknowledgeUnknownCost?:boolean}):Promise<ScanTask>{return http.post(`/scans/${id}/sdk-operations`,payload) as Promise<ScanTask>;},
