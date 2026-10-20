@@ -1,0 +1,541 @@
+{
+  "schemaVersion": 1,
+  "sdk": {
+    "package": "@openai/codex-security",
+    "version": "0.1.25",
+    "upgradePolicy": "separate_compatibility_acceptance",
+    "declarations": {
+      "dist/index.d.ts": "703bc813ad80dfd8068ca5eedad6a4a2b4988755b03e3a4887d56e5149c7a40f",
+      "dist/api.d.ts": "3ccb72c340c9578ea8fe4de7d04866a061f63a5a757759adfcdcd2d13106dd99",
+      "dist/config.d.ts": "913efd62dca90c72dc2546eda2cfe2ec26f8fdad900937c769fc60ce530808b5",
+      "dist/targets.d.ts": "59ef09c8ae18f5b3b531bb1fc5366123678d8018bf51be379f45151c51502f0d",
+      "dist/result.d.ts": "4d292fc024f4ce112ecf5c8020fc8e7f69418fbc2e09139cef3b46bcfc78541a",
+      "dist/auth.d.ts": "3d36c43970fc70c6b9f01f37c3bf6c29806a0bbb1b6d879abdd398382ddb0924",
+      "dist/component-plan.d.ts": "86eb823b97250fbe8efb7ee7aac84d57b88261431646c63a7e46854542ea60a1",
+      "dist/component-scan.d.ts": "d025ff4da15c22d61ed7e95d845687cf7191597ded81c6973a44c298302c7faf",
+      "dist/publish.d.ts": "1ae7880a8d36e31898d7be152f27ad2ca9e9bf72c16a59a732fcce097458cc43",
+      "dist/custom-publish.d.ts": "ff1d065acfa22d9f5c3dbc8680fa733b0341b18d2d1ea4e9b491c8ecf21655d1",
+      "dist/deduplication/scan.d.ts": "59ede46ad254540496ea790d13446be1eece136e517e142742623896857c00fa",
+      "dist/github.d.ts": "662cd3336dc7e7f8d6b9a87059715f8dbd681f5348e68bb56ed9443730a3c271",
+      "dist/server/api.d.ts": "41b0d32c8d089aa47ed03c9fff239126b08c8cd430deb33f15b670818eb1a9ed",
+      "dist/server/storage.d.ts": "fb5e3a3f0c5877707dd0b86da61a318fa27bcd1e2d25ab3db9412caa4b26bcf5",
+      "dist/cost.d.ts": "59e8b2a587638100d9adcf2991ca11fa60af6f1720126bb4d34e1b38802f3357",
+      "dist/cost-model.d.ts": "3f23a544f9034bd30d20e169e29a9affdcd2f4d8c897974420ffe317977074dc"
+    }
+  },
+  "constraints": {
+    "architecture": [
+      "Go Server",
+      "Go Agent",
+      "Node Scanner"
+    ],
+    "transport": [
+      "HTTP",
+      "shared_artifacts",
+      "JSONL"
+    ],
+    "userSurface": "web",
+    "externalWritesDuringAcceptance": false,
+    "autoUpgrade": false,
+    "realAuditsDuringAcceptance": false
+  },
+  "statusDefinitions": {
+    "integrated": "当前主链路已接入，实际覆盖以证据与测试为准",
+    "partial": "只接入部分选项/回调/界面，不等于完整能力",
+    "planned": "需要实现端到端合同、任务、结果与 Web",
+    "adapter_required": "需要与现有架构兼容的服务/存储适配",
+    "sdk_internal_use": "Scanner 内部按需使用，不是独立用户动作",
+    "not_public": "当前 SDK 没有该公开能力，不能伪装已支持"
+  },
+  "capabilities": [
+    {
+      "id": "scan.standard",
+      "label": "标准审计",
+      "api": [
+        "CodexSecurity.run"
+      ],
+      "status": "integrated",
+      "phase": 1,
+      "notes": "保留现有不可变源码、执行身份、费用与历史结果链路。",
+      "evidence": [
+        "code-audit-scanner/src/engine/codex-security-engine.ts"
+      ]
+    },
+    {
+      "id": "scan.deep",
+      "label": "深度审计全部参数",
+      "api": [
+        "CodexSecurity.run",
+        "ScanOptions.workers",
+        "ScanOptions.subagents",
+        "ScanOptions.maxDiscoveryRuns",
+        "ScanOptions.stopAfterNoNew",
+        "ScanOptions.maxTimeHours"
+      ],
+      "status": "integrated",
+      "phase": 1,
+      "notes": "已接 workers、subagents（含显式 0）、发现轮次、停止条件及 maxTimeHours；仅 Deep 接受子代理参数。",
+      "evidence": [
+        "code-audit-scanner/src/engine/codex-security-engine.ts",
+        "code-audit-scanner/src/contract/sdk-scan-input.ts",
+        "code-audit-server/internal/httpserver/knowledge_pipeline_test.go",
+        "code-audit-web/src/components/AdvancedScanConfiguration.vue"
+      ]
+    },
+    {
+      "id": "scan.snapshot_targets",
+      "label": "仓库和路径目标",
+      "api": [
+        "ScanOptions.target"
+      ],
+      "status": "integrated",
+      "phase": 1,
+      "notes": "已接仓库快照及路径数组；不代表 Git 差异目标已接入。",
+      "evidence": [
+        "code-audit-scanner/src/engine/codex-security-engine.ts"
+      ]
+    },
+    {
+      "id": "scan.git_targets",
+      "label": "提交差异与工作区目标",
+      "api": [
+        "DiffTarget.refs",
+        "DiffTarget.workingTree"
+      ],
+      "status": "partial",
+      "phase": 3,
+      "notes": "已接入 Standard 的已提交 base/head：Web 上传完整 SHA-1 仓库归档，清除原配置/hooks，冻结提交/树/差异与 HEAD 哈希，按执行复制并校验后调用公开 DiffTarget.refs。Web 可分页预览并追溯 HEAD 证据。DiffTarget.workingTree 仍待单独设计与验收，本批不接受未提交改动。",
+      "evidence": [
+        "code-audit-server/internal/snapshot/git.go",
+        "code-audit-server/internal/httpserver/git_diff.go",
+        "code-audit-agent/internal/scanner/git.go",
+        "code-audit-scanner/src/runtime/git-target.ts",
+        "code-audit-web/src/components/GitDiffPreview.vue",
+        "code-audit-server/internal/httpserver/git_diff_pipeline_test.go",
+        "code-audit-web/tests/git-diff-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "scan.knowledge",
+      "label": "安全知识库",
+      "api": [
+        "ScanOptions.knowledgeBasePaths"
+      ],
+      "status": "integrated",
+      "phase": 1,
+      "notes": "Web 管理 UTF-8 文档、不可变版本、归档与恢复；任务冻结正文和 SHA-256，最多 8 份、每份 64 KiB。Agent 私有物化并由 Scanner 重新核验；不接收宿主机路径。",
+      "evidence": [
+        "contracts/schemas/v1/scan-input.schema.json",
+        "code-audit-server/internal/store/knowledge.go",
+        "code-audit-agent/internal/scanner/knowledge.go",
+        "code-audit-scanner/src/contract/sdk-scan-input.ts",
+        "code-audit-web/src/views/Knowledge.vue",
+        "code-audit-web/tests/knowledge-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "scan.instructions",
+      "label": "扫描、验证和后处理指令",
+      "api": [
+        "ScanOptions.scanPrompt",
+        "ScanOptions.validationPrompt",
+        "ScanOptions.postScanPrompt"
+      ],
+      "status": "integrated",
+      "phase": 1,
+      "notes": "三类指令经输入版本 2、Job v4 和 SDK 公开参数传递并冻结；自定义 validationPrompt 仅 Standard 默认验证可用；后处理仍受本次预算和时限约束。",
+      "evidence": [
+        "code-audit-scanner/src/engine/codex-security-engine.ts",
+        "code-audit-scanner/src/contract/sdk-scan-input.ts",
+        "code-audit-server/internal/httpserver/knowledge_pipeline_test.go",
+        "code-audit-web/src/components/AdvancedScanConfiguration.vue"
+      ]
+    },
+    {
+      "id": "scan.budget",
+      "label": "预算回调与费用",
+      "api": [
+        "ScanOptions.maxCostUsd",
+        "ScanOptions.onCost",
+        "ScanOptions.onBudgetApproaching",
+        "estimateScanCost"
+      ],
+      "status": "integrated",
+      "phase": 1,
+      "notes": "预算与费用回调及 Web 用量估算已接入。estimateScanCost 使用 SDK 返回轮次的模型/用量和锁定定价，保留已知零与未知，不改变任务账本或额度，不作为开扫前报价。",
+      "evidence": [
+        "code-audit-scanner/src/engine/codex-security-engine.ts",
+        "code-audit-scanner/test/sdk-lifecycle.test.ts",
+        "code-audit-scanner/src/artifact/sdk-native-result.ts",
+        "code-audit-scanner/test/sdk-native-result.test.ts",
+        "code-audit-web/src/components/SDKNativeResult.vue"
+      ]
+    },
+    {
+      "id": "scan.observers",
+      "label": "完整生命周期回调",
+      "api": [
+        "ScanOptions.onAuthentication",
+        "ScanOptions.onTrustedAccessStatus",
+        "ScanOptions.onScanStarted",
+        "ScanOptions.onOutputDirReady",
+        "ScanOptions.onOutputArchived",
+        "ScanOptions.onReconnect",
+        "ScanOptions.onActivity",
+        "ScanOptions.onSessionEvent",
+        "ScanOptions.onProgress",
+        "ScanOptions.onDeepProgress",
+        "ScanOptions.onWorkerStatus",
+        "ScanOptions.onWarning",
+        "ScanOptions.onObserverError"
+      ],
+      "status": "integrated",
+      "phase": 1,
+      "notes": "扫描公开回调均已接入。SessionEvent 全类型进入独立脱敏 JSONL，记录完整性、容量或写入缺失；归档按执行身份、序号及哈希核验分页读取，运行中/中断日志明确标为未提交、完整性未知。独立 validate 的公开参数没有会话观察器，不伪造回调。",
+      "evidence": [
+        "code-audit-scanner/src/engine/codex-security-engine.ts",
+        "code-audit-scanner/src/runtime/sdk-lifecycle.ts",
+        "code-audit-web/src/components/ScanActivity.vue",
+        "code-audit-server/internal/httpserver/progress_pipeline_test.go",
+        "code-audit-scanner/src/runtime/sdk-diagnostics.ts",
+        "code-audit-scanner/src/runtime/contract-progress.ts",
+        "code-audit-web/src/components/SDKDiagnostics.vue",
+        "contracts/schemas/v1/sdk-session-event.schema.json",
+        "code-audit-scanner/src/runtime/sdk-session-journal.ts",
+        "code-audit-server/internal/httpserver/sdk_sessions.go",
+        "code-audit-web/src/components/SDKSessionEvents.vue",
+        "code-audit-scanner/test/sdk-operations.test.ts"
+      ]
+    },
+    {
+      "id": "scan.metadata",
+      "label": "原生身份与工作流元数据",
+      "api": [
+        "ScanOptions.safetyIdentifier",
+        "ScanOptions.workflowId",
+        "ScanOptions.parentScanId",
+        "ScanOptions.failureSeverity",
+        "ScanOptions.expectedPluginVersion"
+      ],
+      "status": "integrated",
+      "phase": 1,
+      "notes": "工作流、隐私标识、插件约束和严重度均已接入。父扫描由 Web 任务解析原生 Scan ID，要求同一源码与封存结果；Scanner 仅复制锁定版本的工作台 SQLite，不复制凭据，创建独立预算的新扫描。",
+      "evidence": [
+        "contracts/schemas/v1/sdk-parent-state.schema.json",
+        "code-audit-server/internal/httpserver/scan_parent.go",
+        "code-audit-scanner/src/runtime/sdk-parent-state.ts",
+        "code-audit-scanner/test/sdk-parent-state.test.ts",
+        "code-audit-server/internal/httpserver/knowledge_pipeline_test.go"
+      ]
+    },
+    {
+      "id": "operation.preflight",
+      "label": "SDK 原生预检",
+      "api": [
+        "CodexSecurity.preflight"
+      ],
+      "status": "integrated",
+      "phase": 2,
+      "notes": "原生预检使用冻结配置，经共同容量/租约/存储准入，认证保持 verified:false；规范结果与完整脱敏响应归档，Web 可读；只检查本地输入，不执行模型。",
+      "evidence": [
+        "contracts/data/sdk-operation-compatibility.json",
+        "contracts/schemas/v1/sdk-operation.schema.json",
+        "code-audit-server/internal/httpserver/sdk_operations.go",
+        "code-audit-server/internal/store/sdk_operations.go",
+        "code-audit-agent/internal/scanner/input.go",
+        "code-audit-scanner/src/engine/sdk-operation.ts",
+        "code-audit-web/src/components/SDKOperationResult.vue",
+        "code-audit-server/internal/httpserver/sdk_operations_pipeline_test.go",
+        "code-audit-web/tests/sdk-operations-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "operation.validate",
+      "label": "独立漏洞复核",
+      "api": [
+        "CodexSecurity.validate"
+      ],
+      "status": "integrated",
+      "phase": 2,
+      "notes": "Web 对已冻结漏洞独立复核；四类原生 disposition 和人工状态分离。SDK 0.1.25 没有公开费用上限、费用回调和 SessionEvent 参数，费用未知且需明确确认；独立账本/对账，禁止自动重放，保留完整脱敏响应。验收仅合成 SDK。",
+      "evidence": [
+        "contracts/data/sdk-operation-compatibility.json",
+        "contracts/schemas/v1/sdk-operation.schema.json",
+        "code-audit-server/internal/httpserver/sdk_operations.go",
+        "code-audit-server/internal/store/sdk_operations.go",
+        "code-audit-agent/internal/scanner/input.go",
+        "code-audit-scanner/src/engine/sdk-operation.ts",
+        "code-audit-web/src/components/SDKOperationResult.vue",
+        "code-audit-server/internal/httpserver/sdk_operations_pipeline_test.go",
+        "code-audit-web/tests/sdk-operations-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "component.plan",
+      "label": "组件规划与规范化",
+      "api": [
+        "planComponents",
+        "normalizeComponentPlan"
+      ],
+      "status": "integrated",
+      "phase": 3,
+      "notes": "纯 Web 管理不可变源码绑定的组件计划；planComponents 建议需单独确认未知费用，normalizeComponentPlan 本地规范化与全量路径覆盖检查，人工确认后冻结版本；本阶段不会启动组件扫描。",
+      "evidence": [
+        "contracts/schemas/v1/component-planning.schema.json",
+        "contracts/schemas/v7/scanner-job.schema.json",
+        "code-audit-server/internal/httpserver/component_plans.go",
+        "code-audit-server/internal/store/component_plans.go",
+        "code-audit-agent/internal/scanner/input.go",
+        "code-audit-scanner/src/engine/component-planning.ts",
+        "code-audit-web/src/views/ComponentPlans.vue",
+        "code-audit-server/internal/httpserver/component_plans_pipeline_test.go",
+        "code-audit-web/tests/component-plans-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "component.scan",
+      "label": "组件化审计",
+      "api": [
+        "runComponentScans"
+      ],
+      "status": "integrated",
+      "phase": 3,
+      "notes": "基于冻结组件计划调用公开 runComponentScans；Standard 组件并发计入容量、父执行额度内逐组件预留，费用未知不视为零；原生跨组件匹配无费用上限，仅覆盖当前执行选中组件；Web 支持证据追溯、人工费用核对及失败组件新执行。",
+      "evidence": [
+        "contracts/schemas/v1/component-scan.schema.json",
+        "contracts/schemas/v8/scanner-job.schema.json",
+        "code-audit-scanner/src/engine/component-scan.ts",
+        "code-audit-server/internal/store/component_scans.go",
+        "code-audit-server/internal/httpserver/component_scans.go",
+        "code-audit-server/internal/httpserver/component_scans_pipeline_test.go",
+        "code-audit-web/src/components/ComponentExecutions.vue",
+        "code-audit-web/tests/component-scans-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "auth.api_key",
+      "label": "API Key 认证",
+      "api": [
+        "CodexSecurity.loginApiKey"
+      ],
+      "status": "integrated",
+      "phase": 4,
+      "notes": "纯 Web 调用 loginApiKey 建立按身份/Agent/凭据版本隔离的持久会话；模型配置密钥保留旧语义，任务冻结来源且无自动回退。验收仅模拟凭据。",
+      "evidence": [
+        "contracts/schemas/v1/sdk-identities.schema.json",
+        "code-audit-server/internal/store/sdk_identities.go",
+        "code-audit-server/internal/httpserver/sdk_identities.go",
+        "code-audit-agent/internal/scanner/sdk_identity.go",
+        "code-audit-scanner/src/runtime/sdk-identity.ts",
+        "code-audit-web/src/components/SDKIdentities.vue",
+        "code-audit-server/internal/httpserver/sdk_identities_pipeline_test.go",
+        "code-audit-web/tests/sdk-identities-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "auth.chatgpt",
+      "label": "ChatGPT 浏览器与设备码登录",
+      "api": [
+        "CodexSecurity.loginChatGPT",
+        "CodexSecurity.loginChatGPTDeviceCode",
+        "CodexLoginHandle"
+      ],
+      "status": "partial",
+      "phase": 4,
+      "notes": "loginChatGPTDeviceCode 已接入：Web 展示白名单授权网址、设备码、本地截止、取消与过期；刷新凭据通过公开 importAmbientAuth 不透明回存，父任务按身份互斥。验收无真实登录。loginChatGPT 的回调式浏览器登录仍待独立设计，本批不暴露宿主机回调。",
+      "evidence": [
+        "contracts/schemas/v1/sdk-identities.schema.json",
+        "code-audit-server/internal/store/sdk_identities.go",
+        "code-audit-server/internal/httpserver/sdk_identities.go",
+        "code-audit-agent/internal/scanner/sdk_identity.go",
+        "code-audit-scanner/src/runtime/sdk-identity.ts",
+        "code-audit-web/src/components/SDKIdentities.vue",
+        "code-audit-server/internal/httpserver/sdk_identities_pipeline_test.go",
+        "code-audit-web/tests/sdk-identities-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "auth.session",
+      "label": "SDK 账户及退出",
+      "api": [
+        "CodexSecurity.account",
+        "CodexSecurity.logout"
+      ],
+      "status": "integrated",
+      "phase": 4,
+      "notes": "account()/logout() 经身份控制队列、租约与共同容量准入；Web 最后检查状态、权限、撤销及离线清理重试。撤销立即禁止新领取并取消运行任务，节点确认本地退出后清理该身份全部凭据版本；历史结果保留。authenticated 不等于 Trusted Access/模型访问或账单验证。",
+      "evidence": [
+        "contracts/schemas/v1/sdk-identities.schema.json",
+        "code-audit-server/internal/store/sdk_identities.go",
+        "code-audit-server/internal/httpserver/sdk_identities.go",
+        "code-audit-agent/internal/scanner/sdk_identity.go",
+        "code-audit-scanner/src/runtime/sdk-identity.ts",
+        "code-audit-web/src/components/SDKIdentities.vue",
+        "code-audit-server/internal/httpserver/sdk_identities_pipeline_test.go",
+        "code-audit-web/tests/sdk-identities-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "result.native",
+      "label": "完整原生结果与导出",
+      "api": [
+        "ScanResult",
+        "ScanResult.toJSON",
+        "loadContract",
+        "requireScanFile"
+      ],
+      "status": "integrated",
+      "phase": 1,
+      "notes": "原生 Markdown/SARIF 按已封存引用核验、预览和下载；明确未生成/格式异常；保存 SDK 仓库历史与同源码执行关联，不改人工状态；旧归档保留原入口。",
+      "evidence": [
+        "code-audit-scanner/src/artifact/result-publisher.ts",
+        "code-audit-web/src/components/ExecutionResult.vue",
+        "code-audit-scanner/src/artifact/sdk-native-result.ts",
+        "code-audit-server/internal/store/native_result.go",
+        "code-audit-server/internal/httpserver/sdk_native_pipeline_test.go",
+        "code-audit-web/src/components/SDKNativeResult.vue",
+        "code-audit-web/tests/sdk-native-web-acceptance.mjs"
+      ]
+    },
+    {
+      "id": "publication.linear",
+      "label": "Linear 预检/预览/发布",
+      "api": [
+        "checkScanPublication",
+        "publishScan"
+      ],
+      "status": "planned",
+      "phase": 5,
+      "notes": "Web 预览后明确发布；幂等记录/indeterminate 状态/断连对账；开发验收不写真实 Linear。",
+      "evidence": []
+    },
+    {
+      "id": "publication.custom",
+      "label": "自定义 Findings 服务发布",
+      "api": [
+        "publishScanToCustom"
+      ],
+      "status": "planned",
+      "phase": 5,
+      "notes": "支持 dryRun；只使用已封存且匹配 expectedScanId 的产物，目标凭据与 URL 归连接配置。",
+      "evidence": []
+    },
+    {
+      "id": "deduplication.semantic",
+      "label": "SDK 语义去重",
+      "api": [
+        "deduplicateScan",
+        "deduplicateScanDirectory"
+      ],
+      "status": "planned",
+      "phase": 5,
+      "notes": "与现有按指纹聚合分开；embedding 与模型审查可能计费，保留不确定匹配和可审查的分组依据。",
+      "evidence": []
+    },
+    {
+      "id": "import.github",
+      "label": "GitHub Code Scanning 导入",
+      "api": [
+        "importGitHubCodeScanningAlerts"
+      ],
+      "status": "planned",
+      "phase": 5,
+      "notes": "上游告警作为来源证据保存；不得直接变成已验证/已封存的 SDK finding。",
+      "evidence": []
+    },
+    {
+      "id": "findings.service",
+      "label": "SDK Findings 服务适配",
+      "api": [
+        "@openai/codex-security/server.startFindingsServer",
+        "@openai/codex-security/server.SqliteFindingsStore",
+        "@openai/codex-security/server.OpenAiFindingEmbedder"
+      ],
+      "status": "adapter_required",
+      "phase": 5,
+      "notes": "保留 Go Server/PostgreSQL；实现 SDK Findings HTTP/存储兼容适配或明确独立服务边界，不偷换业务数据库。",
+      "evidence": []
+    },
+    {
+      "id": "runtime.helpers",
+      "label": "配置与运行时辅助导出",
+      "api": [
+        "createSecurity",
+        "DEFAULT_CODEX_CONFIG",
+        "mergedCodexConfig",
+        "writeCodexConfig",
+        "bootstrapPlugin",
+        "bundledPluginRoot",
+        "cleanupSdkDirectory",
+        "createIsolatedHome",
+        "createMarketplace",
+        "extractPluginZip",
+        "importAmbientAuth",
+        "pluginExecutionEnvironment",
+        "pluginMetadata",
+        "prepareOutputDir",
+        "resolveCodexCommand",
+        "resolvePluginPath",
+        "resolvePluginPython",
+        "validateOutputDir",
+        "normalizeRepository",
+        "normalizeTarget",
+        "repositoryRevision",
+        "validateMode"
+      ],
+      "status": "sdk_internal_use",
+      "phase": 0,
+      "notes": "公开低层辅助函数由 Scanner 按需使用，不作为任意文件路径/任意配置写入的 Web 动作；不把 internal 深层导入当稳定 API。",
+      "evidence": [
+        "code-audit-scanner/src/engine/codex-security-engine.ts"
+      ]
+    },
+    {
+      "id": "unsupported.fix",
+      "label": "独立自动修复方法",
+      "api": [
+        "CodexSecurity.fix"
+      ],
+      "status": "not_public",
+      "phase": 6,
+      "notes": "0.1.25 的公开 CodexSecurity 类没有 fix()；插件修复能力不等于公开 SDK 方法，不构造假接口或自动改写源码。",
+      "evidence": []
+    },
+    {
+      "id": "unsupported.resume",
+      "label": "暂停与原会话续扫",
+      "api": [
+        "CodexSecurity.resume"
+      ],
+      "status": "not_public",
+      "phase": 6,
+      "notes": "已核对锁定的 0.1.25 声明、实现、CLI 与插件：没有跨进程续扫入口；workflowId 仅复用已完成扫描，parentScanId 创建新扫描。Web 区分断点续扫不支持、已提交结果恢复入库与确认重新执行；不依赖 CLI 或篡改 SDK 状态。",
+      "evidence": [
+        "deploy/sdk/recovery-baseline.json",
+        "deploy/sdk/recovery-check.mjs",
+        "code-audit-scanner/test/sdk-recovery.test.ts",
+        "docs/SCAN_RECOVERY.md"
+      ]
+    }
+  ],
+  "nonWorkflowExports": {
+    "AuthenticationRequiredError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "BUNDLED_PLUGIN_VERSION": "运行时版本或插件标识；用于构建、诊断和兼容校验，不作为 Web 操作。",
+    "CodexSecurityError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "ConfigurationError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "ContractValidationError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "DeduplicationReviewError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "IncompleteScanError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "InvalidTargetError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "MARKETPLACE_NAME": "运行时版本或插件标识；用于构建、诊断和兼容校验，不作为 Web 操作。",
+    "OutputDirectoryError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "OutputDirectoryNotEmptyError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "OutputInsideProtectedRootError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "PLUGIN_NAME": "运行时版本或插件标识；用于构建、诊断和兼容校验，不作为 Web 操作。",
+    "PluginBootstrapError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "PluginPythonUnavailableError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "ScanCostLimitExceededError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "ScanInterruptedError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
+    "VERSION": "运行时版本或插件标识；用于构建、诊断和兼容校验，不作为 Web 操作。"
+  }
+}

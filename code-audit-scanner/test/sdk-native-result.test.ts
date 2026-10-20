@@ -10,7 +10,7 @@ test('public SDK estimate uses observed usage, preserves zeros and refuses unsup
  const estimate=(model:unknown,usage:unknown)=>sdkUsageEstimate(execution,{turn:{model,usage}});
  assert.equal(estimate('gpt-5.6',{input_tokens:0,output_tokens:0}).estimatedUsd,0);
  const known=estimate('gpt-5.6',{input_tokens:100,cached_input_tokens:20,cache_write_input_tokens:10,output_tokens:5,reasoning_output_tokens:1});
- assert.equal(known.estimatedUsd,0.0005725);assert.equal(known.scope,'returned_turn_usage');assert.equal(known.cacheWriteInputTokens,10);
+ assert.equal(known.estimatedUsd,0.000438);assert.equal(known.scope,'returned_turn_usage');assert.equal(known.cacheWriteInputTokens,10);
  assert.equal(estimate(undefined,{input_tokens:1,output_tokens:1}).status,'missing_model');
  assert.equal(estimate('gpt-5.6',null).status,'missing_usage');
  for(const [model,usage] of [['fixture-unknown',{input_tokens:1,output_tokens:1}],['gpt-5.6',{input_tokens:1,cached_input_tokens:2,output_tokens:1}]]){

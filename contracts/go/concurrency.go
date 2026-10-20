@@ -12,9 +12,12 @@ func NeedsSDKConcurrency(policy ScanPolicy, input *ScanInput, components *Compon
 }
 
 func DescriptionSupportsSDKParameters(version int64) bool {
-	return version == SDKParametersDescriptionVersion || version == SDKConcurrencyDescriptionVersion
+	return version == SDKParametersDescriptionVersion || DescriptionSupportsSDKConcurrency(version)
 }
 
 func DescriptionSupportsSDKIdentity(version int64) bool {
 	return version == SDKIdentityDescriptionVersion || DescriptionSupportsSDKParameters(version)
 }
+
+// Description 13 adds the 0.5.0 result adapter without imposing new concurrency caps.
+func DescriptionSupportsSDKConcurrency(version int64) bool { return version == SDKConcurrencyDescriptionVersion || version == SDKAdapterDescriptionVersion }

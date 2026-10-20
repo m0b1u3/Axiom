@@ -2,7 +2,7 @@
 package control
 
 const MatrixVersion = 1
-const MatrixHash = "7f77589f40907b7d591be79f1a883d4d5f1f004f2a304db3c5cbde705d9cbfb9"
+const MatrixHash = "f2947398419ab74a0f7463deb00be0127af4dd72c40ff02579cbebfdaa2a653c"
 
 var controlAPIs = []int{1, 2, 3, 4}
 var profiles = []Profile{

@@ -10,11 +10,13 @@ const root=fileURLToPath(new URL('../../',import.meta.url));
 const baseline=JSON.parse(await readFile(new URL('./integration.json',import.meta.url),'utf8'));
 test('locked SDK public surface matches the capability inventory without importing a runtime',async()=>{
   const result=await checkSdkIntegration();
-  assert.equal(result.version,'0.1.25');assert.equal(result.capabilityGroups,25);
+  assert.equal(result.version,'0.5.0');assert.equal(result.capabilityGroups,35);
   assert.equal(result.modelCalls,0);assert.equal(result.externalWrites,0);
   assert.ok(result.publicExports.includes('runComponentScans'));
-  assert.ok(result.serverExports.includes('startFindingsServer'));
-  assert.equal(result.counts.not_public,2);
+  assert.ok(!result.serverExports.includes('startFindingsServer'));
+  assert.ok(result.serverExports.includes('SqliteFindingsStore'));
+  assert.ok(result.publicExports.includes('runHostedScan'));
+  assert.equal(result.counts.not_public,3);
 });
 test('SDK upgrades cannot silently keep the previous integration baseline',async()=>{
   const manifest=structuredClone(baseline);manifest.sdk.version='0.1.26';

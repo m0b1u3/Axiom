@@ -378,11 +378,17 @@
         },
         "sdkVersion": {
           "type": "string",
-          "const": "0.1.25"
+          "enum": [
+            "0.1.25",
+            "0.5.0"
+          ]
         },
         "adapterVersion": {
           "type": "integer",
-          "const": 1
+          "enum": [
+            1,
+            2
+          ]
         },
         "completeness": {
           "type": "string",
@@ -444,7 +450,32 @@
         "edges",
         "diagnostics"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "sdkVersion": {
+                "const": "0.5.0"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "adapterVersion": {
+                "const": 2
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "adapterVersion": {
+                "const": 1
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

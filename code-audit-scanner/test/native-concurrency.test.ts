@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import {readFile,mkdtemp,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {runInNewContext} from 'node:vm';
+
 import {runComponentScans} from '@openai/codex-security';
 import {validate} from '@axiom/contracts';
 import {validateScanTask} from '../src/contract/validate-task.js';
@@ -14,13 +14,9 @@ const base:ScanTask={taskId:42,sourcePath:'/fixture-source',outputPath:'/fixture
 
 test('pinned SDK pure validator and all adapter fields agree at native integer boundaries',async()=>{
  const sdkRoot=new URL('../node_modules/@openai/codex-security/',import.meta.url);
- assert.equal(JSON.parse(await readFile(new URL('package.json',sdkRoot),'utf8')).version,'0.1.25');
- const source=await readFile(new URL('dist/api.js',sdkRoot),'utf8');
- // Execute the actual pinned validator, without loading auth or invoking a model.
- const settings=source.slice(source.indexOf('const DEEP_SCAN_SETTINGS = ['),source.indexOf('export class CodexSecurity {'));
- const native=source.slice(source.indexOf('function deepScanOptions(options) {'),source.indexOf('async function prepareDeepScanConfig('));
- assert.match(native,/Number\.isSafeInteger/);
- const check=runInNewContext(settings+'\n'+native+'\ndeepScanOptions',{CodexSecurityError:Error}) as (v:Record<string,unknown>)=>Record<string,unknown>;
+ assert.equal(JSON.parse(await readFile(new URL('package.json',sdkRoot),'utf8')).version,'0.5.0');
+ // Import the pinned pure validator only. It reads no credentials and makes no model calls.
+ const {deepScanOptions:check}=await import(new URL('dist/deep-config.js',sdkRoot).href);
  for(const [sdk,field] of [['workers','workers'],['maxDiscoveryRuns','deepMaxDiscoveryRuns'],['stopAfterNoNew','deepStopAfterNoNew']] as const){
   for(const value of [1,65,1001,Number.MAX_SAFE_INTEGER]){
    assert.equal(check({mode:'deep',[sdk]:value})[sdk],value);
@@ -57,7 +53,7 @@ test('native component scheduler runs nine components concurrently and naturally
   const result=await runComponentScans({repository,components,workers,outputDir:path.join(scratch,'output-'+workers),createSecurity:()=>({
    close:async()=>{},run:async()=>{
     active++;peak=Math.max(peak,active);if(++started===9)release();await barrier;active--;
-    return {manifest:{scan:{id:'fixture-only-'+started}},findings:{findings:[]},coverage:{completeness:'complete'},cost:null} as never;
+    return {manifest:{scan:{id:'fixture-only-'+started,status:'completed'}},findings:{findings:[]},coverage:{completeness:'complete'},cost:null} as never;
    },
   })});
   clearTimeout(timer);assert.equal(peak,9);assert.equal(active,0);assert.equal(result.completed,9);

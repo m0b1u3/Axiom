@@ -1,0 +1,11 @@
+--- a/@openai/codex-security/dist/custom-validation-prompt.js
++++ b/@openai/codex-security/dist/custom-validation-prompt.js
+@@ -6,7 +6,7 @@
+ // Review this adapter when the bundled workflows change. Never silently run
+ // the ordinary validation sequence with a custom-validation request.
+ const SOURCES = {
+-    "references/core-scan.md": "4a96c8685d30a0441510a289effb41172fa685cc3441686a2eddd4041938e171",
++    "references/core-scan.md": "2332532f33e45d522e0825b11cf0649d371be2f09c5fdb6ba109d6fc2fcd5d35",
+     "skills/security-scan/SKILL.md": "5b8f5d7debeca14c6b37e8e7ba737671362b8eb4b7f49e693c99c6bd04bc8fa0",
+     "skills/security-diff-scan/SKILL.md": "0a4c519ad713585876ea7eb0a8af4b59892c86746f4c69851db9ab347b7fad2f",
+ };

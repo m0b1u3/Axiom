@@ -2,6 +2,14 @@
 
 本文件记录可交付行为与兼容边界。版本遵循 SemVer；候选标识不表示已发布或已完成真实模型验收。执行兼容性仍由 [合同矩阵](contracts/COMPATIBILITY.md) 决定，不能只比较版本字符串。
 
+## 未发布 — SDK 0.5.0 隔离候选
+
+- 精确锁定 SDK 0.5.0 / Codex 0.163.0，新增描述 v13 / 结果适配器 2、执行矩阵隔离及 0.1.25 历史读取；禁止自动迁移旧 SDK 私有父状态。
+- 适配无 `coverage.completeness` 的结果与完整覆盖记录、canonical dataflow/reachability/code evidence、Worker discovery/dispatch 和 Token 观察事件；组件 Worker/用量带所属组件。
+- 保留原生定价与费用范围，不将范围基准或未知费用结算为最终总额；继续 Web 对账、失败组件新执行及历史导出。
+- 七项补丁全部重新基于 0.5.0 发布文件制作，保留旧清单和漂移检查；指导文件解析改用新版 Node helper，候选 Agent 镜像增加 Python 运行时。
+- 隔离跨语言、故障、浏览器及 Linux 原生 SDK Mock 验收记录见 [兼容说明](docs/SDK_050_COMPATIBILITY.md)。隔离阶段未切换生产；随后本地 Docker 已部署通过验收的镜像，完成备份恢复核验和 13 项实际 Web 验收，数据库、报告与凭据保持原样，详见 [部署记录](docs/SDK_050_DEPLOYMENT.md)。未执行真实模型、真实 SDK 登录或外部发布。
+
 ## 0.1.0-beta.1 — 发布候选，尚未正式发布
 
 ### 可用能力

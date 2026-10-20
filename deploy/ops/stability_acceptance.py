@@ -151,7 +151,7 @@ networks:
         network = next(iter(agent["NetworkSettings"]["Networks"]))
         assert json.loads(subprocess.check_output(["docker", "network", "inspect", network]))[0]["Internal"]
         assert agent["Config"]["User"] == "axiom" and agent["HostConfig"]["ReadonlyRootfs"]
-        assert stack.output("exec", "-T", "agent", "node", "-p", "require('/opt/axiom/code-audit-scanner/node_modules/@openai/codex-security/package.json').version") == "0.1.25"
+        assert stack.output("exec", "-T", "agent", "node", "-p", "require('/opt/axiom/code-audit-scanner/node_modules/@openai/codex-security/package.json').version") == json.loads((ROOT/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"]
         web = Web(stack); web.login()  # A newly generated synthetic console identity, never a business account.
         model = web.data("POST", "/api/v1/model-configs", {"name":"Fixtures / Mock stability", "provider":"openai", "model":"fixture-stability-model", "apiKey":"fixture-not-a-real-key"})
         web.data("PUT", f"/api/v1/model-configs/{model['id']}/enable", {"enabled":True})
@@ -274,7 +274,7 @@ networks:
             metadata = json.loads(subprocess.check_output(["docker","image","inspect",image["imageId"]]))[0]
             assert metadata["Os"] == "linux" and metadata["Architecture"] == "amd64"
             image.update(os=metadata["Os"], architecture=metadata["Architecture"])
-        report = {"status":"passed", "fixtureOnly":True, "sdk":"0.1.25", "checks":checks,
+        report = {"status":"passed", "fixtureOnly":True, "sdk":json.loads((ROOT/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"], "checks":checks,
                   "profile":{"holdSeconds":seconds,"files":files,"sourceBytes":inventory["bytes"],"archiveBytes":large_path.stat().st_size,"parallel":parallel,"sessionBurstPerTask":burst,"defaultLeaseSeconds":60},
                   "observations":{"holdElapsedSeconds":round(hold_elapsed,2),"leaseExpiryAfterKillSeconds":round(lease_expiry_elapsed,2),"apiBatchP95Seconds":round(statistics.quantiles(latencies,n=20)[18] if len(latencies)>1 else max(latencies),3),"resourceSamples":samples},
                   "host":{"system":platform.system(),"machine":platform.machine(),"docker":json.loads(subprocess.check_output(["docker","info","--format","{{json .}}" ]))["Architecture"]},

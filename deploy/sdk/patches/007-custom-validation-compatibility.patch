@@ -4,8 +4,8 @@
  // Review this adapter when the bundled workflows change. Never silently run
  // the ordinary validation sequence with a custom-validation request.
  const SOURCES = {
--    "references/core-scan.md": "4a96c8685d30a0441510a289effb41172fa685cc3441686a2eddd4041938e171",
-+    "references/core-scan.md": "2332532f33e45d522e0825b11cf0649d371be2f09c5fdb6ba109d6fc2fcd5d35",
-     "skills/security-scan/SKILL.md": "5b8f5d7debeca14c6b37e8e7ba737671362b8eb4b7f49e693c99c6bd04bc8fa0",
-     "skills/security-diff-scan/SKILL.md": "0a4c519ad713585876ea7eb0a8af4b59892c86746f4c69851db9ab347b7fad2f",
+-    "references/core-scan.md": "80f1c5add713d33d8d3a8024269718f3f917ea1ceead121033dab04092565554",
++    "references/core-scan.md": "4e5d7c0b1acace1c7276982d2f9f7a7711fb12adf0a784a4208c14bd624d130b",
+     "skills/security-scan/SKILL.md": "9ca8fc8daed5379190f87fd11d5abba632850802420822a387dd9eb0cfd05a7f",
+     "skills/security-diff-scan/SKILL.md": "b03f6e765219d9166870ff1dd021f7d97f0e544eb52a2307f70601f00f131c22",
  };

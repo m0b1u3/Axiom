@@ -26,8 +26,18 @@ function declarationSurface(sources) {
   }
   function member(type,name,seen=new Set()) {
     if(seen.has(type))return false;seen.add(type);
-    const decl=declarations.get(type);if(!decl)return false;
-    if(decl.members.some(m=>m.name && m.name.getText().replaceAll('"','').replaceAll("'",'')===name))return true;
+    const decl=declarations.get(type);
+    if(decl?.members.some(m=>m.name && m.name.getText().replaceAll('"','').replaceAll("'",'')===name))return true;
+    // 0.5.0 generates ScanSettings from a Zod object; inspect its static type
+    // literal, without importing or evaluating a runtime or allowing arbitrary names.
+    if(type==='ScanSettings'||type==='DeepScanOptions') {
+      const schema=type==='ScanSettings'?'ScanSettingsSchema':'DeepScanSettingsSchema';
+      for(const [filename,source] of sources)if(filename==='dist/scan-settings.d.ts') {
+        const start=source.indexOf('const '+schema+':'),end=source.indexOf('}, z.core.$strict>',start);
+        if(start>=0&&end>start&&new RegExp('^    '+name+':','m').test(source.slice(start,end)))return true;
+      }
+    }
+    if(!decl)return false;
     for(const clause of decl.heritageClauses??[])for(const base of clause.types)if(member(base.expression.getText(),name,seen))return true;
     return false;
   }

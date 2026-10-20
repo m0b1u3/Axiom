@@ -355,12 +355,7 @@ func (s *Store) AttemptResult(ctx context.Context, id int64, attempt int) (Attem
 		if full.Result.Present {
 			r := full.Result.Value
 			v.Result = &r
-			details := map[string]json.RawMessage{}
-			for k, x := range r.Coverage.Details {
-				details[k] = x
-			}
-			details["completeness"], _ = json.Marshal(r.Coverage.Completeness)
-			v.Coverage, _ = json.Marshal(details)
+			v.Coverage = coverageDocument(r.Coverage)
 			for _, f := range r.Findings {
 				v.Findings = append(v.Findings, projectFinding(id, f))
 			}

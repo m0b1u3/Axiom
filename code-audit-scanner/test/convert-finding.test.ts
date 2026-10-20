@@ -84,7 +84,7 @@ test("converts official example finding into business Finding", () => {
   assert.equal(result.cost?.estimatedUsd, 0);
   assert.equal(result.engine.name, "codex-security");
   assert.equal(result.engine.pluginVersion, "0.1.94");
-  assert.equal(result.engine.version, "0.1.25");
+  assert.equal(result.engine.version, "0.5.0");
 });
 
 test("keeps full upstream finding as raw and maps rich attack path", () => {

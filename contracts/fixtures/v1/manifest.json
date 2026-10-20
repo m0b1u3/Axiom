@@ -2566,6 +2566,218 @@
       "file": "description-sdk-concurrency-unverified-sdk.json",
       "valid": false,
       "code": "invalid_contract"
+    },
+    {
+      "id": "evidence050-facts",
+      "file": "evidence050-facts.json",
+      "kind": "FindingEvidence",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "evidence050-graph",
+      "file": "evidence050-graph.json",
+      "kind": "EvidenceGraph",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "scanner-description-v13",
+      "file": "scanner-description-v13.json",
+      "kind": "ScannerDescriptionV13",
+      "valid": true
+    },
+    {
+      "id": "sdk050-usage",
+      "file": "sdk050-usage.json",
+      "kind": "SDKUsage",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-usage-event",
+      "file": "sdk050-usage-event.json",
+      "kind": "ScanEventV2",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-usage-invalid-price",
+      "file": "sdk050-usage-invalid-price.json",
+      "kind": "SDKUsage",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-usage-invalid-unsafe",
+      "file": "sdk050-usage-invalid-unsafe.json",
+      "kind": "SDKUsage",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-usage-invalid-sdk",
+      "file": "sdk050-usage-invalid-sdk.json",
+      "kind": "SDKUsage",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-usage-invalid-negative",
+      "file": "sdk050-usage-invalid-negative.json",
+      "kind": "SDKUsage",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-usage-event-foreign",
+      "file": "sdk050-usage-event-foreign.json",
+      "kind": "ScanEventV2",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-progress-usage",
+      "file": "sdk050-progress-usage.json",
+      "kind": "ProgressSnapshotV2",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-progress-foreign-usage",
+      "file": "sdk050-progress-foreign-usage.json",
+      "kind": "ProgressSnapshotV2",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-native-result",
+      "file": "sdk050-native-result.json",
+      "kind": "SDKNativeResult",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-evidence-wrong-adapter",
+      "file": "sdk050-evidence-wrong-adapter.json",
+      "kind": "FindingEvidence",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-evidence-unknown-sdk",
+      "file": "sdk050-evidence-unknown-sdk.json",
+      "kind": "FindingEvidence",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-description-wrong-sdk",
+      "file": "sdk050-description-wrong-sdk.json",
+      "kind": "ScannerDescriptionV13",
+      "valid": false
+    },
+    {
+      "id": "sdk050-native-mixed-sdk",
+      "kind": "SDKNativeResult",
+      "file": "sdk050-native-mixed-sdk.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-component-usage",
+      "kind": "SDKUsage",
+      "file": "sdk050-component-usage.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-component-invalid-index",
+      "kind": "SDKUsage",
+      "file": "sdk050-component-invalid-index.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-estimate-range",
+      "kind": "SDKCostEstimate",
+      "file": "sdk050-estimate-range.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-cache-write-unreported",
+      "kind": "SDKUsage",
+      "file": "sdk050-cache-write-unreported.json",
+      "valid": true,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "sdk050-cache-write-false-zero",
+      "kind": "SDKUsage",
+      "file": "sdk050-cache-write-false-zero.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "42",
+        "attempt": 2
+      }
     }
   ]
 }

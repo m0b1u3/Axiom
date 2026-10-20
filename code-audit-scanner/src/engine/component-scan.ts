@@ -1,3 +1,5 @@
+import {ACTIVE_SDK_VERSION} from '../runtime/sdk-version.js';
+import {settledSDKCost} from '../runtime/sdk-cost.js';
 import {sdkScanInputOptions} from '../contract/sdk-scan-input.js';
 import {selectedSDKAuth} from "../runtime/sdk-identity.js";
 import {CodexSecurity,runComponentScans,VERSION,type ComponentScanOptions,type ComponentScanResult as NativeSummary,type ScanResult as NativeResult} from '@openai/codex-security';
@@ -53,7 +55,7 @@ export async function runComponentAudit(task:ScanTask,signal:AbortSignal,deps:De
  const snapshot=(message:string,index?:number)=>{
   state.observedAt=new Date().toISOString();state.reservedMicros=componentReserved(receipts);state.observedMicros=receipts.reduce((n,r)=>n+(r.observedMicros??0),0);
   if(!Number.isSafeInteger(state.observedMicros))throw new Error('组件累计费用超过合同容量');
-  const frozen=structuredClone(state);queue(async()=>{await sink.componentState(frozen,message,index);await sink.cost({estimatedUsd:frozen.observedMicros/1e6});});
+  const frozen=structuredClone(state);queue(async()=>{await sink.componentState(frozen,message,index);await sink.cost({estimatedUsd:frozen.matching.costState==='known'&&frozen.components.every(r=>r.finalMicros!==null)?frozen.observedMicros/1e6:null});});
  };
  const receipt=(local:string)=>{const index=Number(local.replace(/^component-/,''))-1,r=receipts[index];if(!r||!/^component-[1-9][0-9]*$/.test(local))throw new Error('SDK 返回了未知组件身份');return r};
  const observed=(row:ComponentScanReceipt,amount:unknown)=>{const n=componentCostMicros(amount);if(n!==null)row.observedMicros=Math.max(row.observedMicros??0,n);if((row.observedMicros??0)>row.allocatedMicros){row.error=contractError('budget_exceeded','组件费用估算超过预留额度，已停止继续派发。');controller.abort(new Error(row.error.message))}};
@@ -84,7 +86,7 @@ export async function runComponentAudit(task:ScanTask,signal:AbortSignal,deps:De
      await mkdir(path.dirname(source),{recursive:true,mode:0o700});await cp(repository,source,{recursive:true,errorOnExist:true,force:false,dereference:false});roots[source]='$COMPONENT_SOURCE';
      if(await frozenTreeHash(source,combined)!==version.source.contentHash)throw new Error('组件独立源码副本摘要不匹配');
      called=true;
-     const native=await security.run(source,{...options,maxCostUsd:componentLimitUSD(row.allocatedMicros),signal:combined});
+     const native=await security.run(source,{...options,maxCostUsd:componentLimitUSD(row.allocatedMicros),signal:combined,onWorkerEvent:value=>{queue(()=>sink.workerObserved({...value,componentIndex:row.index}));}});
      const json=safe(native.toJSON()) as Record<string,unknown>;
      const bytes=Buffer.from(JSON.stringify(json)+'\n'),relative=`raw/codex-security/component-${row.index+1}.json`;
      await writeFile(path.join(task.outputPath,relative),bytes,{mode:0o600});
@@ -92,12 +94,13 @@ export async function runComponentAudit(task:ScanTask,signal:AbortSignal,deps:De
      if(await frozenTreeHash(source,signal)!==version.source.contentHash)throw new Error('SDK 改写了组件源码；原始结果保留，不能绑定为冻结源码证据');
      if(typeof native.manifest.scan.id!=='string'||!native.manifest.scan.id)throw new Error('SDK 组件结果缺少 Scan ID');
      verified=true;row.scanId=native.manifest.scan.id;row.resultArtifact={kind:'engine_raw',relativePath:relative,sizeBytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};
-     observed(row,native.cost?.estimatedUsd);row.finalMicros=componentCostMicros(native.cost?.estimatedUsd);
+     observed(row,native.cost?.estimatedUsd);row.finalMicros=componentCostMicros(settledSDKCost(native.cost));
      const converted=convertCodexResult(task,native,{startedAt,finishedAt:new Date().toISOString(),rawArtifactDir:'raw/codex-security',normalizedResultPath:'normalized/result.json',sdkSnapshot:json});
      const binding:ComponentFindingBinding={schemaVersion:1,execution,planId:version.planId,version:version.version,versionSha256:version.sha256,source:version.source,componentIndex:row.index,scanId:row.scanId,resultArtifact:row.resultArtifact};validate('ComponentFindingBinding',binding,execution);
      for(const finding of converted.findings){finding.fingerprint='axiom/component/v1:'+createHash('sha256').update(`${row.index}\0${finding.fingerprint}`).digest('hex');finding.extensions={...object(finding.extensions??{}),axiomComponent:object(binding)};result.findings.push(finding)}
      row.findingCount=converted.findings.length;
-     row.status=native.coverage.completeness==='complete'?'completed':'partial';
+     // Execution completion is separate from coverage gaps in 0.5.0.
+     row.status=converted.status==='completed'?'completed':'partial';
      if(row.finalMicros===null)controller.abort(new Error('组件终值费用未知，已停止继续派发，需在 Web 核对。'));
      return native;
     }catch(error){row.status=signal.aborted?'canceled':'failed';row.error=contractError(signal.aborted?'canceled':'unknown',String(safe(error instanceof Error?error.message:String(error))).slice(0,16000));if(!called){row.finalMicros=0;row.observedMicros=0}throw error}
@@ -111,12 +114,13 @@ export async function runComponentAudit(task:ScanTask,signal:AbortSignal,deps:De
     const row=receipt(event.componentId),name=version.document.components[row.index]!.name;
     if(event.type==='cost')observed(row,event.value.estimatedUsd);
     if(event.type==='progress')row.phase=String(safe(event.value.phase)).slice(0,256);
-    if(event.type==='activity'){row.activity=String(safe(event.value.description)).slice(0,512);queue(()=>sink.activity({kind:event.value.kind,status:event.value.status,description:`${name}：${String(safe(event.value.description))}`,id:`component-${row.index+1}:${event.value.id}`,paths:event.value.paths.map(p=>String(safe(p))),...(event.value.worker!==undefined?{worker:{index:event.value.worker}}:{})}))}
-    if(event.type==='session'){journal.record({...event.value,event:object({...event.value.event,axiomComponentIndex:row.index})});queue(()=>sink.session(event.value))}
+    if(event.type==='activity'){row.activity=String(safe(event.value.description)).slice(0,512);queue(()=>sink.activity({kind:event.value.kind,status:event.value.status,description:`${name}：${String(safe(event.value.description))}`,id:`component-${row.index+1}:${event.value.id}`,paths:event.value.paths.map(p=>String(safe(p))),...(event.value.worker!==undefined?{worker:{index:event.value.worker,componentIndex:row.index}}:{})}))}
+    if(event.type==='session'){journal.record({...event.value,event:object({...event.value.event,axiomComponentIndex:row.index})});queue(()=>sink.session({...event.value,componentIndex:row.index}))}
     if(event.type==='warning')queue(()=>sink.warning(`${name}：${String(safe(event.value))}`));
     if(event.type==='workers')queue(()=>sink.workerStatus(event.value));
+    if(event.type==='usage')queue(()=>sink.usage({...event.value},row.index));
     snapshot(`${name} · ${event.type}`,row.index);
-   },onDeduplicationStarted:()=>{state.phase='matching';state.matching={status:'running',costState:'unknown',reason:'SDK 原生跨组件匹配可能调用模型；0.1.25 无费用回调或上限，费用未知。',native:null};snapshot('跨组件匹配；匹配范围为本次执行所选组件，费用未知')},onComplete:value=>{summary=value}
+   },onDeduplicationStarted:()=>{state.phase='matching';state.matching={status:'running',costState:'unknown',reason:'SDK 原生跨组件匹配可能调用模型；0.5.0 无费用回调或上限，费用未知。',native:null};snapshot('跨组件匹配；匹配范围为本次执行所选组件，费用未知')},onComplete:value=>{summary=value}
   });});
   if(await frozenTreeHash(task.sourcePath,signal)!==version.source.contentHash)throw new Error('父执行源码已变化，无法确认结果来源');
  }catch(error){
@@ -124,7 +128,7 @@ export async function runComponentAudit(task:ScanTask,signal:AbortSignal,deps:De
   result.error={code:signal.aborted?'canceled':'unknown',message:String(safe(error instanceof Error?error.message:String(error))).slice(0,16000)||'组件审计未完成'};
  }finally{try{await shim?.close()}catch{queue(()=>sink.warning('模型连接关闭失败；保留当前组件结果。'))}}
  for(const row of receipts)if(row.status==='pending'||row.status==='running'){const pending=row.status==='pending';row.status=signal.aborted?'canceled':'failed';row.error??=contractError(signal.aborted?'canceled':'incomplete','组件未完成；重新执行会创建新的 SDK 会话。');if(pending){row.finalMicros=0;row.observedMicros=0}}
- if(summary?.deduplication&&state.matching.status!=='not_started'){state.matching.status=summary.deduplication.status;state.matching.native=object(safe(summary.deduplication));if(summary.deduplication.status==='incomplete')state.matching.reason=('跨组件匹配未完成：'+String(safe(summary.deduplication.error??'SDK 未提供原因'))+'；费用未知。').slice(0,2048)}
+ if(summary?.deduplication&&state.matching.status!=='not_started'){state.matching.status=summary.deduplication.status==='completed'?'completed':'incomplete';state.matching.native=object(safe(summary.deduplication));if(summary.deduplication.status!=='completed')state.matching.reason=('跨组件匹配未完成：'+String(safe(summary.deduplication.error??'SDK 未提供原因'))+'；费用未知。').slice(0,2048)}
  else if(state.matching.status==='running')state.matching.status='incomplete';
  let native:JsonObject|null=summary?object(safe(summary)):null;
  // This file retains match/uncertainty/related provenance, including merged sources.
@@ -132,7 +136,7 @@ export async function runComponentAudit(task:ScanTask,signal:AbortSignal,deps:De
  if(result.status==='completed'&&receipts.some(r=>r.status!=='completed'))result.status='partial';
  if(state.matching.status==='incomplete')result.status=result.status==='completed'?'partial':result.status;
  state.phase='finished';snapshot('本次组件执行结束，结果与费用证据已保留');await writes;if(writeError)throw writeError;
- const outcome:ComponentScanResult={schemaVersion:1,execution,sdkVersion:'0.1.25',request,snapshot:state,native,error:result.error?contractError(result.error.code,result.error.message):null};validate('ComponentScanResult',outcome,execution);result.componentScan=outcome;
+ const outcome:ComponentScanResult={schemaVersion:1,execution,sdkVersion:ACTIVE_SDK_VERSION,request,snapshot:state,native,error:result.error?contractError(result.error.code,result.error.message):null};validate('ComponentScanResult',outcome,execution);result.componentScan=outcome;
  const known=state.matching.costState==='known'&&receipts.every(r=>r.finalMicros!==null);
  if(known)result.cost={estimatedUsd:state.observedMicros/1e6};
  result.lastObservedCost={estimatedUsd:state.observedMicros/1e6,scope:'component_scans_only',matchingCost:state.matching.costState};

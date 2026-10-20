@@ -15,15 +15,22 @@ export function sdkDiagnosticsView(raw:unknown,execution:ExecutionRef):{value:SD
   return {value:v,invalid:false};
 }
 export function sdkCostEstimateView(raw:unknown,execution:ExecutionRef):SDKCostEstimate|null{
-  if(!object(raw)||raw.schemaVersion!==1||raw.sdkVersion!=='0.1.25'||!same(raw.execution,execution)||raw.method!=='estimateScanCost'||raw.scope!=='returned_turn_usage'||raw.currency!=='USD'||raw.isEstimate!==true||!['estimated','missing_model','missing_usage','unsupported_model_or_usage','unavailable'].includes(String(raw.status)))return null;
+  if(!object(raw)||raw.schemaVersion!==1||!['0.1.25','0.5.0'].includes(String(raw.sdkVersion))||!same(raw.execution,execution)||raw.method!=='estimateScanCost'||raw.scope!=='returned_turn_usage'||raw.currency!=='USD'||raw.isEstimate!==true||!['estimated','missing_model','missing_usage','unsupported_model_or_usage','unavailable'].includes(String(raw.status)))return null;
   if((raw.model!==null&&typeof raw.model!=='string')||(raw.reason!==null&&typeof raw.reason!=='string')||!Object.hasOwn(raw,'usage'))return null;
   if(['inputTokens','cachedInputTokens','cacheWriteInputTokens','outputTokens'].some(k=>raw[k]!==null&&!count(raw[k])))return null;
   if(raw.status==='estimated'?(typeof raw.estimatedUsd!=='number'||!Number.isFinite(raw.estimatedUsd)||raw.estimatedUsd<0):raw.estimatedUsd!==null)return null;
+  if(raw.nativeEstimate!==undefined&&(!object(raw.nativeEstimate)||(raw.nativeEstimate.estimatedUsdRange!==undefined&&!sdkEstimateRange(raw))))return null;
   return raw as unknown as SDKCostEstimate;
+}
+export function sdkEstimateRange(raw:unknown):{minimum:number;maximum:number|null}|null{
+ if(!object(raw)||!object(raw.nativeEstimate)||!object(raw.nativeEstimate.estimatedUsdRange))return null;
+ const r=raw.nativeEstimate.estimatedUsdRange;
+ if(typeof r.min!=='number'||!Number.isFinite(r.min)||r.min<0||(r.max!==null&&(typeof r.max!=='number'||!Number.isFinite(r.max)||r.max<r.min)))return null;
+ return {minimum:r.min,maximum:r.max as number|null};
 }
 export function sdkNativeView(raw:unknown,execution:ExecutionRef,artifacts:ArtifactRef[]):{value:SDKNativeResult|null;invalid:boolean}{
   const bad={value:null,invalid:true};if(raw===undefined)return {value:null,invalid:false};
-  if(!object(raw)||raw.schemaVersion!==1||raw.sdkVersion!=='0.1.25'||!same(raw.execution,execution)||!object(raw.reports)||!object(raw.repositoryHistory))return bad;
+  if(!object(raw)||raw.schemaVersion!==1||!['0.1.25','0.5.0'].includes(String(raw.sdkVersion))||!same(raw.execution,execution)||!object(raw.reports)||!object(raw.repositoryHistory))return bad;
   if((raw.scanId!==null&&typeof raw.scanId!=='string')||(raw.targetId!==null&&typeof raw.targetId!=='string')||typeof raw.observedAt!=='string'||!Number.isFinite(Date.parse(raw.observedAt)))return bad;
   const matches=(v:unknown)=>object(v)&&artifacts.some(a=>a.kind===v.kind&&a.relativePath===v.relativePath&&a.sizeBytes===v.sizeBytes&&a.sha256===v.sha256);
   for(const format of ['markdown','sarif']){
@@ -37,7 +44,7 @@ export function sdkNativeView(raw:unknown,execution:ExecutionRef,artifacts:Artif
     if(!object(row)||['findingId','occurrenceId','scanId','targetId','title','summary'].some(k=>typeof row[k]!=='string')||!object(row.severity)||!['open','closed'].includes(String(row.status))||typeof row.confirmedInLatestScan!=='boolean'||(row.knownSince!==null&&typeof row.knownSince!=='string'))return bad;
     if(['knownScanIds','matchedFindingIds'].some(k=>row[k]!==null&&(!Array.isArray(row[k])||(row[k] as unknown[]).some(v=>typeof v!=='string'))))return bad;
   }
-  if(!sdkCostEstimateView(raw.usageEstimate,execution)||!sdkDiagnosticsView(raw.diagnostics,execution).value)return bad;
+  if(!sdkCostEstimateView(raw.usageEstimate,execution)||!object(raw.usageEstimate)||raw.usageEstimate.sdkVersion!==raw.sdkVersion||!sdkDiagnosticsView(raw.diagnostics,execution).value)return bad;
   if(raw.diagnosticJournal!==null&&!matches(raw.diagnosticJournal))return bad;
   if(raw.diagnosticJournalError!==null&&typeof raw.diagnosticJournalError!=='string')return bad;
   return {value:raw as unknown as SDKNativeResult,invalid:false};

@@ -50,6 +50,18 @@ class SourceDeliveryGuards(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "tree differs"):
             verify(self.base/"export")
 
+    def test_only_reviewed_legacy_sdk_replacements_survive_export(self):
+        retained = "deploy/sdk/legacy/0.1.25/overrides/@openai/codex-security/dist/config.js"
+        self.put(retained, "// reviewed legacy source\n")
+        for path in ("deploy/sdk/legacy/0.1.25/dist/output.js",
+                     "deploy/sdk/legacy/unreviewed/overrides/dist/config.js",
+                     "deploy/sdk/legacy/0.1.25/overrides/auth.json",
+                     "deploy/sdk/legacy/0.1.25/overrides/dist/private.key"):
+            self.put(path, "private fixture")
+        data = export(self.root, self.base/"export")
+        self.assertEqual({item["path"] for item in data["files"]}, {"VERSION", "README.md", retained})
+        verify(self.base/"export")
+
     def test_identity_credentials_browser_state_and_database_sidecars_are_excluded(self):
         for name in [".sdk-identities/agent/identity/credential", "state/.sdk-identities/private.json",
                      ".playwright-cli/page.yml", "auth.json", ".npmrc", ".netrc", "id_rsa", "id_ed25519",

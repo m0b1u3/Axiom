@@ -102,7 +102,7 @@ onUnmounted(()=>{generation++;planGeneration++;sourceGeneration++;versionGenerat
      </div>
      <button v-if="view.result" type="button" class="raw-link" :aria-expanded="rawOpen" @click="rawOpen=!rawOpen">{{rawOpen?'收起':'查看'}}原始规划与校验结果</button><pre v-if="rawOpen" class="raw-result mono">{{JSON.stringify(view.result,null,2)}}</pre>
     </section>
-    <section class="plan-section" aria-label="SDK 自动规划建议"><h3>SDK 自动规划建议</h3><p class="plan-note">生成建议会调用模型。SDK 0.1.25 的 planComponents 没有费用回调或费用上限；费用保持未知。建议须人工采用、审阅并重新校验后才能冻结。</p>
+    <section class="plan-section" aria-label="SDK 自动规划建议"><h3>SDK 自动规划建议</h3><p class="plan-note">生成建议会调用模型。SDK 的 planComponents 没有费用回调或费用上限；费用保持未知。建议须人工采用、审阅并重新校验后才能冻结。</p>
      <p v-if="modelError" role="alert">模型配置读取失败：{{modelError}}<Button variant="ghost" @click="loadModels">重读模型配置</Button></p>
      <label for="component-model">规划模型</label><Select id="component-model" aria-label="规划模型" v-model="modelId" :options="models.map(m=>({value:String(m.id),label:m.name+' · '+m.model}))" placeholder="选择规划模型" :disabled="!canOperate||!!action||inFlight"/>
      <label class="cost-ack"><input v-model="acknowledge" type="checkbox" :disabled="!canOperate||!!action||inFlight"/>我知悉自动规划会调用模型，费用未知且不受扫描预算上限控制</label>

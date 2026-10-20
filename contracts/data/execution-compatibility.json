@@ -121,5 +121,10 @@
       "agent-and-scanner",
       "web"
     ]
-  }
+  },
+  "sdkResultAdapters": {
+    "0.1.25": 1,
+    "0.5.0": 2
+  },
+  "activeSDK": "0.5.0"
 }

@@ -37,8 +37,11 @@ def excluded(relative):
         return True
     if "data" in parts and parts[:2] != ("contracts", "data"):
         return True
-    # SDK replacement dist files are reviewed source, not generated output.
-    if "dist" in parts and parts[:3] != ("deploy", "sdk", "overrides"):
+    # Active and explicitly retained SDK replacement dist files are reviewed
+    # source. Other dist directories remain generated output.
+    sdk_override = (parts[:3] == ("deploy", "sdk", "overrides") or
+                    parts[:5] == ("deploy", "sdk", "legacy", "0.1.25", "overrides"))
+    if "dist" in parts and not sdk_override:
         return True
     name = relative.name
     if name in {".env.example", ".env.production.example"}:

@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 2,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "revision": 1,
+  "phase": "unknown",
+  "source": "engine_callback",
+  "observedAt": "2026-10-13T00:00:00Z",
+  "reportedAt": null,
+  "files": {
+    "completed": null,
+    "total": 1,
+    "unit": "files",
+    "basis": "reported"
+  },
+  "phaseCounts": null,
+  "deep": null,
+  "cost": null,
+  "extensions": {
+    "fixtureOnly": true,
+    "future": {
+      "value": null,
+      "flags": [
+        false,
+        0,
+        ""
+      ]
+    },
+    "sdkUsage": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "42",
+        "attempt": 2
+      },
+      "sdkVersion": "0.5.0",
+      "observedAt": "2026-10-20T01:00:00Z",
+      "source": "sdk_on_usage",
+      "measurement": "observed_tokens",
+      "inputTokens": 123,
+      "cachedInputTokens": 20,
+      "cacheWriteInputTokens": null,
+      "outputTokens": 0,
+      "reasoningOutputTokens": 0,
+      "totalTokens": 123
+    }
+  },
+  "rawPhase": "fixture-native-phase",
+  "workers": [],
+  "workerStatus": null,
+  "activity": null,
+  "reconnect": null,
+  "error": null
+}

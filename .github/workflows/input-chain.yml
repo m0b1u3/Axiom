@@ -74,7 +74,7 @@ jobs:
         working-directory: contracts
       - run: npm ci --no-audit --no-fund
         working-directory: code-audit-scanner
-      - run: npm run verify:sdk-integration && npm run test:sdk-integration
+      - run: npm run verify:sdk-integration && npm run test:sdk-integration && npm run test:sdk-patches
         working-directory: code-audit-scanner
       - run: npm run build
         working-directory: code-audit-scanner

@@ -65,7 +65,12 @@ export function validate<K extends ContractKind>(kind: K,value: unknown,expected
   if(kind==='SDKNativeResult'){
     validate('SDKCostEstimate',object['usageEstimate'],execution as ExecutionRef);
     validate('SDKDiagnostics',object['diagnostics'],execution as ExecutionRef);
+    if((object['usageEstimate'] as Record<string,unknown>)['sdkVersion']!==object['sdkVersion'])throw new ContractValidationError('identity_mismatch',kind);
   }
+  if(kind==='ProgressSnapshotV2'&&isObject(object['extensions'])&&object['extensions']['sdkUsage']!==undefined){
+    validate('SDKUsage',object['extensions']['sdkUsage'],execution as ExecutionRef);
+  }
+  if(kind==='ScanEventV2'&&object['type']==='scan.usage')validate('SDKUsage',object['data'],execution as ExecutionRef);
   if(kind==='SDKDiagnostics'){
     const value=object as unknown as ContractTypes['SDKDiagnostics'],total=value.warningCount+value.observerErrorCount;
     if(!Number.isSafeInteger(total)||value.omittedCount+value.entries.length!==total)throw new ContractValidationError('invalid_contract',kind);

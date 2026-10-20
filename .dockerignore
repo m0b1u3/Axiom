@@ -7,6 +7,8 @@ release
 **/dist
 !deploy/sdk/overrides/**/dist/
 !deploy/sdk/overrides/**/dist/**
+!deploy/sdk/legacy/0.1.25/overrides/**/dist/
+!deploy/sdk/legacy/0.1.25/overrides/**/dist/**
 **/.dist
 **/data
 **/.sdk-identities

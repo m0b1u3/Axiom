@@ -1,3 +1,4 @@
+import {ACTIVE_SDK_VERSION} from '../runtime/sdk-version.js';
 import {selectedSDKAuth} from "../runtime/sdk-identity.js";
 import {sdkScanTarget} from '../runtime/git-target.js';
 import {mkdir,writeFile,realpath} from 'node:fs/promises';
@@ -28,7 +29,7 @@ export async function runSDKOperation(task:ScanTask,signal:AbortSignal):Promise<
   const sink=new ContractProgressSink(task.outputPath,execution);await sink.init();
   const result:ScanResult={taskId:task.taskId,status:'completed',startedAt,finishedAt:startedAt,engine:{name:'codex-security',version:VERSION},model:{provider:task.provider,model:task.model},findings:[],rawArtifactDir:'raw/codex-security',normalizedResultPath:'normalized/result.json'};
   if(operation.kind==='preflight')result.cost={estimatedUsd:0,inputTokens:0,outputTokens:0};
-  const outcome:SDKOperationResult={schemaVersion:1,execution,kind:operation.kind,sdkVersion:'0.1.25',startedAt,finishedAt:startedAt,cost:operation.kind==='preflight'?{state:'known',estimatedUsd:0,reason:'原生预检只检查本地输入与配置，不调用模型。'}:{state:'unknown',estimatedUsd:null,reason:'SDK 0.1.25 validate 没有公开费用回调或费用上限；本次操作费用未知，不计为零。'},preflight:null,validation:null,error:null};
+  const outcome:SDKOperationResult={schemaVersion:1,execution,kind:operation.kind,sdkVersion:ACTIVE_SDK_VERSION,startedAt,finishedAt:startedAt,cost:operation.kind==='preflight'?{state:'known',estimatedUsd:0,reason:'原生预检只检查本地输入与配置，不调用模型。'}:{state:'unknown',estimatedUsd:null,reason:'SDK 0.5.0 validate 没有公开费用回调或费用上限；本次操作费用未知，不计为零。'},preflight:null,validation:null,error:null};
   let security:CodexSecurity|undefined,shim:Awaited<ReturnType<typeof maybeStartChatShim>>=null;
   try {
     await mkdir(raw,{recursive:true,mode:0o700});

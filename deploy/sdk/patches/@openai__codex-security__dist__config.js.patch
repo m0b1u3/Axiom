@@ -1,17 +1,15 @@
 --- a/@openai/codex-security/dist/config.js
 +++ b/@openai/codex-security/dist/config.js
-@@ -34,10 +34,10 @@
-     features: {
+@@ -41,10 +41,8 @@
+     features: Object.freeze({
          plugins: true,
          goals: true,
--        multi_agent_v2: {
+-        multi_agent_v2: Object.freeze({
 -            enabled: true,
 -            max_concurrent_threads_per_session: 9,
--        },
-+        // AXIOM PATCH: 第三方 Responses provider（DeepSeek）丢弃 MultiAgentV2
-+        // encrypted_content 子代理载荷 → 空 fork。改用 V1（fork_context:false 明文投递，
-+        // issue #36586）。catalog 已带 multi_agent_version:"v1"。
+-        }),
++        // Axiom: retain plaintext fresh-context delegation for compatible providers.
 +        multi_agent: true,
-     },
-     // Named filesystem profiles need an active Windows sandbox backend.
-     windows: {
+     }),
+     // Credential read denials require the elevated Windows sandbox backend.
+     windows: Object.freeze({

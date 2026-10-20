@@ -1,3 +1,4 @@
+import {ACTIVE_SDK_VERSION,type SupportedSDKVersion} from '../runtime/sdk-version.js';
 import {createHash} from 'node:crypto';
 import {validate,type Finding,type FindingEvidence,type EvidenceNode,type EvidenceRelation,type JsonValue} from '@axiom/contracts';
 import type {ScanTask} from '../contract/scan-task.js';
@@ -7,12 +8,12 @@ const text=(v:unknown):string|null=>typeof v==='string'&&v.length>0?v:null;
 const pointerKey=(v:string)=>v.replaceAll('~','~0').replaceAll('/','~1');
 const relative=(v:unknown):v is string=>typeof v==='string'&&v.length>0&&v.length<=4096&&!/^[A-Za-z]:|^[/\\]|\\|\x00/u.test(v)&&!v.split('/').some(p=>p==='..'||p==='.'||p==='');
 
-/** A deterministic adapter for SDK 0.1.25. Text and SDK review statuses are
+/** Versioned adapter for SDK 0.1.25 and 0.5.0. Text and SDK review statuses are
  * claims, never runtime observations. Only explicit evidence IDs form links. */
-export function buildFindingEvidence(f:Finding,task:ScanTask):FindingEvidence {
+export function buildFindingEvidence(f:Finding,task:ScanTask,sdkVersion:SupportedSDKVersion=ACTIVE_SDK_VERSION):FindingEvidence {
  const raw=object(f.raw)?f.raw:null;
  const execution={taskId:String(task.taskId),attempt:task.executionAttempt!};
- const out:FindingEvidence={schemaVersion:1,execution,findingFingerprint:f.fingerprint,sourceContentHash:task.sourceContentHash??null,sdkVersion:'0.1.25',adapterVersion:1,completeness:'complete',nodes:[],edges:[],diagnostics:[]};
+ const out:FindingEvidence={schemaVersion:1,execution,findingFingerprint:f.fingerprint,sourceContentHash:task.sourceContentHash??null,sdkVersion,adapterVersion:sdkVersion==='0.1.25'?1:2,completeness:'complete',nodes:[],edges:[],diagnostics:[]};
  const id=(kind:string,pointer:string)=>createHash('sha256').update(JSON.stringify([execution,f.fingerprint,kind,pointer])).digest('hex');
  function diagnostic(code:string,message:string,pointer:string|null){out.completeness='partial';if(out.diagnostics.length<255)out.diagnostics.push({code,message,sourcePointer:pointer});else if(out.diagnostics.length===255)out.diagnostics.push({code:'diagnostic_limit',message:'更多映射诊断未展开；完整 SDK 对象仍可读取。',sourcePointer:null});}
  function node(kind:EvidenceNode['kind'],label:string|null,pointer:string,extra:Partial<EvidenceNode>={}):EvidenceNode|null{
@@ -58,7 +59,12 @@ export function buildFindingEvidence(f:Finding,task:ScanTask):FindingEvidence {
  }
  function claim(value:unknown,kind:EvidenceNode['kind'],pointer:string,parent:EvidenceNode=root):EvidenceNode|null{
   const label=text(value)??(object(value)?text(value.summary)??text(value.rationale)??text(value.why):null);
-  const n=node(kind,label,pointer);edge(parent,n,'contains',pointer,'SDK 结果中的分析内容。');if(object(value))refs(value,pointer,n??parent);return n;
+  const n=node(kind,label,pointer,object(value)?{code:text(value.code)}:{});edge(parent,n,'contains',pointer,'SDK 结果中的分析内容。');
+  if(object(value)){
+   if(n)refs(value,pointer,n);
+   else if(value.evidenceRefs!==undefined||value.evidence_refs!==undefined)diagnostic('unmapped_claim','SDK 分析对象没有可映射的结论文字；保留引用但未将它附到其他结论。',pointer);
+  }
+  return n;
  }
  function list(value:unknown,kind:EvidenceNode['kind'],pointer:string,parent:EvidenceNode,relation:EvidenceRelation['kind']='contains'){
   if(!Array.isArray(value))return [];
@@ -71,7 +77,7 @@ export function buildFindingEvidence(f:Finding,task:ScanTask):FindingEvidence {
   const path=raw.attackPath??raw.attack_path;const pathKey=raw.attackPath!==undefined?'attackPath':'attack_path';const pp='/raw/'+pathKey;
   if(typeof path==='string'){claim(path,'step',pp);diagnostic('unstructured_path','SDK 只提供路径文字，未将其解释为实际调用或传播链。',pp);}
   else if(object(path)){
-   const pnode=claim(path,'step',pp)??root;refs(path,pp,pnode);
+   const pnode=claim(path,'step',pp)??root;
    for(const key of ['entrypoint','source','sink','impact','likelihood','reachability'])if(path[key]!==undefined)claim(path[key],key==='source'||key==='entrypoint'?'source':key==='sink'?'sink':key==='impact'?'impact':'step',pp+'/'+key,pnode);
    for(const key of ['dataFlow','data_flow','dataflow']){
     const flow=path[key];if(flow===undefined)continue;const fp=pp+'/'+key;
@@ -82,11 +88,17 @@ export function buildFindingEvidence(f:Finding,task:ScanTask):FindingEvidence {
      const steps=list(flow.transformations,'step',fp+'/transformations',flowNode);
      const sequence=[source,...steps,sink].filter((n):n is EvidenceNode=>!!n);
      for(let i=1;i<sequence.length;i++)edge(sequence[i-1]!,sequence[i]!,'describes_next',fp,'SDK 描述的数据流次序；未验证真实调用或传播。');
+     claim(flow.outcome,'impact',fp+'/outcome',flowNode);
     }
    }
    const steps=list(path.steps,'step',pp+'/steps',pnode);
    for(let i=1;i<steps.length;i++)edge(steps[i-1]!,steps[i]!,'describes_next',pp+'/steps','SDK 列出的步骤顺序；不代表真实调用栈。');
    for(const key of ['preconditions','assumptions','controls','limitations','blindspots'])list(path[key],key==='controls'?'control':key==='preconditions'||key==='assumptions'?'assumption':'limitation',pp+'/'+key,pnode);
+   if(object(path.reachability)){
+    const reach=path.reachability,rp=pp+'/reachability';
+    for(const key of ['attacker','entrypoint','source','sink','outcome'])if(reach[key]!==undefined)claim(reach[key],key==='source'||key==='entrypoint'?'source':key==='sink'?'sink':key==='outcome'?'impact':'assumption',rp+'/'+key,pnode);
+    list(reach.preconditions,'assumption',rp+'/preconditions',pnode);
+   }
   }
   if(object(raw.validation)){
    const v=raw.validation;const n=node('validation',text(v.summary)??('SDK 复核：'+(text(v.status)??text(v.disposition)??text(v.result)??'结论未结构化')),'/raw/validation');

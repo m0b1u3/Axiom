@@ -80,7 +80,9 @@ export class CodexSecurity {
         });
       }finally{child.kill('SIGKILL');}
     }
-    const cost=scenario==='empty'?null:{model:'fixture-reported-model',estimatedUsd:1.125,inputTokens:0,cachedInputTokens:0,cacheWriteInputTokens:3,outputTokens:17};
+    const sdk050=process.env.AXIOM_SDK050_FIXTURE==='1';
+    if(sdk050){options.onProgress?.({phase:'discovery'});options.onWorkerStatus?.({kind:'dispatch',phase:'discovery',planned:2,started:1});options.onWorkerEvent?.({kind:'observed',worker:1});options.onUsage?.({input_tokens:123,cached_input_tokens:20,cache_write_input_tokens:0,output_tokens:0,reasoning_output_tokens:0,total_tokens:123});}
+    const cost=(scenario==='empty'||sdk050)?null:{model:'fixture-reported-model',estimatedUsd:1.125,inputTokens:0,cachedInputTokens:0,cacheWriteInputTokens:3,outputTokens:17};
     if(cost)options.onCost?.(cost);
     if(scenario==='observations'||scenario==='observation-cancel'){
       options.onAuthentication?.({method:'api_key',source:'OPENAI_API_KEY',verified:false});
@@ -120,19 +122,22 @@ export class CodexSecurity {
     if(scenario==='progress-io'){await rm(path.join(this.output,'state/progress.json'),{force:true});await mkdir(path.join(this.output,'state/progress.json'));}
     if(process.env.AXIOM_OPERATION_TEST_FINDING_FIELDS==='1')finding.fixtureCredentials={api_key:'fixture-evidence-only',authorization:'Fixture finding header',password:'fixture-reproduction-field'};
     if(scenario==='evidence-chain'||scenario==='git-evidence'){
-      const fixture=JSON.parse(await readFile(new URL('../../fixtures/v1/evidence-source.json',import.meta.url),'utf8'));
+      const fixture=JSON.parse(await readFile(new URL('../../fixtures/v1/'+(sdk050?'evidence050-source.json':'evidence-source.json'),import.meta.url),'utf8'));
       for(const key of Object.keys(finding))delete finding[key];
-      Object.assign(finding,fixture.raw,{fingerprints:{primary:fixture.fingerprint},locations:[{path:'fixture.ts',startLine:3,role:'sink'}],remediation:'Fixtures / Mock：需要独立核实参数边界。'});
+      Object.assign(finding,fixture.raw,{fingerprints:{primary:'fixture:evidence-chain'},locations:[{path:'fixture.ts',startLine:3,role:'sink'}],remediation:'Fixtures / Mock：需要独立核实参数边界。'});
     }
     if(scenario==='git-evidence'){finding.codeEvidence.push({id:'E-base-only',label:'仅存在于 base 的代码',path:'fixture.ts',startLine:2,endLine:2,code:"const query = 'base-only';",explanation:'Fixtures / Mock：不能观察为 HEAD 代码'},{id:'E-deleted',label:'HEAD 已删除文件',path:'deleted.ts',startLine:1,endLine:1,code:'// deleted in HEAD',explanation:'Fixtures / Mock：删除内容只能用作 base 差异上下文'});}
     const result={scanId:'fixture-input',manifest:{scan:{id:'fixture-input',status:scenario==='canceled'?'canceled':'completed',producer:{version:'fixture-plugin-1'}},futureManifest:{retained:true}},
       findings:{findings:['empty','partial-empty'].includes(scenario)?[]:[finding],futureFindings:{retained:true}},coverage:{completeness:scenario==='partial-empty'?'partial':'complete',futureCoverage:{retained:true}},
       cost,turn:{model:'fixture-reported-model',usage:{input_tokens:0,output_tokens:17,cached_input_tokens:0,reasoning_output_tokens:5,total_tokens:17}},repositoryFindings:{fixtureOnly:true},unknownNativeResult:{retained:[null,0,false,'']}};
+    if(sdk050){result.cost={model:'fixture-reported-model',estimatedUsd:1.125,estimatedUsdRange:{min:1.125,max:null,context:'unknown'},inputTokens:123,outputTokens:0};options.onCost?.(result.cost);}
+    if(sdk050)result.coverage={documentType:'codex-security.coverage',schemaVersion:'1.0',surfaces:[],deferred:['Fixtures / Mock 未审查项'],resolvedDeferred:['Fixtures / Mock 已完成审查'],openQuestions:['Fixtures / Mock 未决问题'],fixtureOnly:true};
     if(scenario==='evidence-chain'||scenario==='git-evidence'){
       const second=structuredClone(finding);second.findingId='fixture-evidence-2';second.fingerprints.primary='fixture:evidence-chain-other';second.title='Fixtures / Mock：第二条证据链';result.findings.findings.push(second);
     }
     await mkdir(options.outputDir,{recursive:true});
     await writeFile(path.join(options.outputDir,'report.md'),'Synthetic SDK report. No model called.\n');
+    if(sdk050){result.reportPath=path.join(options.outputDir,'report.md');result.sarifPath=path.join(options.outputDir,'results.sarif');await writeFile(result.sarifPath,JSON.stringify({version:'2.1.0',runs:[],fixtureOnly:true}));}
     if(scenario.startsWith('native-')){
       const job=JSON.parse(await readFile(path.join(this.output,'runtime/job.json'),'utf8'));
       const scanId=`fixture-native-${job.execution.taskId}-${job.execution.attempt}`;

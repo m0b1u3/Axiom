@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "baseSDK": "0.1.25",
+  "candidateSDK": "0.5.0",
+  "patches": [
+    {
+      "path": "@openai/codex-security/dist/config.js",
+      "decision": "rebased",
+      "oldSDK": "0.1.25",
+      "newSDK": "0.5.0",
+      "upstreamSha256": "6aecf274751ffd1b2e9ae7d7af0274c0196c8413d483aed1063e01c5776549c5",
+      "patchedSha256": "1d50c9bd25ff9365fc8b61d9c158a5f1cd2ad6c9c363092cedf4621e54590863",
+      "scope": "Keep the 0.5.0 workflow and permissions; change only provider credential forwarding or V1 delegation compatibility.",
+      "verifiedWithoutModels": true,
+      "realProviderValidation": "not_run"
+    },
+    {
+      "path": "@openai/codex-security/_bundled_plugin/references/core-scan.md",
+      "decision": "rebased",
+      "oldSDK": "0.1.25",
+      "newSDK": "0.5.0",
+      "upstreamSha256": "80f1c5add713d33d8d3a8024269718f3f917ea1ceead121033dab04092565554",
+      "patchedSha256": "4e5d7c0b1acace1c7276982d2f9f7a7711fb12adf0a784a4208c14bd624d130b",
+      "scope": "Keep the 0.5.0 workflow and permissions; change only provider credential forwarding or V1 delegation compatibility.",
+      "verifiedWithoutModels": true,
+      "realProviderValidation": "not_run"
+    },
+    {
+      "path": "@openai/codex-security/_bundled_plugin/references/threat-model.md",
+      "decision": "rebased",
+      "oldSDK": "0.1.25",
+      "newSDK": "0.5.0",
+      "upstreamSha256": "72e69cb5a4d9343e8c828fb74dc75f95c97bbf2c934df269236f597bb4ce7dc3",
+      "patchedSha256": "28a9a20a2bbc043b96709c9a7db6134b8e0bc0b9f990f110e4545c1ceb3fd2e8",
+      "scope": "Keep the 0.5.0 workflow and permissions; change only provider credential forwarding or V1 delegation compatibility.",
+      "verifiedWithoutModels": true,
+      "realProviderValidation": "not_run"
+    },
+    {
+      "path": "@openai/codex-security/_bundled_plugin/skills/fix-finding/SKILL.md",
+      "decision": "rebased",
+      "oldSDK": "0.1.25",
+      "newSDK": "0.5.0",
+      "upstreamSha256": "ba7311f43b2c0742da0d5c6bdb2f0b26601c09cc59747cf8c62a09f8d0bb86d2",
+      "patchedSha256": "5d0f49df5c1ef09cbd1e3280eb0d4949de962e82f168a978a081d75c7659be46",
+      "scope": "Keep the 0.5.0 workflow and permissions; change only provider credential forwarding or V1 delegation compatibility.",
+      "verifiedWithoutModels": true,
+      "realProviderValidation": "not_run"
+    },
+    {
+      "path": "@openai/codex-security/_bundled_plugin/skills/security-scan/references/scan-artifacts-and-ledger.md",
+      "decision": "rebased",
+      "oldSDK": "0.1.25",
+      "newSDK": "0.5.0",
+      "upstreamSha256": "337d2ff1d4a3fbcbee3cc31c18a2f13b9f5576d066c73b41add67f20464a8a4e",
+      "patchedSha256": "6942dbe38db4cfd3005a6e56b638ab37d7dcd5137dc2628607501afc9ef86569",
+      "scope": "Keep the 0.5.0 workflow and permissions; change only provider credential forwarding or V1 delegation compatibility.",
+      "verifiedWithoutModels": true,
+      "realProviderValidation": "not_run"
+    },
+    {
+      "path": "@openai/codex-security/_bundled_plugin/.mcp.json",
+      "decision": "rebased",
+      "oldSDK": "0.1.25",
+      "newSDK": "0.5.0",
+      "upstreamSha256": "18383ceeb91f3a8d794cf8b54d07a2c475c8c6933c649ede678ae8f2dbc1f691",
+      "patchedSha256": "1903eb95280b510b2abe3ea500329ca2abeaebbcc7d6fbc0856ff65053585f72",
+      "scope": "Keep the 0.5.0 workflow and permissions; change only provider credential forwarding or V1 delegation compatibility.",
+      "verifiedWithoutModels": true,
+      "realProviderValidation": "not_run"
+    },
+    {
+      "path": "@openai/codex-security/dist/custom-validation-prompt.js",
+      "decision": "rebased",
+      "oldSDK": "0.1.25",
+      "newSDK": "0.5.0",
+      "upstreamSha256": "e412d4f8d29d0ce9428015c014ffc59d3ba69785552565c057ca5e466d28f98a",
+      "patchedSha256": "4033467beddec085fcd35b689a03d0b8efe7b29f654b324bb2fd9cea9a381424",
+      "scope": "Keep the 0.5.0 workflow and permissions; change only provider credential forwarding or V1 delegation compatibility.",
+      "verifiedWithoutModels": true,
+      "realProviderValidation": "not_run"
+    }
+  ],
+  "legacyBundle": "legacy/0.1.25",
+  "liveDeploymentChanged": false
+}

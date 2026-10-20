@@ -5,6 +5,7 @@ import type { Progress, ScanLogEvent } from '../types';
 import { activityEntry, isImportant, localLogTime, mergeLogEvents, phaseLabel, progressEntries, fileProgressLabel, phaseProgressLabel } from '../utils/scan-log';
 import type {ContractError} from '../contracts';
 import {sdkLifecycleView,authenticationMethods,trustedAccessStates} from '../utils/sdk-lifecycle';
+import {sdkUsageView} from '../utils/sdk-usage';
 import {progressSources} from '../utils/scan-progress';
 import {workerLabel,workerStates} from '../utils/scan-log';
 import Button from './ui/Button.vue';
@@ -22,6 +23,7 @@ const failures=computed(()=>entries.value.filter(e=>e.failed||e.warning).length)
 const visible=computed(()=>entries.value.filter(e=>(filter.value==='all'||filter.value==='issues'?(filter.value==='all'||e.failed||e.warning||e.recovered):isImportant(e))&&e.message.toLowerCase().includes(query.value.toLowerCase().trim())));
 const options=[{value:'important',label:'重要进展'},{value:'all',label:'全部记录'},{value:'issues',label:'异常'}];
 const lifecycle=computed(()=>sdkLifecycleView(props.progress?.snapshot?.extensions?.sdkLifecycle));
+const usage=computed(()=>sdkUsageView(props.progress?.snapshot?.extensions?.sdkUsage,props.progress?.snapshot?.execution));
 const current=computed(()=>props.progress?.snapshot?.activity?{label:props.progress.snapshot.activity.status==='failed'?'最近调用失败':props.progress.snapshot.activity.kind==='reasoning'?'最近推理记录':'最近上报动作',summary:props.progress.snapshot.activity.description}:props.progress?.activity?activityEntry({n:0,timestamp:'',level:'info',kind:'activity',message:props.progress.activity}):null);
 async function scrollLatest(){await nextTick();if(follow.value&&box.value)box.value.scrollTop=box.value.scrollHeight;}
 function onScroll(){const el=box.value;if(el)follow.value=el.scrollHeight-el.scrollTop-el.clientHeight<32;}
@@ -51,8 +53,12 @@ onMounted(()=>void pull());onUnmounted(()=>{disposed=true;clearTimeout(timer);})
  </dl>
  <dl v-if="progress?.snapshot" class="execution-observations">
   <div><dt>观察来源</dt><dd>{{progressSources[progress.snapshot.source]}} · {{localLogTime(progress.snapshot.observedAt)}} · 修订 {{progress.snapshot.revision}}<span v-if="!running">最后归档快照</span><span v-else>观察时间不代表当前仍在执行该动作</span></dd></div>
-  <div v-if="!operationKind"><dt>估算费用</dt><dd>{{progress.snapshot.cost?.estimatedUsd==null?'尚未上报':progress.snapshot.cost.estimatedUsd>0&&progress.snapshot.cost.estimatedUsd<0.0001?'< $0.0001':`$${progress.snapshot.cost.estimatedUsd.toFixed(4)}`}} · 输入 {{progress.snapshot.cost?.inputTokens??'—'}} / 输出 {{progress.snapshot.cost?.outputTokens??'—'}} Token<span v-if="progress.snapshot.cost?.reportedModel">{{progress.snapshot.cost.reportedModel}}</span><span>以 SDK 上报的累计估算为准</span></dd></div>
+  <div v-if="!operationKind"><dt>估算费用</dt><dd>{{progress.snapshot.cost?.estimatedUsd==null?'尚未上报':progress.snapshot.cost.estimatedUsd>0&&progress.snapshot.cost.estimatedUsd<0.0001?'< $0.0001':`$${progress.snapshot.cost.estimatedUsd.toFixed(4)}`}} · 输入 {{progress.snapshot.cost?.inputTokens??'—'}} / 输出 {{progress.snapshot.cost?.outputTokens??'—'}} Token<span v-if="progress.snapshot.cost?.reportedModel">{{progress.snapshot.cost.reportedModel}}</span><span>回调估算不代表最终结算，完整费用依据见归档结果</span></dd></div>
  </dl>
+ <dl v-if="usage.value" class="execution-observations" aria-label="SDK Token 观察">
+  <div><dt>已观测 Token</dt><dd><template v-if="usage.value.componentIndex!==undefined">最近组件 {{usage.value.componentIndex+1}} · </template>输入 {{usage.value.inputTokens??'—'}} / 输出 {{usage.value.outputTokens??'—'}} / 总计 {{usage.value.totalTokens??'—'}}<span>缓存读取 {{usage.value.cachedInputTokens??'—'}} · 缓存写入 {{usage.value.cacheWriteInputTokens??'—'}} · 推理输出 {{usage.value.reasoningOutputTokens??'—'}}</span><span>SDK {{usage.value.sdkVersion}} · {{localLogTime(usage.value.observedAt)}}；Token 观察不代表费用已知或完整结算</span></dd></div>
+ </dl>
+ <div v-if="usage.invalid" class="log-error" role="alert">Token 观察记录不兼容或执行身份不匹配；费用仍以独立估算为准，原始快照可查看。</div>
  <dl v-if="lifecycle.value" class="execution-observations" aria-label="SDK 生命周期">
   <div><dt>认证来源</dt><dd>{{lifecycle.value.authentication?authenticationMethods[lifecycle.value.authentication.method]:'尚未上报'}}<span v-if="lifecycle.value.authentication">来源已识别，访问权限尚未验证</span></dd></div>
   <div><dt>Trusted Access</dt><dd>{{lifecycle.value.trustedAccess===null?'尚未上报':trustedAccessStates[lifecycle.value.trustedAccess]}}<span>与认证来源分别记录</span></dd></div>

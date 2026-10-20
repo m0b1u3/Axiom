@@ -16,8 +16,9 @@ export async function prepareAuditWorkspace(task:ScanTask):Promise<{prompt:strin
  const result=path.join(root,'security-guidance.md');
  try{
   const entry=createRequire(import.meta.url).resolve('@openai/codex-security');
-  const helper=path.resolve(path.dirname(entry),'../_bundled_plugin/scripts/resolve_security_md.py');
-  await exec(process.env['PYTHON']??'python3',[helper,'--repo',task.sourcePath,'--scope',scope,'--out',result],{timeout:15000,maxBuffer:1024*1024});
-  return {restore,ensureTemp,prompt:`预检已由宿主执行 resolve_security_md.py --repo <目标仓库> --scope <审计范围>，结果保存在 ${JSON.stringify(result)}。读取该结果并继续审计，不重复探索 helper 参数。审计范围仍以 SDK scope 为准。临时文件写入 ${JSON.stringify(temp)}；不要写 /tmp，不改目标源码。`};
- }catch{ return {restore,ensureTemp,prompt:`临时文件只写 ${JSON.stringify(temp)}，不要写 /tmp。指导文件预解析未成功，请调用 "$PYTHON" "$CODEX_SECURITY_PLUGIN_ROOT/scripts/resolve_security_md.py" --repo "$CODEX_SECURITY_REPOSITORY" --scope "$CODEX_SECURITY_REPOSITORY" --out <扫描产物目录内的文件>；--scope 不可省略。`};}
+  // 0.5.0 moved this read-only resolver into the bundled Node helper.
+  const helper=path.resolve(path.dirname(entry),'../_bundled_plugin/mcp/helpers.mjs');
+  await exec(process.execPath,[helper,'resolve-security-md','--repo',task.sourcePath,'--scope',scope,'--out',result],{timeout:15000,maxBuffer:1024*1024});
+  return {restore,ensureTemp,prompt:`指导文件已由宿主执行 resolve-security-md --repo <目标仓库> --scope <审计范围> 完成解析，结果保存在 ${JSON.stringify(result)}。这是只读指导文件解析，不代表 SDK 预检或身份验证成功。读取该结果并继续审计。审计范围仍以 SDK scope 为准。临时文件写入 ${JSON.stringify(temp)}；不要写 /tmp，不改目标源码。`};
+ }catch{ return {restore,ensureTemp,prompt:`临时文件只写 ${JSON.stringify(temp)}，不要写 /tmp。指导文件预解析未成功，请按插件 references/security-guidance.md 使用 launch_codex_security_mcp --helper resolve-security-md；必须指定 --repo、--scope 和 --out，保留该解析失败信息。`};}
 }

@@ -166,7 +166,7 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 			return nil, tx.Commit()
 		}
 		runtimeAPI = int(runtime.ControlAPI)
-		limits.SDKConcurrencyCapable = limits.SDKConcurrencyCapable && runtime.ScannerDescriptionVersion != nil && *runtime.ScannerDescriptionVersion == contracts.SDKConcurrencyDescriptionVersion
+		limits.SDKConcurrencyCapable = limits.SDKConcurrencyCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKConcurrency(*runtime.ScannerDescriptionVersion)
 		limits.SDKParametersCapable = limits.SDKParametersCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKParameters(*runtime.ScannerDescriptionVersion)
 		limits.SDKIdentityCapable = limits.SDKIdentityCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKIdentity(*runtime.ScannerDescriptionVersion)
 	}

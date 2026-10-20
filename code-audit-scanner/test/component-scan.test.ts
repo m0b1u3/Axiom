@@ -21,6 +21,7 @@ async function run(t:TestContext,scenario:string){
 test('real pinned component scheduler reserves distinct budgets, binds evidence and preserves matching uncertainty',async t=>{
  const f=await run(t,'normal');assert.equal(f.code,0,f.stderr+JSON.stringify(f.out));assert.equal(f.result.status,'completed');assert.equal(f.result.findings.length,3);assert.equal(f.result.cost,null);assert.equal(f.out.snapshot.matching.costState,'unknown');
  assert.deepEqual(f.out.snapshot.components.map(r=>r.finalMicros),[125000,125000,125000]);assert.equal(f.out.snapshot.observedMicros,375000);assert.equal(f.out.snapshot.reservedMicros,0);
+ const progress=decode('ProgressSnapshotV2',await readFile(path.join(f.output,'state/progress.json')),f.job.execution);assert.equal(progress.cost?.estimatedUsd,null,'unknown matching fees must not become a scalar total');
  const calls=(await readFile(f.capture+'.component-calls','utf8')).trim().split('\n').map(x=>JSON.parse(x));assert.equal(calls.length,3);assert.ok(calls.every(c=>c.options.mode==='standard'&&c.options.maxCostUsd===2));assert.equal(new Set(calls.map(c=>c.source)).size,3);assert.ok(calls.every(c=>c.source!==f.source));
  assert.equal(new Set(f.result.findings.map(x=>x.fingerprint)).size,3);for(const finding of f.result.findings){const binding=decode('ComponentFindingBinding',JSON.stringify(finding.extensions!.axiomComponent),f.job.execution);assert.equal(binding.versionSha256,f.job.componentScan.planVersion.sha256);assert.equal(binding.source.contentHash,f.job.source.contentHash);assert.ok(f.result.artifacts.some(a=>a.sha256===binding.resultArtifact.sha256))}
  assert.match(JSON.stringify(f.out.native),/uncertain|confidence|sources/);assert.equal(await frozenTreeHash(f.source),f.job.source.contentHash);
@@ -30,6 +31,10 @@ test('component failure retains other results and never settles unknown fees as 
 });
 test('unknown component cost stops subsequent dispatch and keeps fees unknown',async t=>{
  const f=await run(t,'unknown');assert.equal(f.result.status,'partial');assert.equal(f.out.snapshot.components[0]!.finalMicros,null);assert.equal(f.result.cost,null);assert.ok(f.out.snapshot.components.some(r=>r.error));assert.equal(f.out.snapshot.reservedMicros,0);
+});
+test('a 0.5 native range does not settle the component baseline as a final fee',async t=>{
+ const f=await run(t,'range');assert.equal(f.result.status,'partial');assert.equal(f.result.cost,null);assert.equal(f.out.snapshot.components[0]!.finalMicros,null);assert.equal(f.out.snapshot.components[0]!.observedMicros,125000);
+ const native=JSON.parse(await readFile(path.join(f.output,'raw/codex-security/component-1.json'),'utf8'));assert.equal(native.cost.estimatedUsdRange.max,null);
 });
 test('SDK private-source mutation cannot become immutable finding evidence',async t=>{
  const f=await run(t,'mutate');assert.equal(f.result.status,'partial');assert.equal(f.out.snapshot.components[0]!.resultArtifact,null);assert.equal(f.out.snapshot.components[0]!.status,'failed');assert.equal(await frozenTreeHash(f.source),f.job.source.contentHash);assert.equal(f.result.findings.some(x=>(x.extensions!.axiomComponent as {componentIndex:number}).componentIndex===0),false);

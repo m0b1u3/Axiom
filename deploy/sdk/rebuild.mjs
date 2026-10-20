@@ -18,6 +18,10 @@ for(const dir of [home,cache,temp])mkdirSync(dir,{recursive:true,mode:0o700});
 const env={PATH:process.env.PATH,HOME:home,TMPDIR:temp,TEMP:temp,LANG:'C.UTF-8',npm_config_cache:cache};
 function run(command,argv,cwd=output){const r=spawnSync(command,argv,{cwd,env,stdio:'inherit'});if(r.error)throw r.error;if(r.status!==0)throw new Error(`${command} failed (${r.status})`);}
 const scanner=path.join(output,'code-audit-scanner');mkdirSync(scanner);
+cpSync(path.join(source,'contracts'),path.join(output,'contracts'),{recursive:true,filter:p=>!p.split(path.sep).includes('node_modules')});
+cpSync(path.join(source,'shared'),path.join(output,'shared'),{recursive:true});
+run('npm',['ci','--ignore-scripts','--no-audit','--no-fund'],path.join(output,'contracts'));
+run('npm',['run','build'],path.join(output,'contracts'));
 for(const name of ['package.json','package-lock.json','tsconfig.json','src','test'])cpSync(path.join(source,'code-audit-scanner',name),path.join(scanner,name),{recursive:true});
 cpSync(path.join(source,'deploy/sdk'),path.join(output,'deploy/sdk'),{recursive:true});
 if(existsSync(path.join(source,'test-fixtures')))cpSync(path.join(source,'test-fixtures'),path.join(output,'test-fixtures'),{recursive:true});

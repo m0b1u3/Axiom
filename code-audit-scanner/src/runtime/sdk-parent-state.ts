@@ -1,3 +1,4 @@
+import {ACTIVE_SDK_VERSION} from './sdk-version.js';
 import {DatabaseSync} from 'node:sqlite';
 import {createHash,randomUUID} from 'node:crypto';
 import {lstat,mkdir,readFile,writeFile,rename,rm,realpath} from 'node:fs/promises';
@@ -15,6 +16,7 @@ export async function restoreSdkParentState(task:ScanTask):Promise<void>{
  const state=task.parentState,id=task.scanInput?.parentScanId;
  if(!id){if(state)throw new Error('Unexpected parent state');return;}
  if(!state)throw new Error('Parent scan requires a frozen SDK workbench state');validate('SDKParentState',state);
+ if(state.sdkVersion!==ACTIVE_SDK_VERSION)throw new Error('Parent SDK state belongs to a different SDK version; historical results remain readable. Create a new scan instead of migrating private state.');
  if(state.scanId!==id||state.sourceHash!==task.sourceContentHash)throw new Error('Parent SDK state differs from the selected scan or source');
  const bytes=Buffer.from(state.data,'base64');if(bytes.length>MAX_STATE_BYTES||hash(bytes)!==state.sha256||bytes.subarray(0,16).toString()!=='SQLite format 3\0')throw new Error('Parent SDK state is invalid or changed');
  const root=await realpath(task.outputPath),directory=task.sdkIdentity?path.resolve(process.env.CODEX_SECURITY_STATE_DIR??''):path.join(root,'runtime/sdk');await mkdir(directory,{recursive:true,mode:0o700});if(await realpath(directory)!==directory)throw new Error('Parent SDK directory must not be a symlink');
@@ -32,7 +34,7 @@ export async function exportSdkParentState(task:ScanTask,scanId:string):Promise<
   const db=new DatabaseSync(source,{readOnly:true});try{db.prepare('VACUUM INTO ?').run(snapshot);}finally{db.close();}
   if((await lstat(snapshot)).size>MAX_STATE_BYTES)return;
   const bytes=await readFile(snapshot),commit=decode('ResultCommit',await readFile(path.join(task.outputPath,'normalized/result.commit.json'),'utf8'));
-  const state:SDKParentState={schemaVersion:1,execution:{taskId:String(task.taskId),attempt:task.executionAttempt},sdkVersion:'0.1.25',scanId,sourceHash:task.sourceContentHash,resultSha256:commit.sha256,sha256:hash(bytes),data:bytes.toString('base64')};validate('SDKParentState',state,state.execution);
+  const state:SDKParentState={schemaVersion:1,execution:{taskId:String(task.taskId),attempt:task.executionAttempt},sdkVersion:ACTIVE_SDK_VERSION,scanId,sourceHash:task.sourceContentHash,resultSha256:commit.sha256,sha256:hash(bytes),data:bytes.toString('base64')};validate('SDKParentState',state,state.execution);
   const file=path.join(task.outputPath,PARENT_STATE_FILE),temp=file+'.tmp';await writeFile(temp,JSON.stringify(state)+'\n',{mode:0o600});await rename(temp,file);
  }finally{await rm(snapshot,{force:true});}
 }

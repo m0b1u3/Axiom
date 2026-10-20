@@ -22,7 +22,7 @@ Use this reference only for diff scans that need auditable candidate coverage or
 
 - When a scan uses subagent-dispatch phases and subagents are available in the current tool set, use subagents for those phases.
 - Explicit invocation of the top-level diff scan authorizes the subagent-dispatch phases described by that workflow.
-- For JSONL worklist phases, spawn no more workers than the runtime's usable slots, wait for their concrete worker ids, validate each result, and then refill available slots. If a spawn is rejected, have the parent complete the unstarted work without narrowing coverage. On v1, spawn self-contained workers with `fork_context: false`; use `interrupt_agent` only to stop a still-running worker before a retry.
+- For JSONL worklist phases, spawn no more workers than the runtime's usable slots, wait for their concrete worker ids, validate each result, and then refill available slots. If a spawn is rejected, have the parent complete the unstarted work without narrowing coverage. On the Axiom V1 runtime, spawn self-contained workers with `fork_context: false`; use `interrupt_agent` only to stop a still-running worker before a retry.
 - Immediately after each delegated file-review, validation, or attack-path dispatch, emit `CODEX_SECURITY_WORKER_STATUS {"phase":"file_review","planned":6,"started":3}` with the actual phase and worker counts, including when no worker starts. Do not include worker ids, paths, prompts, errors, or other fields.
 - File-review-subagent ownership: one file-review subagent owns one `deep_review_input.jsonl` row or one very small tightly coupled shard, max 5 files, and returns full-file receipts plus pre-dedupe finding objects for that assignment.
 - File-review subagents are read-only with respect to the target code under review, but they are allowed and expected to write scan artifacts under the resolved numbered artifact directories, including `<discovery_dir>/work_ledger.jsonl`, raw candidate snippets in `<discovery_dir>/raw_candidates.jsonl`, and per-candidate ledger receipts under `<findings_dir>/<candidate_id>/` when those artifact paths are provided in the prompt.
@@ -55,8 +55,10 @@ The parent agent must reconcile validation and attack-path subagent outputs befo
 
 ## Scoped Deep Review
 
+The legacy ranking helpers have been removed: `make-repo-rank-input`, `select-deep-review-input`, `make-rank-shards`, `validate-rank-shard`, `merge-rank-outputs`, `make-rank-pool-plan`, `validate-rank-worker`, and `validate-rank-pool`. Use `make-repo-scope-input --repo <repo_root> --scopes-file <scopes_json> --out <output_jsonl>` for explicit repository scopes. Diff scans retain `make-diff-rank-input` and `copy-deep-review-input` as shown below, including their existing arguments and worklist formats.
+
 - Use `deep_review_input.jsonl` as the canonical changed-file review worklist for diff scans.
-- For diff-scoped scans, generate `rank_input.jsonl` deterministically from changed source-like files with `<python_command> <plugin_dir>/scripts/generate_rank_input.py make-diff-rank-input --repo <repo_root> --base <base> --mode revisions --head <head> --out <discovery_dir>/rank_input.jsonl` for PR, commit, and branch diffs, or `<python_command> <plugin_dir>/scripts/generate_rank_input.py make-diff-rank-input --repo <repo_root> --base <base> --mode local-patch --out <discovery_dir>/rank_input.jsonl` for a local patch, then copy every row into `deep_review_input.jsonl` with `<python_command> <plugin_dir>/scripts/generate_rank_input.py copy-deep-review-input --rank-input <discovery_dir>/rank_input.jsonl --out <discovery_dir>/deep_review_input.jsonl`.
+- For diff-scoped scans, generate `rank_input.jsonl` deterministically from changed text files regardless of filename, extension, or directory, with `<python_command> <plugin_dir>/scripts/generate_rank_input.py make-diff-rank-input --repo <repo_root> --base <base> --mode revisions --head <head> --out <discovery_dir>/rank_input.jsonl` for PR, commit, and branch diffs, or `<python_command> <plugin_dir>/scripts/generate_rank_input.py make-diff-rank-input --repo <repo_root> --base <base> --mode local-patch --out <discovery_dir>/rank_input.jsonl` for a local patch, then copy every row into `deep_review_input.jsonl` with `<plugin_dir>/scripts/launch_codex_security_mcp --helper copy-deep-review-input --rank-input <discovery_dir>/rank_input.jsonl --out <discovery_dir>/deep_review_input.jsonl`. On Windows, use the [PowerShell copy command](#windows-worklist-copy) below.
 - Diff-scoped scans do not rank or drop changed files before deep review. Every row in diff `rank_input.jsonl` must be copied into `deep_review_input.jsonl` and receive a full-file review receipt.
 - Add directly supporting files required to understand the changed security behavior only when repository evidence shows they are needed; record the add-back reason in the work ledger or per-file result.
 - Deep-review every file selected into `deep_review_input.jsonl`.
@@ -70,6 +72,18 @@ The parent agent must reconcile validation and attack-path subagent outputs befo
   - Record file-level completion, disposition, and a concise evidence note in `<discovery_dir>/work_ledger.jsonl`; do not create a separate per-file findings directory.
   - Append normalized, pre-dedupe candidate objects to `<discovery_dir>/raw_candidates.jsonl` when multiple file-review results are being aggregated or cross-file dedupe is needed.
   - Do not stop until every `deep_review_input.jsonl` row has a completion receipt.
+
+### Windows Worklist Copy
+
+In PowerShell, replace the placeholders inside single quotes with literal paths, doubling any single quote in a path:
+
+```powershell
+$env:worklistPluginRoot = Convert-Path -LiteralPath '<plugin_dir>' -ErrorAction Stop
+$env:worklistDiscoveryDir = Convert-Path -LiteralPath '<discovery_dir>' -ErrorAction Stop
+cmd.exe /d /v:off /s /c '""%worklistPluginRoot%\scripts\launch_codex_security_mcp.cmd" --helper copy-deep-review-input --rank-input "%worklistDiscoveryDir%\rank_input.jsonl" --out "%worklistDiscoveryDir%\deep_review_input.jsonl""'
+```
+
+These variables are temporary values in the calling shell, not application settings. Resolve paths against PowerShell's current location before CMD starts, including when that location is a UNC share. Missing paths stop the invocation with PowerShell's path error. The discovery directory already contains `rank_input.jsonl`; the output file does not need to exist. CMD expands the references once, preserving literal `%` and `!` in the paths.
 
 ## Candidate Finding Coverage
 

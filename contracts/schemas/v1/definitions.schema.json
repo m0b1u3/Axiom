@@ -786,6 +786,11 @@
               "type": "null"
             }
           ]
+        },
+        "componentIndex": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
         }
       },
       "required": [],
@@ -3262,7 +3267,8 @@
         "scan.finished",
         "scan.progress",
         "scan.worker_status",
-        "scan.error"
+        "scan.error",
+        "scan.usage"
       ]
     },
     "ScanEventV2": {
@@ -3406,6 +3412,16 @@
             },
             "data": {
               "$ref": "#/$defs/ContractError"
+            }
+          }
+        },
+        {
+          "properties": {
+            "type": {
+              "const": "scan.usage"
+            },
+            "data": {
+              "$ref": "https://axiom.invalid/contracts/v1/sdk-usage.schema.json#/$defs/SDKUsage"
             }
           }
         }

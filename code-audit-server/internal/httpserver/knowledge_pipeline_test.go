@@ -90,6 +90,7 @@ func runKnowledgeInputAcceptance(t *testing.T, s *store.Store, agent, root, url,
 		t.Fatal("parent selection must expose only metadata", status, string(metadata))
 	}
 	for _, alter := range []func(*contracts.SDKParentState){
+		func(v *contracts.SDKParentState) { v.SDKVersion = "0.1.25" },
 		func(v *contracts.SDKParentState) { v.Execution.Attempt++ },
 		func(v *contracts.SDKParentState) { v.SourceHash = strings.Repeat("0", 64) },
 		func(v *contracts.SDKParentState) { v.ResultSHA256 = strings.Repeat("0", 64) },

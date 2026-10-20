@@ -1,4 +1,5 @@
 import {InvalidSDKResultError} from "../artifact/result-publisher.js";
+import {settledSDKCost} from '../runtime/sdk-cost.js';
 import { createHash } from "node:crypto";
 import { VERSION as CODEX_SECURITY_SDK_VERSION } from "@openai/codex-security";
 import type { ScanTask } from "../contract/scan-task.js";
@@ -52,6 +53,11 @@ export function convertCodexResult(
     rawArtifactDir: meta.rawArtifactDir,
     normalizedResultPath: meta.normalizedResultPath,
   };
+  // 0.5.0 removed completeness. Preserve its full coverage document without
+  // deriving completeness from a completed process or an empty findings list.
+  if (sdkResult.coverage) {
+    result.coverage = { ...sdkResult.coverage } as NonNullable<ScanResult['coverage']>;
+  }
   if (completeness !== undefined) {
     result.coverage = { ...sdkResult.coverage, completeness };
     if (completeness === "partial" && result.status === "completed") result.status = "partial";
@@ -244,7 +250,8 @@ function mapCost(
 ): ScanResult["cost"] | undefined {
   if (!cost) return undefined;
   const mapped: NonNullable<ScanResult["cost"]> = {};
-  if (typeof cost.estimatedUsd === "number") mapped.estimatedUsd = cost.estimatedUsd;
+  const settled=settledSDKCost(cost);
+  if (settled!==null) mapped.estimatedUsd = settled;
   if (typeof cost.inputTokens === "number") mapped.inputTokens = cost.inputTokens;
   if (typeof cost.outputTokens === "number") mapped.outputTokens = cost.outputTokens;
   return Object.keys(mapped).length > 0 ? mapped : undefined;

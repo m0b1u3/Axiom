@@ -177,7 +177,7 @@ func (s *Server) createComponentOperation(w http.ResponseWriter, r *http.Request
 		t.PolicySnapshotJSON = string(raw)
 	case "suggest":
 		if !body.Acknowledge || body.ModelConfigID <= 0 {
-			httputil.Error(w, 400, 40000, "自动规划会调用模型，SDK 0.1.25 不提供费用回调或上限；请先选择模型并确认未知费用")
+			httputil.Error(w, 400, 40000, "自动规划会调用模型，SDK 不提供费用回调或上限；请先选择模型并确认未知费用")
 			return
 		}
 		t, e = s.prepareScan(r, createScanRequest{SDKIdentityID: body.SDKIdentityID, SourceSnapshotID: snapshot, ModelConfigID: body.ModelConfigID, ScanMode: "standard", TimeoutMinutes: 15})

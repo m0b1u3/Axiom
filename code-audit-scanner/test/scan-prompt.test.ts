@@ -11,10 +11,11 @@ test("always requires Simplified Chinese output", () => {
   assert.match(prompt, /漏洞标题必须是中文/);
 });
 
-test("permits required SDK helpers and avoids sliced file reads", () => {
+test("uses the 0.5 guidance helper without requesting removed Python helpers", () => {
   const prompt = buildScanPrompt();
-  assert.match(prompt, /config_preflight\.py/);
-  assert.match(prompt, /resolve_security_md\.py/);
+  assert.match(prompt, /launch_codex_security_mcp --helper resolve-security-md/);
+  assert.doesNotMatch(prompt, /config_preflight\.py|resolve_security_md\.py/);
+  assert.match(prompt, /优先复用宿主/);
   assert.match(prompt, /不要逐行切片阅读/);
 });
 

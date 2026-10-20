@@ -165,6 +165,13 @@ export class CodexSecurityEngine implements AuditEngine {
               observe(sink.workerStatus(status));
               process.stderr.write(`scan-worker ${JSON.stringify(status)}\n`);
             },
+            onWorkerEvent: (event) => {
+              if(sink instanceof ContractProgressSink)observe(sink.workerObserved(event));
+              else observe(sink.activity(`SDK 已记录 Worker ${event.worker}；运行状态尚未提供`));
+            },
+            onUsage: (usage) => {
+              if(sink instanceof ContractProgressSink)observe(sink.usage({...usage}));
+            },
             onCost: (cost) => {
               lastObservedCost={...cost,observedAt:new Date().toISOString(),source:"engine_callback"};
               observe(sink instanceof ContractProgressSink ? sink.cost({...cost}) : sink.cost(cost.estimatedUsd));

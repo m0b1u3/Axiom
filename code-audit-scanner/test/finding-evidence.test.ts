@@ -7,7 +7,7 @@ import type {ScanTask} from '../src/contract/scan-task.js';
 const source=JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/evidence-source.json',import.meta.url),'utf8')) as Finding;
 const task={taskId:'9007199254740993',executionAttempt:2,sourceContentHash:'2'.repeat(64)} as ScanTask;
 test('SDK evidence projection is deterministic, scoped and agrees with shared fixtures',async()=>{
- const a=buildFindingEvidence(source,task),b=buildFindingEvidence(source,task);
+ const a=buildFindingEvidence(source,task,'0.1.25'),b=buildFindingEvidence(source,task,'0.1.25');
  assert.deepEqual(a,b);assert.deepEqual(a,JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/evidence-facts.json',import.meta.url),'utf8')));
  assert.ok([...a.nodes,...a.edges].every(n=>evidencePointer(source,n.sourcePointer).found));
  const next=buildFindingEvidence(source,{...task,executionAttempt:3});assert.notEqual(a.nodes[0]!.id,next.nodes[0]!.id);

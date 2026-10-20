@@ -1,3 +1,4 @@
+import {ACTIVE_SDK_VERSION} from '../runtime/sdk-version.js';
 import {planComponents,normalizeComponentPlan,VERSION} from '@openai/codex-security';
 import {validate,type ComponentPlanningResult,type ComponentPlanDocument} from '@axiom/contracts';
 import {mkdir,writeFile,realpath} from 'node:fs/promises';
@@ -20,7 +21,7 @@ export async function runComponentPlanning(task:ScanTask,signal:AbortSignal):Pro
  const startedAt=new Date().toISOString(),raw=path.join(task.outputPath,'raw/codex-security');await mkdir(raw,{recursive:true,mode:0o700});
  const sink=new ContractProgressSink(task.outputPath,execution);await sink.init();
  const result:ScanResult={taskId:task.taskId,status:'completed',startedAt,finishedAt:startedAt,engine:{name:'codex-security',version:VERSION},model:{provider:task.provider,model:task.model},findings:[],rawArtifactDir:'raw/codex-security',normalizedResultPath:'normalized/result.json'};
- const outcome:ComponentPlanningResult={schemaVersion:1,execution,operation:op,sdkVersion:'0.1.25',document:null,coverage:null,cost:op.kind==='normalize'?{state:'known',estimatedUsd:0}:{state:'unknown',estimatedUsd:null},native:null,error:null};
+ const outcome:ComponentPlanningResult={schemaVersion:1,execution,operation:op,sdkVersion:ACTIVE_SDK_VERSION,document:null,coverage:null,cost:op.kind==='normalize'?{state:'known',estimatedUsd:0}:{state:'unknown',estimatedUsd:null},native:null,error:null};
  if(op.kind==='normalize')result.cost={estimatedUsd:0,inputTokens:0,outputTokens:0};
  let shim:Awaited<ReturnType<typeof maybeStartChatShim>>=null;
  const roots:Record<string,string>={[task.sourcePath]:'$SOURCE',[task.outputPath]:'$OUTPUT'};

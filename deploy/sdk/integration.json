@@ -2,25 +2,30 @@
   "schemaVersion": 1,
   "sdk": {
     "package": "@openai/codex-security",
-    "version": "0.1.25",
+    "version": "0.5.0",
     "upgradePolicy": "separate_compatibility_acceptance",
     "declarations": {
-      "dist/index.d.ts": "703bc813ad80dfd8068ca5eedad6a4a2b4988755b03e3a4887d56e5149c7a40f",
-      "dist/api.d.ts": "3ccb72c340c9578ea8fe4de7d04866a061f63a5a757759adfcdcd2d13106dd99",
-      "dist/config.d.ts": "913efd62dca90c72dc2546eda2cfe2ec26f8fdad900937c769fc60ce530808b5",
-      "dist/targets.d.ts": "59ef09c8ae18f5b3b531bb1fc5366123678d8018bf51be379f45151c51502f0d",
-      "dist/result.d.ts": "4d292fc024f4ce112ecf5c8020fc8e7f69418fbc2e09139cef3b46bcfc78541a",
-      "dist/auth.d.ts": "3d36c43970fc70c6b9f01f37c3bf6c29806a0bbb1b6d879abdd398382ddb0924",
-      "dist/component-plan.d.ts": "86eb823b97250fbe8efb7ee7aac84d57b88261431646c63a7e46854542ea60a1",
-      "dist/component-scan.d.ts": "d025ff4da15c22d61ed7e95d845687cf7191597ded81c6973a44c298302c7faf",
-      "dist/publish.d.ts": "1ae7880a8d36e31898d7be152f27ad2ca9e9bf72c16a59a732fcce097458cc43",
+      "dist/index.d.ts": "750e337abee78517d4a82202bc0defc246bdadb4b167396090bb9a05aec1b3ce",
+      "dist/api.d.ts": "0bc773664af6157516e49a8de49bd56df19327522d04955a4199f17d7696251a",
+      "dist/config.d.ts": "ca7a96b31474131488b383ead5df6409d389094a09bd22246aed93aa01cf9959",
+      "dist/targets.d.ts": "d5e2e2d89be8a674aaa9706a5ce63ff5ddfc20456d3f5c5ef33ae775a62fbbf6",
+      "dist/result.d.ts": "42bd946eb917c5776fae4b024440c42462671e8964a549cf7726d8543fbc03bf",
+      "dist/auth.d.ts": "4ade086921706a92833a924009e6fd68593d7c4bf4eb155200e756bd0ab46923",
+      "dist/component-plan.d.ts": "b7d58dd8208da0df909dfb7b8c4d1b1021d314efa7da894f65fbf6c96d978acf",
+      "dist/component-scan.d.ts": "7fab6c659298ff35942dd2e3c47835cd877270301d929a04002e6f298770f5e4",
+      "dist/publish.d.ts": "0f03eb8137492b14ec59ca8d9d3e0fe9a18067f762d3c9f4b6d0bdeb057553be",
       "dist/custom-publish.d.ts": "ff1d065acfa22d9f5c3dbc8680fa733b0341b18d2d1ea4e9b491c8ecf21655d1",
-      "dist/deduplication/scan.d.ts": "59ede46ad254540496ea790d13446be1eece136e517e142742623896857c00fa",
-      "dist/github.d.ts": "662cd3336dc7e7f8d6b9a87059715f8dbd681f5348e68bb56ed9443730a3c271",
-      "dist/server/api.d.ts": "41b0d32c8d089aa47ed03c9fff239126b08c8cd430deb33f15b670818eb1a9ed",
-      "dist/server/storage.d.ts": "fb5e3a3f0c5877707dd0b86da61a318fa27bcd1e2d25ab3db9412caa4b26bcf5",
-      "dist/cost.d.ts": "59e8b2a587638100d9adcf2991ca11fa60af6f1720126bb4d34e1b38802f3357",
-      "dist/cost-model.d.ts": "3f23a544f9034bd30d20e169e29a9affdcd2f4d8c897974420ffe317977074dc"
+      "dist/deduplication/scan.d.ts": "e58e7774e053c92c667a8c07b770e7efed8b2b043a2beed0aa98b7d60f410bf9",
+      "dist/github.d.ts": "bdbda405741938cb0f7341b7d0be39f0181c526614a422b32bf4559458a19626",
+      "dist/server/api.d.ts": "37b212887552e52b8e3b0844244621930ede6ba4abd56858be61827605186807",
+      "dist/server/storage.d.ts": "8663d6baf3417872695325d979f3310c0751e27017f8acebefc9425968bac9fb",
+      "dist/cost.d.ts": "9a2ed7b73909e74a93e8a208ef92ff3ab9922f3ffd150a45ee2568240d1a63b4",
+      "dist/cost-model.d.ts": "f6ff778fcc6ae9ca77e719386c529d8e8f4da155bb0bfa3a65402c27509968e9",
+      "dist/scan-settings.d.ts": "62b608407c6f02bec66a299687e66c729226afc39d05b832ab2c32a28b6ab947",
+      "dist/security-policy.d.ts": "e3383f3b04eb7068c377705b0650deacd057abce8298784d3f6e88f7997f5b37",
+      "dist/hosted-scan.d.ts": "79ab226a9b6e8c87ff61d97f3289883c3fe536ea2093fe6ba5f98bfa2d8a7909",
+      "dist/classify-severity-records.d.ts": "34e35fd8766656fcddad25e174979a2d992f4542184ee243e0e99319ef32082b",
+      "dist/validation-records.d.ts": "2658daf9d4b4511bd4112f87daf8f45102e610adc6635a774a4d74296bac5c4e"
     }
   },
   "constraints": {
@@ -63,7 +68,7 @@
     },
     {
       "id": "scan.deep",
-      "label": "深度审计全部参数",
+      "label": "已接入的深度审计参数",
       "api": [
         "CodexSecurity.run",
         "ScanOptions.workers",
@@ -187,7 +192,9 @@
         "ScanOptions.onDeepProgress",
         "ScanOptions.onWorkerStatus",
         "ScanOptions.onWarning",
-        "ScanOptions.onObserverError"
+        "ScanOptions.onObserverError",
+        "ScanOptions.onWorkerEvent",
+        "ScanOptions.onUsage"
       ],
       "status": "integrated",
       "phase": 1,
@@ -219,7 +226,7 @@
       ],
       "status": "integrated",
       "phase": 1,
-      "notes": "工作流、隐私标识、插件约束和严重度均已接入。父扫描由 Web 任务解析原生 Scan ID，要求同一源码与封存结果；Scanner 仅复制锁定版本的工作台 SQLite，不复制凭据，创建独立预算的新扫描。",
+      "notes": "工作流、隐私标识、插件约束和严重度均已接入。父扫描由 Web 任务解析原生 Scan ID，要求同一源码与封存结果；Scanner 仅复制锁定版本的工作台 SQLite，不复制凭据，创建独立预算的新扫描。 不将 0.1.25 的私有工作台或身份凭据自动迁移到 0.5.0。",
       "evidence": [
         "contracts/schemas/v1/sdk-parent-state.schema.json",
         "code-audit-server/internal/httpserver/scan_parent.go",
@@ -257,7 +264,7 @@
       ],
       "status": "integrated",
       "phase": 2,
-      "notes": "Web 对已冻结漏洞独立复核；四类原生 disposition 和人工状态分离。SDK 0.1.25 没有公开费用上限、费用回调和 SessionEvent 参数，费用未知且需明确确认；独立账本/对账，禁止自动重放，保留完整脱敏响应。验收仅合成 SDK。",
+      "notes": "Web 对已冻结漏洞独立复核；四类原生 disposition 和人工状态分离。SDK 0.5.0 没有公开费用上限、费用回调和 SessionEvent 参数，费用未知且需明确确认；独立账本/对账，禁止自动重放，保留完整脱敏响应。验收仅合成 SDK。",
       "evidence": [
         "contracts/data/sdk-operation-compatibility.json",
         "contracts/schemas/v1/sdk-operation.schema.json",
@@ -279,7 +286,7 @@
       ],
       "status": "integrated",
       "phase": 3,
-      "notes": "纯 Web 管理不可变源码绑定的组件计划；planComponents 建议需单独确认未知费用，normalizeComponentPlan 本地规范化与全量路径覆盖检查，人工确认后冻结版本；本阶段不会启动组件扫描。",
+      "notes": "纯 Web 管理不可变源码绑定的组件计划；planComponents 建议需单独确认未知费用，normalizeComponentPlan 本地规范化与全量路径覆盖检查，人工确认后冻结版本；规划操作自身不启动组件扫描，执行需冻结计划后单独创建。",
       "evidence": [
         "contracts/schemas/v1/component-planning.schema.json",
         "contracts/schemas/v7/scanner-job.schema.json",
@@ -300,7 +307,7 @@
       ],
       "status": "integrated",
       "phase": 3,
-      "notes": "基于冻结组件计划调用公开 runComponentScans；Standard 组件并发计入容量、父执行额度内逐组件预留，费用未知不视为零；原生跨组件匹配无费用上限，仅覆盖当前执行选中组件；Web 支持证据追溯、人工费用核对及失败组件新执行。",
+      "notes": "基于冻结组件计划调用公开 runComponentScans；Standard 组件由 SDK 原生并发派发、父执行额度内逐组件预留，费用未知不视为零；原生跨组件匹配无费用上限，仅覆盖当前执行选中组件；Web 支持证据追溯、人工费用核对及失败组件新执行。",
       "evidence": [
         "contracts/schemas/v1/component-scan.schema.json",
         "contracts/schemas/v8/scanner-job.schema.json",
@@ -447,13 +454,12 @@
       "id": "findings.service",
       "label": "SDK Findings 服务适配",
       "api": [
-        "@openai/codex-security/server.startFindingsServer",
         "@openai/codex-security/server.SqliteFindingsStore",
         "@openai/codex-security/server.OpenAiFindingEmbedder"
       ],
       "status": "adapter_required",
       "phase": 5,
-      "notes": "保留 Go Server/PostgreSQL；实现 SDK Findings HTTP/存储兼容适配或明确独立服务边界，不偷换业务数据库。",
+      "notes": "SDK 0.5.0 仅公开 SQLite store 与 embedder；旧版 startFindingsServer 已移除。当前 Server 继续负责平台结果存储，此 SDK 扩展未对外启用。",
       "evidence": []
     },
     {
@@ -498,7 +504,7 @@
       ],
       "status": "not_public",
       "phase": 6,
-      "notes": "0.1.25 的公开 CodexSecurity 类没有 fix()；插件修复能力不等于公开 SDK 方法，不构造假接口或自动改写源码。",
+      "notes": "0.5.0 的公开 CodexSecurity 类没有 fix()；插件修复能力不等于公开 SDK 方法，不构造假接口或自动改写源码。",
       "evidence": []
     },
     {
@@ -509,13 +515,134 @@
       ],
       "status": "not_public",
       "phase": 6,
-      "notes": "已核对锁定的 0.1.25 声明、实现、CLI 与插件：没有跨进程续扫入口；workflowId 仅复用已完成扫描，parentScanId 创建新扫描。Web 区分断点续扫不支持、已提交结果恢复入库与确认重新执行；不依赖 CLI 或篡改 SDK 状态。",
+      "notes": "0.5.0 上游 CLI 与内部路径可恢复符合条件的 Deep Scan；公开 CodexSecurity/ScanOptions 没有稳定 resume 方法。本产品继续区分恢复完整结果入库与显式重新执行，不调用 CLI 或内部恢复参数。",
       "evidence": [
         "deploy/sdk/recovery-baseline.json",
         "deploy/sdk/recovery-check.mjs",
         "code-audit-scanner/test/sdk-recovery.test.ts",
         "docs/SCAN_RECOVERY.md"
       ]
+    },
+    {
+      "id": "sdk050.patch",
+      "label": "sdk050.patch",
+      "api": [
+        "CodexSecurity.patch"
+      ],
+      "status": "planned",
+      "phase": 7,
+      "notes": "已核对 0.5.0 公开接口；本次仅升级既有执行与读取链路，不开放新模型操作或外部发布。",
+      "evidence": []
+    },
+    {
+      "id": "sdk050.hosted",
+      "label": "sdk050.hosted",
+      "api": [
+        "runHostedScan"
+      ],
+      "status": "planned",
+      "phase": 7,
+      "notes": "已核对 0.5.0 公开接口；本次仅升级既有执行与读取链路，不开放新模型操作或外部发布。",
+      "evidence": []
+    },
+    {
+      "id": "sdk050.records",
+      "label": "sdk050.records",
+      "api": [
+        "validateRecords",
+        "classifySeverityRecords",
+        "deduplicateRecords"
+      ],
+      "status": "planned",
+      "phase": 7,
+      "notes": "已核对 0.5.0 公开接口；本次仅升级既有执行与读取链路，不开放新模型操作或外部发布。",
+      "evidence": []
+    },
+    {
+      "id": "sdk050.governance",
+      "label": "sdk050.governance",
+      "api": [
+        "classifySeverity",
+        "classifyScanSeverity",
+        "classifyScanDirectorySeverity",
+        "suggestOwners",
+        "CodexSecurity.preflightPolicy",
+        "CodexSecurity.generatePolicy",
+        "CodexSecurity.previewPolicy"
+      ],
+      "status": "planned",
+      "phase": 7,
+      "notes": "已核对 0.5.0 公开接口；本次仅升级既有执行与读取链路，不开放新模型操作或外部发布。",
+      "evidence": []
+    },
+    {
+      "id": "sdk050.artifacts",
+      "label": "sdk050.artifacts",
+      "api": [
+        "exportArtifact"
+      ],
+      "status": "planned",
+      "phase": 7,
+      "notes": "已核对 0.5.0 公开接口；本次仅升级既有执行与读取链路，不开放新模型操作或外部发布。",
+      "evidence": []
+    },
+    {
+      "id": "sdk050.project_config",
+      "label": "sdk050.project_config",
+      "api": [
+        "loadProjectConfig",
+        "resolveProjectConfig"
+      ],
+      "status": "planned",
+      "phase": 7,
+      "notes": "已核对 0.5.0 公开接口；本次仅升级既有执行与读取链路，不开放新模型操作或外部发布。",
+      "evidence": []
+    },
+    {
+      "id": "sdk050.comparison",
+      "label": "sdk050.comparison",
+      "api": [
+        "matchScanFindings"
+      ],
+      "status": "planned",
+      "phase": 7,
+      "notes": "已核对 0.5.0 公开接口；本次仅升级既有执行与读取链路，不开放新模型操作或外部发布。",
+      "evidence": []
+    },
+    {
+      "id": "sdk050.policy_helpers",
+      "label": "sdk050.policy_helpers",
+      "api": [
+        "resolveSecurityPolicyTarget",
+        "securityPolicyDiff"
+      ],
+      "status": "planned",
+      "phase": 7,
+      "notes": "已核对 0.5.0 公开接口；本次仅升级既有执行与读取链路，不开放新模型操作或外部发布。",
+      "evidence": []
+    },
+    {
+      "id": "removed.findings_server",
+      "status": "not_public",
+      "api": [
+        "@openai/codex-security/server.startFindingsServer"
+      ],
+      "phase": 0,
+      "notes": "0.1.25 历史 API 已在 0.5.0 移除；不伪造服务端入口。",
+      "evidence": []
+    },
+    {
+      "id": "sdk050.extended_settings",
+      "label": "0.5.0 新增调查设置",
+      "status": "planned",
+      "phase": 2,
+      "api": [
+        "ScanOptions.stopAfterConsecutiveErrors",
+        "ScanOptions.maxTimeMinutes",
+        "ScanOptions.cyberAccessProgram"
+      ],
+      "notes": "新增设置尚未提供独立 Web 配置；现有超时和 Deep maxTimeHours 保持历史语义，不替换为模型调查建议时长；实验访问计划需另行验收。",
+      "evidence": []
     }
   ],
   "nonWorkflowExports": {
@@ -536,6 +663,11 @@
     "PluginPythonUnavailableError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
     "ScanCostLimitExceededError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
     "ScanInterruptedError": "错误类型；由 Scanner 转换为产品错误合同，不作为 Web 操作。",
-    "VERSION": "运行时版本或插件标识；用于构建、诊断和兼容校验，不作为 Web 操作。"
+    "VERSION": "运行时版本或插件标识；用于构建、诊断和兼容校验，不作为 Web 操作。",
+    "LocalPluginBootstrapError": "公开错误类型；用于兼容诊断，不作为 Web 操作。",
+    "SandboxUnavailableError": "公开错误类型；用于兼容诊断，不作为 Web 操作。",
+    "HostedScanPreparationError": "公开错误类型；用于兼容诊断，不作为 Web 操作。",
+    "HostedScanInputSchema": "公开运行时 Schema；未作为任意输入执行的 Web 入口。",
+    "classifySeverityRecordsInputSchema": "公开运行时 Schema；未作为任意输入执行的 Web 入口。"
   }
 }

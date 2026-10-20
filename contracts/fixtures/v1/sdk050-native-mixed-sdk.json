@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 2
+  },
+  "sdkVersion": "0.5.0",
+  "observedAt": "2026-10-15T08:00:00Z",
+  "scanId": "fixture-native-1",
+  "targetId": "fixture-target",
+  "reports": {
+    "markdown": {
+      "format": "markdown",
+      "status": "available",
+      "artifact": {
+        "kind": "report",
+        "relativePath": "raw/codex-security/report.md",
+        "sizeBytes": 12,
+        "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      "reason": null
+    },
+    "sarif": {
+      "format": "sarif",
+      "status": "not_generated",
+      "artifact": null,
+      "reason": "未生成"
+    }
+  },
+  "repositoryHistory": {
+    "state": "reported",
+    "reason": null,
+    "records": [
+      {
+        "findingId": "finding-1",
+        "occurrenceId": "occurrence-1",
+        "scanId": "fixture-native-1",
+        "targetId": "fixture-target",
+        "title": "合成历史发现",
+        "summary": "仅用于合同验收",
+        "severity": {
+          "level": "high",
+          "score": 0,
+          "future": false
+        },
+        "status": "closed",
+        "confirmedInLatestScan": false,
+        "knownSince": "2026-10-15T08:00:00Z",
+        "knownScanIds": [
+          "fixture-native-0",
+          "fixture-native-1"
+        ],
+        "matchedFindingIds": []
+      }
+    ]
+  },
+  "usageEstimate": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "42",
+      "attempt": 2
+    },
+    "sdkVersion": "0.1.25",
+    "method": "estimateScanCost",
+    "scope": "returned_turn_usage",
+    "observedAt": "2026-10-15T08:00:00Z",
+    "model": "gpt-5.6",
+    "status": "estimated",
+    "reason": null,
+    "estimatedUsd": 0,
+    "inputTokens": 0,
+    "cachedInputTokens": 0,
+    "cacheWriteInputTokens": 0,
+    "outputTokens": 0,
+    "usage": {
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cached_input_tokens": 0,
+      "future": false
+    },
+    "currency": "USD",
+    "isEstimate": true
+  },
+  "diagnostics": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "42",
+      "attempt": 2
+    },
+    "warningCount": 1,
+    "observerErrorCount": 0,
+    "omittedCount": 0,
+    "entries": [
+      {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "42",
+          "attempt": 2
+        },
+        "sequence": 1,
+        "occurredAt": "2026-10-15T08:00:00Z",
+        "source": "sdk_warning",
+        "kind": "target_changed",
+        "observer": null,
+        "message": "合成目标变化警告",
+        "error": null,
+        "details": {
+          "kind": "target_changed"
+        },
+        "truncated": false
+      }
+    ]
+  },
+  "diagnosticJournal": null,
+  "diagnosticJournalError": null
+}

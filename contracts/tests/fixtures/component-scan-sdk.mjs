@@ -1,4 +1,4 @@
-// Fixtures / Mock only. The real 0.1.25 component scheduler runs; inference
+// Fixtures / Mock only. The real pinned component scheduler runs; inference
 // boundaries are replaced and never contact an account, model or publisher.
 import {appendFile,mkdir,readFile,readdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
@@ -8,11 +8,12 @@ export async function runComponentFixture(source,options,config){
  const capture=process.env.AXIOM_INPUT_TEST_CAPTURE;await mkdir(path.dirname(capture),{recursive:true});
  const evidence={fixtureOnly:true,kind:'component_scan',index,source,options:{mode:options.mode,target:options.target,maxCostUsd:options.maxCostUsd,outputDir:options.outputDir,scanPrompt:options.scanPrompt,postScanPrompt:options.postScanPrompt,knowledgeBasePaths:options.knowledgeBasePaths},knowledge:await Promise.all((options.knowledgeBasePaths??[]).map(async file=>({path:file,content:await readFile(file,'utf8')}))),config,credentialPresent:!!process.env.OPENAI_API_KEY,leakedServerCredentials:['AXIOM_DATABASE_URL','AXIOM_AGENT_TOKEN','AXIOM_MASTER_KEY','AXIOM_JWT_SECRET'].some(n=>process.env[n]!==undefined)};
  await appendFile(capture+'.component-calls',JSON.stringify(evidence)+'\n');await writeFile(capture,JSON.stringify(evidence));
+ options.onWorkerEvent?.({kind:'observed',worker:1});options.onUsage?.({input_tokens:10,cached_input_tokens:0,cache_write_input_tokens:0,output_tokens:5,reasoning_output_tokens:0,total_tokens:15});
  options.onProgress?.({phase:'discovery',filesCompleted:0,filesTotal:1});
  options.onActivity?.({id:'fixture-inspect-'+index,kind:'tool',status:'running',description:'Fixtures / Mock：读取组件源码',paths:options.target,worker:1});
  options.onSessionEvent?.({threadId:'fixture-component-thread-'+index,parentThreadId:null,worker:1,event:{type:'event_msg',payload:{type:'task_started'}}});
  if(scenario==='controlled'){await new Promise((resolve,reject)=>{const deadline=Date.now()+25000;const timer=setInterval(async()=>{try{await readFile(capture+'.release');clearInterval(timer);resolve()}catch{if(Date.now()>deadline){clearInterval(timer);reject(new Error('Fixture controlled hold expired'))}}},100);options.signal?.addEventListener('abort',()=>{clearInterval(timer);reject(options.signal.reason)},{once:true})});}
- const cost=scenario==='unknown'&&index===0?null:{estimatedUsd:0.125,inputTokens:10,outputTokens:5};if(cost)options.onCost?.(cost);
+ const cost=scenario==='unknown'&&index===0?null:{estimatedUsd:0.125,inputTokens:10,outputTokens:5,...(scenario==='range'&&index===0?{estimatedUsdRange:{min:0.125,max:null,context:'unknown'}}:{})};if(cost)options.onCost?.(cost);
  await new Promise((resolve,reject)=>{const timer=setTimeout(resolve,scenario==='hold'?30000:80);options.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(new Error('Fixtures / Mock：组件已取消'))},{once:true});if(options.signal?.aborted){clearTimeout(timer);reject(options.signal.reason)}});
  if((scenario==='partial'&&index===1)||(scenario==='partial-two'&&index>0))throw new Error('Fixtures / Mock：组件执行合成故障');
  if(scenario==='mutate'&&index===0)await writeFile(path.join(source,'fixture-mutation.txt'),'Fixture only');
@@ -33,3 +34,6 @@ export async function matchScanFindings(input,options){
  if(input.before.length===1)return {matches:[],uncertain:[{beforeOccurrenceId:before.occurrenceId,afterOccurrenceId:after.occurrenceId,reason:'Fixtures / Mock：不足以确认同一根因，保留独立发现'}],related:[]};
  return {matches:[{beforeOccurrenceIds:[before.occurrenceId],afterOccurrenceIds:[after.occurrenceId],confidence:'high',reason:'Fixtures / Mock：合成高置信匹配，仍然是推断'}],uncertain:[],related:[]};
 }
+
+// 0.5.0 renamed its internal inference boundary; this alias never calls a model.
+export const matchScanFindingsInternal=matchScanFindings;

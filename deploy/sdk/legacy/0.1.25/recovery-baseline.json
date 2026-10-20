@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "sdkVersion": "0.1.25",
+  "pluginVersion": "0.1.94",
+  "checkpointResume": false,
+  "files": {
+    "dist/api.d.ts": "3ccb72c340c9578ea8fe4de7d04866a061f63a5a757759adfcdcd2d13106dd99",
+    "dist/api.js": "978bbc59f016f45ce00087c2b9e0d5a16344ec02509595b97c5a71a51093f945",
+    "dist/index.d.ts": "703bc813ad80dfd8068ca5eedad6a4a2b4988755b03e3a4887d56e5149c7a40f",
+    "dist/cli.js": "ef9157ceb20f8cbac08b97b83dd6d6516b70a2880c50cc7c6ad0c6692c9c36d0",
+    "dist/finding-workflow.js": "702aafc4f06f96bb23fc8847317d3f4b3927cb7162aaa15f47bcf472eeaa4a63",
+    "_bundled_plugin/scripts/deep_scan_workbench.py": "7cdf38827285bc837a689b0982b12e6f46e456aa1f94223dea496854fb591820"
+  },
+  "conclusions": {
+    "run": "Registers a new scan and calls codex.startThread; no saved-session recovery input.",
+    "workflowId": "Reuses a saved completed scan; an interrupted scan is started again.",
+    "parentScanId": "Creates an independent child scan and scan ID; not checkpoint continuation.",
+    "deepCoordinator": "Plugin-internal expired coordinator recovery is not a CodexSecurity SDK resume API.",
+    "applicationRecovery": "Only a verified Axiom result.commit.json can restore an unarchived result without model calls."
+  }
+}

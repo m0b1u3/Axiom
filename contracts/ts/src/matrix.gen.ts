@@ -122,6 +122,11 @@ export const EXECUTION_MATRIX={
       "agent-and-scanner",
       "web"
     ]
-  }
+  },
+  "sdkResultAdapters": {
+    "0.1.25": 1,
+    "0.5.0": 2
+  },
+  "activeSDK": "0.5.0"
 } as const;
-export const EXECUTION_MATRIX_HASH="7f77589f40907b7d591be79f1a883d4d5f1f004f2a304db3c5cbde705d9cbfb9" as const;
+export const EXECUTION_MATRIX_HASH="f2947398419ab74a0f7463deb00be0127af4dd72c40ff02579cbebfdaa2a653c" as const;

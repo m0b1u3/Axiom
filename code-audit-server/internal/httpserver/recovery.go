@@ -44,7 +44,7 @@ func (s *Server) recoverScan(w http.ResponseWriter, r *http.Request, u *store.Us
 	}
 	action, e := contracts.DecodeScanRecoveryAction(raw, nil)
 	if e != nil || action.Execution.TaskID != contracts.TaskID(fmt.Sprint(id)) {
-		httputil.Error(w, 400, 40000, "恢复操作或执行身份无效；SDK 0.1.25 不支持断点续扫，重新执行需要明确确认")
+		httputil.Error(w, 400, 40000, "恢复操作或执行身份无效；此入口不支持断点续扫，重新执行需要明确确认")
 		return
 	}
 	switch action.Action {

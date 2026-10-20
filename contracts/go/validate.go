@@ -131,6 +131,24 @@ func ValidateJSON(kind Kind, data []byte, expected *ExecutionRef) error {
 			return err
 		}
 	}
+	if kind == KindProgressSnapshotV2 {
+		if ext, ok := object["extensions"].(map[string]any); ok {
+			if usage, exists := ext["sdkUsage"]; exists {
+				data, _ := json.Marshal(usage)
+				ref := &ExecutionRef{TaskID: TaskID(execution["taskId"].(string)), Attempt: int64(execution["attempt"].(float64))}
+				if err := ValidateJSON(KindSDKUsage, data, ref); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if kind == KindScanEventV2 && object["type"] == "scan.usage" {
+		raw, _ := json.Marshal(object["data"])
+		ref := &ExecutionRef{TaskID: TaskID(execution["taskId"].(string)), Attempt: int64(execution["attempt"].(float64))}
+		if err := ValidateJSON(KindSDKUsage, raw, ref); err != nil {
+			return err
+		}
+	}
 	if kind == KindScanRecoverySnapshot {
 		if recovery, ok := object["recovery"].(map[string]any); ok {
 			if cost, ok := recovery["previousCost"].(map[string]any); ok {
@@ -176,6 +194,9 @@ func ValidateJSON(kind Kind, data []byte, expected *ExecutionRef) error {
 	if kind == KindSDKNativeResult || kind == KindSDKDiagnostics {
 		expectedNested := &ExecutionRef{TaskID: TaskID(execution["taskId"].(string)), Attempt: int64(execution["attempt"].(float64))}
 		if kind == KindSDKNativeResult {
+			if object["usageEstimate"].(map[string]any)["sdkVersion"] != object["sdkVersion"] {
+				return invalid("identity_mismatch", kind)
+			}
 			for key, nestedKind := range map[string]Kind{"usageEstimate": KindSDKCostEstimate, "diagnostics": KindSDKDiagnostics} {
 				raw, _ := json.Marshal(object[key])
 				if err := ValidateJSON(nestedKind, raw, expectedNested); err != nil {

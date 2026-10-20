@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {decode,type SDKIdentityClaim,type SDKIdentityRef,type SDKIdentityReport} from '@axiom/contracts';
 
 const scannerRoot=fileURLToPath(new URL('../',import.meta.url));
-test('SDK 0.1.25 auth APIs use isolated credential state through a synthetic executable',{skip:process.platform==='win32'},async()=>{
+test('SDK 0.5.0 auth APIs use isolated credential state through a synthetic executable',{skip:process.platform==='win32'},async()=>{
  const temporary=await mkdtemp(path.join(os.tmpdir(),'axiom-native-auth-fixture-')),base=await realpath(temporary);
  const executable=path.join(base,'fixture-codex.cjs');
  const script=`#!/usr/bin/env node

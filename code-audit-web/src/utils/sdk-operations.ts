@@ -2,7 +2,7 @@ import type {ArtifactRef,ExecutionRef,SDKOperationResult,SDKSessionSummary} from
 const object=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 const same=(v:unknown,e:ExecutionRef)=>object(v)&&v.taskId===e.taskId&&v.attempt===e.attempt;
 export function sdkOperationView(raw:unknown,e:ExecutionRef):SDKOperationResult|null {
- if(!object(raw)||raw.schemaVersion!==1||raw.sdkVersion!=='0.1.25'||!same(raw.execution,e)||!['preflight','validate'].includes(String(raw.kind))||!object(raw.cost)||typeof raw.cost.reason!=='string')return null;
+ if(!object(raw)||raw.schemaVersion!==1||!['0.1.25','0.5.0'].includes(String(raw.sdkVersion))||!same(raw.execution,e)||!['preflight','validate'].includes(String(raw.kind))||!object(raw.cost)||typeof raw.cost.reason!=='string')return null;
  if(typeof raw.startedAt!=='string'||typeof raw.finishedAt!=='string'||!Number.isFinite(Date.parse(raw.startedAt))||!Number.isFinite(Date.parse(raw.finishedAt)))return null;
  if(raw.error!==null&&(!object(raw.error)||typeof raw.error.code!=='string'||typeof raw.error.message!=='string'))return null;
  if(raw.kind==='preflight'){

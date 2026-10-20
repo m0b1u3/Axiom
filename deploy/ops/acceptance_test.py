@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from acceptance import verify_runtime_baseline
+from acceptance import verify_runtime_baseline, runtime_baseline
 
 
 class RuntimeBaselineAcceptance(unittest.TestCase):
@@ -56,6 +56,24 @@ class RuntimeBaselineAcceptance(unittest.TestCase):
             with self.assertRaisesRegex(AssertionError, "pinned dependency"):
                 self.check()
             metadata["sdkVersion"] = "0.1.25"
+
+    def test_sdk050_result_adapter_advances_without_relabeling_old_capability_baselines(self):
+        adapter={"sdkVersion":"0.5.0", "adapterVersion":2, "descriptionVersion":13, "readableSDKVersions":["0.1.25", "0.5.0"]}
+        description={**self.description, "schemaVersion":13, "sdkResultAdapterVersion":2, "configuredSdk":{"package":"@openai/codex-security", "version":"0.5.0"}}
+        runtime={**self.runtime, "scannerDescriptionVersion":13}
+        verify_runtime_baseline(runtime,self.matrix,description,self.identity,self.parameters,self.concurrency,"0.5.0","fixture-release",adapter)
+        for change in ({"schemaVersion":12},{"sdkResultAdapterVersion":1},{"configuredSdk":{"package":"@openai/codex-security","version":"0.1.25"}}):
+            with self.subTest(change=change), self.assertRaises(AssertionError):
+                verify_runtime_baseline(runtime,self.matrix,{**description,**change},self.identity,self.parameters,self.concurrency,"0.5.0","fixture-release",adapter)
+
+    def test_running_versions_use_distinct_pinned_baselines(self):
+        old, candidate = runtime_baseline("0.1.25"), runtime_baseline("0.5.0")
+        self.assertIsNone(old["adapter"])
+        self.assertEqual(old["sdkVersion"], "0.1.25")
+        self.assertEqual(candidate["adapter"]["descriptionVersion"], 13)
+        self.assertNotEqual(old["matrixHash"], candidate["matrixHash"])
+        with self.assertRaisesRegex(AssertionError, "no certified"):
+            runtime_baseline("0.6.0")
 
 
 if __name__ == "__main__":

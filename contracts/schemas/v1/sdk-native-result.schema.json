@@ -16,7 +16,10 @@
         },
         "sdkVersion": {
           "type": "string",
-          "const": "0.1.25"
+          "enum": [
+            "0.1.25",
+            "0.5.0"
+          ]
         },
         "observedAt": {
           "type": "string",

@@ -53,3 +53,5 @@ code-audit-server/bin/
 /SOURCE_MANIFEST.json
 !deploy/sdk/overrides/**/dist/
 !deploy/sdk/overrides/**/dist/**
+!deploy/sdk/legacy/0.1.25/overrides/**/dist/
+!deploy/sdk/legacy/0.1.25/overrides/**/dist/**

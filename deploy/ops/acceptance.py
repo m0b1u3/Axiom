@@ -85,21 +85,53 @@ console.log(JSON.stringify({sha256:c.createHash('sha256').update(fs.readFileSync
     return result
 
 
-def verify_runtime_baseline(runtime, matrix, description, identity, parameters, concurrency, sdk_version, release):
+def verify_runtime_baseline(runtime, matrix, description, identity, parameters, concurrency, sdk_version, release, adapter=None):
     assert runtime["state"] == "ready", "Agent runtime is not ready"
     assert runtime["controlAPI"] == max(matrix["controlAPIs"]), "Agent selected a different control API"
     # Independent SDK capabilities advance the Scanner description without
     # adding new scan input/job profiles to the execution matrix. Check the
     # installed bundle against all current baselines, not only identity v10.
     expected_description = max(item["descriptionVersion"] for item in (identity, parameters, concurrency))
+    if adapter is not None:
+        assert adapter["sdkVersion"] == sdk_version, "SDK adapter differs from the pinned dependency"
+        expected_description = max(expected_description, adapter["descriptionVersion"])
+        assert description["sdkResultAdapterVersion"] == adapter["adapterVersion"], "SDK result adapter version drift"
     assert description["schemaVersion"] == expected_description, "Scanner description differs from the SDK capability baselines"
     assert description["sdkIdentityVersion"] == identity["identityVersion"], "Scanner identity contract differs from the baseline"
     assert description["sdkParametersVersion"] == parameters["parametersVersion"], "Scanner parameters contract differs from the baseline"
     assert description["sdkConcurrencyVersion"] == concurrency["concurrencyVersion"], "Scanner concurrency contract differs from the baseline"
-    assert parameters["sdkVersion"] == concurrency["sdkVersion"] == sdk_version, "SDK capability baselines differ from the pinned dependency"
+    if adapter is None:
+        assert parameters["sdkVersion"] == concurrency["sdkVersion"] == sdk_version, "SDK capability baselines differ from the pinned dependency"
+    else:
+        assert parameters["sdkVersion"] in adapter["readableSDKVersions"] and concurrency["sdkVersion"] in adapter["readableSDKVersions"], "SDK capability baselines differ from the pinned dependency"
     assert runtime["scannerDescriptionVersion"] == description["schemaVersion"], "Agent did not report the installed Scanner description"
     assert description["configuredSdk"] == {"package":"@openai/codex-security", "version":sdk_version}, "Scanner SDK differs from the pinned dependency"
     assert runtime["agentBuild"] == release and runtime["scannerBuild"], "Agent/Scanner build identity is missing or stale"
+
+
+def runtime_baseline(sdk_version):
+    """Select a pinned baseline, never relabel a 0.1.25 runtime as 0.5.0."""
+    current = json.loads((ROOT/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"]
+    if sdk_version == current:
+        matrix_path = ROOT/"contracts/data/execution-compatibility.json"
+        return {"sdkVersion":current, "matrix":json.loads(matrix_path.read_text()), "matrixHash":hashlib.sha256(matrix_path.read_bytes()).hexdigest(),
+                **{key:json.loads((ROOT/("contracts/data/sdk-"+key+"-compatibility.json")).read_text()) for key in ("identity", "parameters", "concurrency", "adapter")}}
+    if sdk_version == "0.1.25":
+        baseline = json.loads((ROOT/"deploy/sdk/legacy/0.1.25/execution-baseline.json").read_text())
+        assert baseline["schemaVersion"] == 1 and baseline["sdkVersion"] == sdk_version
+        return baseline
+    raise AssertionError("SDK runtime has no certified compatibility baseline")
+
+
+def verify_stack_runtime(stack, web, release):
+    version = stack.output("exec", "-T", "agent", "node", "-p", "require('/opt/axiom/code-audit-scanner/node_modules/@openai/codex-security/package.json').version")
+    baseline = runtime_baseline(version)
+    def matching_runtime():
+        agents = web.data("GET", "/api/v1/executions/overview")["agents"]
+        return next((a.get("runtime") for a in agents if a.get("runtime", {}).get("matrixHash") == baseline["matrixHash"]), None)
+    runtime = wait_for(matching_runtime, 30, "Agent did not publish its version's compatibility matrix")
+    description = json.loads(stack.output("exec", "-T", "agent", "node", "/opt/axiom/code-audit-scanner/dist/main.js", "--describe"))
+    verify_runtime_baseline(runtime,baseline["matrix"],description,baseline["identity"],baseline["parameters"],baseline["concurrency"],version,release,baseline["adapter"])
 
 
 def suite(env_file, work, candidate_env=None):
@@ -176,18 +208,7 @@ networks:
         assert len(calls) == 1, "Server restart called SDK again"
         checks.append("real Server process restart retains Agent scan and one SDK invocation")
 
-        matrix = json.loads((ROOT / "contracts/data/execution-compatibility.json").read_text())
-        matrix_hash = hashlib.sha256((ROOT / "contracts/data/execution-compatibility.json").read_bytes()).hexdigest()
-        def matching_runtime():
-            overview = web.data("GET", "/api/v1/executions/overview")
-            return next((a.get("runtime") for a in overview["agents"] if a.get("runtime", {}).get("matrixHash") == matrix_hash), None)
-        runtime = wait_for(matching_runtime, 20, "Agent did not publish its compatibility matrix")
-        description = json.loads(stack.output("exec", "-T", "agent", "node", "/opt/axiom/code-audit-scanner/dist/main.js", "--describe"))
-        identity = json.loads((ROOT/"contracts/data/sdk-identity-compatibility.json").read_text())
-        parameters = json.loads((ROOT/"contracts/data/sdk-parameters-compatibility.json").read_text())
-        concurrency = json.loads((ROOT/"contracts/data/sdk-concurrency-compatibility.json").read_text())
-        sdk_version = json.loads((ROOT/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"]
-        verify_runtime_baseline(runtime, matrix, description, identity, parameters, concurrency, sdk_version, values["AXIOM_RELEASE"])
+        verify_stack_runtime(stack, web, values["AXIOM_RELEASE"])
         checks.append("release build identity, Server/Agent matrix and Scanner contract preflight")
 
         result_path = f"/api/v1/scans/{task_id}/attempts/1/result"
@@ -343,6 +364,7 @@ networks:
                 agents = web.data("GET", "/api/v1/executions/overview")["agents"]
                 return any(a.get("runtime", {}).get("agentBuild") == candidate_values["AXIOM_RELEASE"] for a in agents)
             wait_for(candidate_ready, 30, "upgraded Agent did not publish the candidate build")
+            verify_stack_runtime(candidate, web, candidate_values["AXIOM_RELEASE"])
             upgraded_task = web.data("POST", "/api/v1/scans", {"sourceSnapshotId":snapshot["id"], "modelConfigId":model["id"], "maxCostUsd":1.25, "maxTotalCostUsd":2.25})["id"]
             assert task_wait(web, upgraded_task)["status"] == "completed", "candidate could not run the isolated SDK fixture"
             upgrade = {"kind":"internal-image-upgrade", "status":"passed", "baselineImages":baseline_images,

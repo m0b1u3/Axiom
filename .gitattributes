@@ -1,3 +1,5 @@
 # Keep hash-pinned vendor replacements byte-for-byte on every checkout.
 deploy/sdk/overrides/** -text
+deploy/sdk/legacy/0.1.25/overrides/** -text
 deploy/sdk/patches/*.patch -text -whitespace
+deploy/sdk/legacy/0.1.25/patches/*.patch -text -whitespace

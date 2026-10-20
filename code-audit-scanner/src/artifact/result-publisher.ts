@@ -9,6 +9,7 @@ import type {ScanResult as LegacyResult} from '../contract/scan-result.js';
 import type {Finding as LegacyFinding} from '../contract/finding.js';
 import {buildSDKNativeResult} from './sdk-native-result.js';
 import {findingEvidenceJSON} from '../converter/finding-evidence.js';
+import {ACTIVE_SDK_VERSION} from '../runtime/sdk-version.js';
 
 export const RESULT_FILE='normalized/result.json';
 export const COMMIT_FILE='normalized/result.commit.json';
@@ -25,7 +26,7 @@ export function contractResult(task:ScanTask,legacy:LegacyResult,artifacts:Artif
     model:task.resolvedModel,findings:legacy.findings.map(f=>contractFinding(f,task)),
     coverage:{completeness:legacy.coverage?.completeness??'unknown',details:jsonObject(legacy.coverage??{})},artifacts,
     cost:legacy.cost?{estimatedUsd:legacy.cost.estimatedUsd??null,inputTokens:legacy.cost.inputTokens??null,outputTokens:legacy.cost.outputTokens??null,currency:'USD',isEstimate:true}:null,
-    extensions:{...(legacy.sdkRaw?{sdk:jsonObject(legacy.sdkRaw)}:{}),...(legacy.lastObservedCost?{lastObservedCost:jsonObject(legacy.lastObservedCost)}:{}),adapter:{format:'codex-security-sdk',version:1,source:legacy.sdkRawSource??'unavailable'}},
+    extensions:{...(legacy.sdkRaw?{sdk:jsonObject(legacy.sdkRaw)}:{}),...(legacy.lastObservedCost?{lastObservedCost:jsonObject(legacy.lastObservedCost)}:{}),adapter:{format:'codex-security-sdk',version:2,sdkVersion:ACTIVE_SDK_VERSION,source:legacy.sdkRawSource??'unavailable'}},
   };
   if(legacy.error)result.error=contractError(legacy.error.code,legacy.error.message);
   else if(['failed','canceled','timeout'].includes(result.status))result.error=contractError(result.status==='failed'?'unknown':result.status,'SDK returned '+result.status);

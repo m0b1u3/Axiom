@@ -1,6 +1,6 @@
 --- a/@openai/codex-security/_bundled_plugin/skills/fix-finding/SKILL.md
 +++ b/@openai/codex-security/_bundled_plugin/skills/fix-finding/SKILL.md
-@@ -33,7 +33,7 @@
+@@ -35,7 +35,7 @@
  
  ## Pre-Patch Investigation
  
@@ -9,7 +9,7 @@
  
  - **Security-boundary and compatibility investigator:** Independently trace the source-to-sink path and identify the shared enforcement boundary, affected entry points, alternate representations or lifecycle states, parser and validation-to-use transitions, concrete sibling paths, and source-backed bypass risks. Establish the legitimate workflows and public behavior that must remain, then inspect callers, implementations, optional modes, errors, side effects, repository conventions, existing helpers, and focused validation commands for integration constraints.
  
-@@ -54,7 +54,7 @@
+@@ -56,7 +56,7 @@
  
  ## Patch Candidate Review
  

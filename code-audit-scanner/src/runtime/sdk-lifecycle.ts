@@ -15,6 +15,11 @@ export function sdkLifecycleCallbacks(report: LifecycleReporter): LifecycleCallb
   };
   return {
     onAuthentication(authentication) {
+      if (authentication.method==='host') {
+        state.authentication=null;
+        emit('SDK 报告宿主执行身份；当前本地扫描入口未启用此认证方式，访问权限保持未核验。',true);
+        return;
+      }
       state.authentication={method:authentication.method, verified:false,
         ...(authentication.method==='stored_credentials' && authentication.credentialType ? {credentialType:authentication.credentialType} : {})};
       const labels={command:'认证命令',api_key:'API Key',stored_credentials:'已保存凭据',aws_credentials:'AWS 凭据'};

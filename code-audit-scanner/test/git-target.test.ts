@@ -45,7 +45,7 @@ test('result and every finding bind execution, frozen source and HEAD; foreign S
  const bad=structuredClone(result);(bad.sdkRaw as any).manifest.scan.target.headRevision=task.gitTarget!.baseCommit;assert.throws(()=>contractResult(task,bad),/frozen base\/head/);
  bad.status='failed';assert.throws(()=>contractResult(task,bad),/frozen base\/head/,'failed scans must not publish findings from an unbound target');
 });
-test('pinned SDK 0.1.25 preflight accepts committed refs locally without a model call',async t=>{
+test('pinned SDK 0.5.0 preflight accepts committed refs locally without a model call',async t=>{
  const {task,root}=await fixture(t);task.mock=true;task.sdkOperation={schemaVersion:1,execution:{taskId:String(task.taskId),attempt:task.executionAttempt!},kind:'preflight',origin:null,findingId:null,finding:null,acknowledgeUnknownCost:false};
  const privateSource=path.join(task.outputPath,'runtime/git-source-fixture');await cp(task.sourcePath,privateSource,{recursive:true});task.sourcePath=privateSource;
  process.env.GIT_DIR='/fixture/ambient-other-repository';process.env.GIT_CONFIG_COUNT='1';process.env.GIT_CONFIG_KEY_0='core.hooksPath';process.env.GIT_CONFIG_VALUE_0='/fixture/ambient-hooks';

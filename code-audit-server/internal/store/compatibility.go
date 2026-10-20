@@ -30,7 +30,7 @@ func evaluateTaskCompatibility(t QueueTask, agents []AgentPresence) *TaskCompati
 	}
 	inputOK, resultOK, observationOK, online, blocked, matrixBlocked, ready := false, false, false, false, false, false, false
 	for _, a := range agents {
-		caps := control.Capabilities{SDKConcurrency: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && *a.Runtime.ScannerDescriptionVersion == contracts.SDKConcurrencyDescriptionVersion, SDKParameters: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKParameters(*a.Runtime.ScannerDescriptionVersion), Input: a.InputCapabilities, Result: a.ResultCapabilities, Observation: a.ObservationCapabilities}
+		caps := control.Capabilities{SDKConcurrency: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKConcurrency(*a.Runtime.ScannerDescriptionVersion), SDKParameters: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKParameters(*a.Runtime.ScannerDescriptionVersion), Input: a.InputCapabilities, Result: a.ResultCapabilities, Observation: a.ObservationCapabilities}
 		missing := control.Missing(v.Required, caps)
 		n := CompatibilityCandidate{AgentID: a.AgentID, Online: a.Online, Missing: missing, Ready: a.Online && len(missing) == 0}
 		if a.Runtime != nil && a.Runtime.MatrixHash != control.MatrixHash {

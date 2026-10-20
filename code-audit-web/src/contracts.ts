@@ -6,6 +6,7 @@ export type {TaskBudgetSnapshot,AttemptCost} from '../../contracts/ts/src/types.
 export type {StorageSnapshot,StoragePolicy,CleanupJob,CleanupItem} from '../../contracts/ts/src/types.gen';
 
 export type {SDKLifecycle} from '../../contracts/ts/src/types.gen';
+export type {SDKUsage} from '../../contracts/ts/src/types.gen';
 
 export type {ScanInput,KnowledgeDocument} from '../../contracts/ts/src/types.gen';
 export type {ExecutionRef,SDKNativeResult,SDKRepositoryFinding,SDKNativeExport,SDKCostEstimate,SDKDiagnostics,SDKDiagnostic} from '../../contracts/ts/src/types.gen';

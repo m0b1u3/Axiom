@@ -82,7 +82,7 @@ test('aliases, limits, enum kinds and source hashes are stable',()=>{
   assert.deepEqual(normalizeLegacyErrorCode('HTTP 401 in arbitrary text'),{code:'unknown',recognized:false});
   assert.equal(exitCode('partial'),2);
   assert.match(SCHEMA_HASH,/^[a-f0-9]{64}$/);
-  assert.equal(CONTRACT_KINDS.length,83);
+  assert.equal(CONTRACT_KINDS.length,85);
   assert.ok(CONTRACT_KINDS.includes('AgentRuntime'));
   assert.throws(()=>decode('ProgressSnapshot',' '.repeat(COMPATIBILITY.limits.progressBytes+1)),e=>e.code==='payload_too_large');
   assert.throws(()=>decode('ExecutionRef',new Uint8Array([255])),e=>e.code==='invalid_json');
@@ -97,7 +97,7 @@ test('scanner describe advertises current input, result and observation contract
   let stdout='',stderr='';p.stdout.on('data',d=>stdout+=d);p.stderr.on('data',d=>stderr+=d);
   const code=await new Promise((resolve,reject)=>{p.on('error',reject);p.on('close',resolve)});
   assert.equal(code,0,stderr);
-  const value=decode('ScannerDescriptionV12',stdout);
+  const value=decode('ScannerDescriptionV13',stdout);
   assert.equal(value.runtime.input,'scanner_job');
   assert.deepEqual(value.runtime.versions.job,[1,2,3,4,5,6,7,8]);
   assert.equal(value.capabilities.jobFile,true);

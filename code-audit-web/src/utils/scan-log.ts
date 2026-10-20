@@ -54,6 +54,7 @@ function structuredEntry(e:ScanLogEvent):ActivityEntry {
  case 'scan.worker':category='progress';label='线程';summary=`${workerLabel(event.data.worker)} · ${workerStates[event.data.status]??event.data.status}${event.data.activity?` · ${event.data.activity.description}`:''}`;failed=event.data.status==='failed';break;
  case 'scan.worker_status':category='progress';label='调度';summary=event.data.kind==='preflight'?`Worker 预检 · ${event.data.delegation??'unknown'} · 配置槽位 ${event.data.configuredSlots??'—'}`:`${phaseLabel(event.data.phase??'')} · 已启动 ${event.data.started} / 计划 ${event.data.planned}`;break;
  case 'scan.cost':label='费用';summary=`估算费用 ${event.data.estimatedUsd===null?'未知':`$${event.data.estimatedUsd}`} · 输入 ${event.data.inputTokens??'—'} / 输出 ${event.data.outputTokens??'—'} Token`;break;
+ case 'scan.usage':label='用量';summary=`已观测 Token · 输入 ${event.data.inputTokens??'—'} / 输出 ${event.data.outputTokens??'—'} / 总计 ${event.data.totalTokens??'—'}；费用独立核对`;break;
  case 'scan.reconnect':category='system';label='连接重试';summary=`${event.data.reason} · 第 ${event.data.attempt} / ${event.data.maximum} 次`;break;
  case 'scan.warning':label='警告';warning=true;summary=`${event.data.code} · ${event.data.message}`;break;
  case 'scan.error':label='错误';failed=true;summary=`${event.data.code} · ${event.data.origin} · ${event.data.message}`;break;
@@ -62,4 +63,4 @@ function structuredEntry(e:ScanLogEvent):ActivityEntry {
  return {...e,category,label,summary,failed,warning};
 }
 export const workerStates:Record<string,string>={running:'执行轮次运行中',waiting:'等待下一轮',completed:'已完成',failed:'失败',unknown:'状态未上报'};
-export function workerLabel(worker:{threadId?:string;index?:number}):string{return worker.threadId?`${worker.index!==undefined?`Worker ${worker.index} · `:'线程 '}${worker.threadId}`:`Worker ${worker.index}`;}
+export function workerLabel(worker:{threadId?:string;index?:number;componentIndex?:number}):string{return (worker.componentIndex!==undefined?`组件 ${worker.componentIndex+1} · `:'')+(worker.threadId?`${worker.index!==undefined?`Worker ${worker.index} · `:'线程 '}${worker.threadId}`:`Worker ${worker.index}`);}

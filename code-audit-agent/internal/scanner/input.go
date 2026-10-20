@@ -73,6 +73,12 @@ func parseDescription(raw []byte) (Capabilities, error) {
 	}
 	var value any
 	switch h.SchemaVersion {
+	case 13:
+		v, e := contracts.DecodeScannerDescriptionV13(raw, nil)
+		if e != nil {
+			return Capabilities{}, e
+		}
+		value = v
 	case 12:
 		v, e := contracts.DecodeScannerDescriptionV12(raw, nil)
 		if e != nil {

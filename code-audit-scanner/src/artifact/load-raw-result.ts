@@ -31,8 +31,8 @@ export async function loadRawCodexResult(rawDir: string): Promise<CodexLikeScanR
   }
 
   const coverage = await readJson(path.join(rawDir, "coverage.json"));
-  if (typeof coverage?.["completeness"] === "string") {
-    result.coverage = { ...coverage, completeness: coverage["completeness"] };
+  if (coverage) {
+    result.coverage = { ...coverage };
   }
 
   result.toJSON=()=>({manifest:manifest??null,findings:findingsDoc,coverage:coverage??null,recoveredArtifacts:true});

@@ -1,5 +1,7 @@
 # Axiom — AI 源代码安全审计一体机
 
+本分支包含 **SDK 0.5.0 兼容适配**；本地 Docker 已使用通过隔离验收的镜像，备份、浏览器验收和回滚前提见 [部署记录](docs/SDK_050_DEPLOYMENT.md)。适配范围、历史读取、七项补丁及无模型验收见 [兼容记录](docs/SDK_050_COMPATIBILITY.md)。源码检查结果见仓库 [GitHub Actions](https://github.com/m0b1u3/Axiom/actions)。
+
 自托管的 Web 源代码安全审计平台。用户在浏览器配置模型、上传源码、控制扫描和查看证据，后台使用 Go Server + Go Agent + Node Scanner / Codex Security SDK。
 
 当前版本：`0.1.0-beta.1` 发布候选。首版支持 **Linux amd64、可信用户、自托管**。本轮自动验收使用 SDK Fixture 及官方 Mock，真实审计、供应商费用及长期运行验收尚未完成；详见 [CHANGELOG](CHANGELOG.md)。
@@ -16,7 +18,7 @@
 
 已提交的 [Git base/head 差异审计](docs/SDK_GIT_DIFF.md) 已接入：Web 上传完整仓库归档，冻结提交并预览差异，使用 Standard 调用 SDK refs 目标，证据绑定 HEAD；未提交工作区差异仍待后续接入。
 
-[组件规划与计划管理](docs/SDK_COMPONENT_PLANS.md) 已接入：Web 编辑、SDK 自动建议、本地规范化与全量路径检查、人工确认冻结和历史版本下载。固定 SDK 0.1.25；计划确认不会启动组件扫描。
+[组件规划与计划管理](docs/SDK_COMPONENT_PLANS.md) 已接入：Web 编辑、SDK 自动建议、本地规范化与全量路径检查、人工确认冻结和历史版本下载。候选 SDK 0.5.0；计划确认不会启动组件扫描，真实规划模型仍未验收。
 
 ## 仓库结构
 

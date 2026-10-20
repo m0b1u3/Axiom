@@ -52,12 +52,7 @@ func (s *Store) completeContractExecution(ctx context.Context, full contracts.Ex
 	}
 	if full.Result.Present {
 		result := full.Result.Value
-		details := map[string]json.RawMessage{}
-		for k, v := range result.Coverage.Details {
-			details[k] = v
-		}
-		details["completeness"], _ = json.Marshal(result.Coverage.Completeness)
-		c.Coverage, _ = json.Marshal(details)
+		c.Coverage = coverageDocument(result.Coverage)
 		for _, f := range result.Findings {
 			c.Findings = append(c.Findings, projectFinding(id, f))
 		}
@@ -67,6 +62,21 @@ func (s *Store) completeContractExecution(ctx context.Context, full contracts.Ex
 		}
 	}
 	return s.CompleteExecution(ctx, c)
+}
+
+// The portable fallback is not a field in the original coverage document.
+// Keep known legacy conclusions authoritative, but do not inject an unknown
+// conclusion into a complete native document that has no such field.
+func coverageDocument(coverage contracts.Coverage) json.RawMessage {
+	details := map[string]json.RawMessage{}
+	for key, value := range coverage.Details {
+		details[key] = value
+	}
+	if len(details) == 0 || coverage.Completeness != "unknown" {
+		details["completeness"], _ = json.Marshal(coverage.Completeness)
+	}
+	raw, _ := json.Marshal(details)
+	return raw
 }
 
 func projectFinding(id int64, f contracts.Finding) Finding {

@@ -67,7 +67,7 @@ async function artifact(ref:ArtifactRef){artifactError.value='';downloading.valu
    <ComponentPlanningResult v-if="result.extensions?.componentPlanning" :result="result"/>
    <SDKOperationResult v-if="result.extensions?.sdkOperation" :result="result"/>
    <SDKSessionEvents v-if="!result.extensions?.sdkOperation && !result.extensions?.componentPlanning" :scan-id="scanId" :attempt="attempt" :result="result"/>
-   <p v-else class="result-note">SDK 0.1.25 的独立操作不提供原生 SessionEvent 回调；执行阶段与报告仍单独归档。</p>
+   <p v-else class="result-note">SDK 的独立操作不提供原生 SessionEvent 回调；执行阶段与报告仍单独归档。</p>
    <SDKNativeResult v-if="!result.extensions?.sdkOperation && !result.extensions?.componentPlanning && !result.extensions?.componentScan" :scan-id="scanId" :attempt="attempt" :result="result"/>
    <details v-if="result.artifacts.length" class="result-details"><summary>原生产物 · {{result.artifacts.length}}</summary>
     <div class="artifact-scroll"><table><thead><tr><th>产物</th><th>字节数</th><th>SHA-256</th><th><span class="sr-only">操作</span></th></tr></thead><tbody><tr v-for="ref in result.artifacts" :key="ref.relativePath"><td class="mono">{{ref.relativePath}}</td><td class="mono">{{ref.sizeBytes}}</td><td class="mono hash">{{ref.sha256}}</td><td><Button variant="ghost" size="sm" :disabled="!!downloading" @click="artifact(ref)">{{downloading===ref.relativePath?'下载中…':'下载产物'}}</Button></td></tr></tbody></table></div>

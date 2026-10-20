@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "sdkVersion": "0.5.0",
+  "readableSDKVersions": [
+    "0.1.25",
+    "0.5.0"
+  ],
+  "adapterVersion": 2,
+  "descriptionVersion": 13,
+  "workerStatusKinds": [
+    "dispatch"
+  ],
+  "checkpointResume": false,
+  "history": "preserve old native results, events, evidence and reports; never relabel old evidence or migrate private credentials"
+}

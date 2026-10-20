@@ -1,7 +1,9 @@
 # Axiom SDK build inputs
 
-`manifest.json` pins official npm packages, complete file hashes and five Axiom modifications.
-`overrides/` contains source files copied from the working deployment or its customized plugin cache.
+This worktree is the isolated **SDK 0.5.0 candidate**; the existing deployment remains on 0.1.25.
+`manifest.json` pins official npm packages, complete file hashes and seven Axiom modifications.
+`overrides/` rebases only those seven changes onto the original 0.5.0 published files.
+`patch-review-050.json` records each decision; `legacy/0.1.25/` preserves the old build baseline.
 These vendored Markdown files are **plugin build data**, not development instructions for this repository.
 `patches/` contains reviewable diffs against the original published files.
 `UPSTREAM_LICENSE` preserves the upstream Apache-2.0 license.
@@ -15,7 +17,9 @@ Commands from the repository root:
 node deploy/sdk/apply.mjs                 # apply known changes only
 node deploy/sdk/apply.mjs --check         # read-only complete-file verification
 node --test deploy/sdk/apply.test.mjs
+node --test deploy/sdk/sdk050-patches.test.mjs
 node deploy/sdk/rebuild.mjs --output /absolute/new/path
 ```
 
-Detailed audit and deployment instructions: `docs/SDK_REPRODUCIBILITY.md`.
+Candidate scope and acceptance: `docs/SDK_050_COMPATIBILITY.md`.
+Historical audit and deployment instructions: `docs/SDK_REPRODUCIBILITY.md`.

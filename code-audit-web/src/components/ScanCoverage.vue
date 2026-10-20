@@ -21,7 +21,7 @@ function objectValue(item:unknown,key:string):unknown{return item&&typeof item==
 </script>
 <template>
 <section class="coverage-report" aria-label="扫描覆盖报告" :aria-busy="loading">
- <header><h2>覆盖报告 <span>第 {{attempt||'—'}} 次执行</span></h2><strong v-if="doc" :class="{incomplete:doc.completeness!=='complete'}">{{coverageLabel(doc)}}</strong><Button v-if="doc" variant="ghost" size="sm" @click="download">下载完整 JSON</Button></header>
+ <header><h2>覆盖报告 <span>第 {{attempt||'—'}} 次执行</span></h2><strong v-if="doc" :class="{incomplete:doc.completeness==='partial'}">{{coverageLabel(doc)}}</strong><Button v-if="doc" variant="ghost" size="sm" @click="download">下载完整 JSON</Button></header>
  <p v-if="error" role="alert">覆盖报告读取失败：{{error}} <Button variant="outline" size="sm" @click="load">重试</Button></p>
  <p v-else-if="!doc" class="muted">{{loading?'正在读取覆盖报告…':!terminal?'扫描结束后显示覆盖报告。当前进度不能作为完整覆盖证明。':response?.reason||'没有可用的覆盖报告，无法确认完整性。'}}</p>
  <template v-else>

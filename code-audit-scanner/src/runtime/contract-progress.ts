@@ -4,6 +4,7 @@ import {validate,normalizeLegacyErrorCode,type SDKLifecycle,type ActivityV2,type
 import {redactSecrets} from '../security/secret-redactor.js';
 import {SCANNER_LAYOUT} from '../contract/workspace.js';
 import type {SDKDiagnostic,SDKDiagnostics} from '@axiom/contracts';
+import {ACTIVE_SDK_VERSION} from './sdk-version.js';
 
 export interface ObserverProgress {phase:string;phaseReportedAt:string|null;reportedAt:string|null;filesTotal:number|null;completed:number|null;total:number|null;unit:string|null}
 const safe=(s:string,max=32768)=>{const value=redactSecrets(s).slice(0,max);const last=value.charCodeAt(value.length-1);return last>=0xd800&&last<=0xdbff?value.slice(0,-1):value;};
@@ -60,11 +61,25 @@ export class ContractProgressSink {
   if(status.kind==='dispatch'&&status.started!>status.planned!)return;
   this.snapshot.workerStatus=status;await this.emit('scan.worker_status',status,'info','worker status updated');
  });}
- private findWorker(worker:WorkerRef){return worker.threadId?this.snapshot.workers.find(w=>w.worker.threadId===worker.threadId):this.snapshot.workers.filter(w=>w.worker.index===worker.index).at(-1);}
+ workerObserved(input:{kind:string;worker:number;componentIndex?:number}){const v={...input};return this.update(async()=>{
+  if(v.kind!=='observed'||count(v.worker)===null||(v.componentIndex!==undefined&&count(v.componentIndex)===null))return;
+  const worker:WorkerRef={index:v.worker,...(v.componentIndex!==undefined?{componentIndex:v.componentIndex}:{})};
+  // Persisted-session discovery supplies neither a phase nor a running state.
+  if(this.findWorker(worker))return;
+  await this.emit('scan.worker',this.putWorker(worker,'unknown'),'info',`SDK 已记录 Worker ${v.worker}；运行状态尚未提供`);
+ });}
+ usage(input:Record<string,unknown>,componentIndex?:number){const v=structuredClone(input);return this.update(async()=>{
+  const usage={schemaVersion:1 as const,execution:this.snapshot.execution,sdkVersion:ACTIVE_SDK_VERSION,observedAt:new Date().toISOString(),source:'sdk_on_usage' as const,measurement:'observed_tokens' as const,
+   inputTokens:count(v.input_tokens),cachedInputTokens:count(v.cached_input_tokens),cacheWriteInputTokens:v.cache_write_input_tokens_reported===false?null:count(v.cache_write_input_tokens),outputTokens:count(v.output_tokens),reasoningOutputTokens:count(v.reasoning_output_tokens),totalTokens:count(v.total_tokens),...(typeof v.cache_write_input_tokens_reported==='boolean'?{cacheWriteInputTokensReported:v.cache_write_input_tokens_reported}:{}),...(componentIndex!==undefined?{componentIndex}:{})};
+  validate('SDKUsage',usage,this.snapshot.execution);
+  this.snapshot.extensions={...this.snapshot.extensions,sdkUsage:usage};
+  await this.emit('scan.usage',usage,'info','已记录 SDK Token 观察；费用和完整结算状态独立核对');
+ });}
+ private findWorker(worker:WorkerRef){return worker.threadId?this.snapshot.workers.find(w=>w.worker.threadId===worker.threadId&&w.worker.componentIndex===worker.componentIndex):this.snapshot.workers.filter(w=>w.worker.index===worker.index&&w.worker.componentIndex===worker.componentIndex).at(-1);}
  private putWorker(worker:WorkerRef,status:WorkerObservation['status'],activity?:ActivityV2,error?:ContractError){
-  const previous=this.findWorker(worker)??this.snapshot.workers.find(w=>!w.worker.threadId&&worker.index!==undefined&&w.worker.index===worker.index);
+  const previous=this.findWorker(worker)??this.snapshot.workers.find(w=>!w.worker.threadId&&worker.index!==undefined&&w.worker.index===worker.index&&w.worker.componentIndex===worker.componentIndex);
   const merged:WorkerObservation={...previous,worker:{...previous?.worker,...worker},status,observedAt:new Date().toISOString(),source:'engine_callback',...(activity?{activity:activitySummary(activity)}:{}),...(error?{error:{...error,message:safe(error.message,512)}}:{})};
-  const match=this.snapshot.workers.findIndex(w=>w===previous||(!w.worker.threadId&&worker.index!==undefined&&w.worker.index===worker.index));
+  const match=this.snapshot.workers.findIndex(w=>w===previous||(!w.worker.threadId&&worker.index!==undefined&&w.worker.index===worker.index&&w.worker.componentIndex===worker.componentIndex));
   if(match>=0)this.snapshot.workers.splice(match,1);
   this.snapshot.workers.push(merged);if(this.snapshot.workers.length>256){this.snapshot.workers.shift();this.snapshot.workersTruncated=true;}return merged;
  }
@@ -74,8 +89,8 @@ export class ContractProgressSink {
  warning(message:string,code:ContractError['code']='unknown',origin:ContractError['origin']='engine'){return this.update(()=>this.emit('scan.warning',{code,origin,message:safe(message)||'Unreported observer warning'},'warn',message));}
  sdkDiagnostic(snapshot:SDKDiagnostics,entry:SDKDiagnostic){const value=structuredClone(snapshot),item=structuredClone(entry);validate('SDKDiagnostics',value,this.snapshot.execution);validate('SDKDiagnostic',item,this.snapshot.execution);return this.update(async()=>{this.snapshot.extensions={...this.snapshot.extensions,sdkDiagnostics:value};await this.emit('scan.warning',{code:'unknown',origin:'engine',message:item.message},'warn',item.source==='observer_error'?`观察器 ${item.observer}：${item.message}`:item.message);});}
  error(error:ContractError){const v={...error,message:safe(error.message)||'Unreported execution error'};return this.update(async()=>{this.snapshot.error=v;await this.emit('scan.error',v,'error',v.message);});}
- session(input:{threadId:string;parentThreadId:string|null;worker?:number;event:Record<string,unknown>}){
-  const v=structuredClone(input),payload=record(v.event.payload);const lifecycle=v.event.type==='event_msg'&&(payload.type==='task_started'||payload.type==='task_complete');const text=reasoningText(v.event);if(!lifecycle&&!text)return Promise.resolve();const worker:WorkerRef={threadId:v.threadId,parentThreadId:v.parentThreadId,...(v.worker!==undefined?{index:v.worker}:{})};
+ session(input:{threadId:string;parentThreadId:string|null;worker?:number;componentIndex?:number;event:Record<string,unknown>}){
+  const v=structuredClone(input),payload=record(v.event.payload);const lifecycle=v.event.type==='event_msg'&&(payload.type==='task_started'||payload.type==='task_complete');const text=reasoningText(v.event);if(!lifecycle&&!text)return Promise.resolve();const worker:WorkerRef={threadId:v.threadId,parentThreadId:v.parentThreadId,...(v.worker!==undefined?{index:v.worker}:{}),...(v.componentIndex!==undefined?{componentIndex:v.componentIndex}:{})};
   return this.update(async()=>{
    // Lifecycle follows typed session fields. A completed turn is waiting for
    // another turn, not proof that an independent scan finished successfully.

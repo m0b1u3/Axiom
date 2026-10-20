@@ -20,7 +20,7 @@ var ErrRecoveryConflict = errors.New("执行状态或恢复证据已变化，请
 var ErrRecoveryUnavailable = errors.New("本次执行没有可安全恢复的完整提交结果，已保留现有记录与证据")
 var errRecoveryReplayed = errors.New("result recovery already committed")
 
-const checkpointResumeReason = "SDK 0.1.25 没有跨进程恢复扫描的入口；Standard 和 Deep 均不能通过 SDK 断点续扫。重新执行会创建新的扫描会话。"
+const checkpointResumeReason = "当前 Web 的公开 SDK 集成不支持跨进程断点续扫。完整提交结果可恢复入库；重新执行会创建新的扫描会话。"
 
 type resultRecovery struct {
 	record             contracts.RecoveredResult
@@ -63,7 +63,7 @@ func (s *Store) RecoverySnapshot(ctx context.Context, id int64, outputRoot strin
 	}
 	v := contracts.ScanRecoverySnapshot{
 		SchemaVersion: 1, Execution: contracts.RecoveryExecution{TaskID: contracts.TaskID(fmt.Sprint(id)), Attempt: int64(t.Attempt)},
-		ObservedAt: contracts.Timestamp(time.Now().UTC().Format(time.RFC3339Nano)), TaskStatus: contracts.ScanRecoverySnapshotTaskStatus(t.Status), SDKVersion: "0.1.25",
+		ObservedAt: contracts.Timestamp(time.Now().UTC().Format(time.RFC3339Nano)), TaskStatus: contracts.ScanRecoverySnapshotTaskStatus(t.Status), SDKVersion: contracts.CurrentSDKVersion,
 		CheckpointResume: contracts.ScanRecoverySnapshotCheckpointResume{Supported: false, Reason: checkpointResumeReason},
 		CommittedResult:  contracts.ScanRecoverySnapshotCommittedResult{State: "unsupported", Reason: "历史执行缺少完整结果合同；原有报告与历史读取保持可用。"},
 		Restart:          contracts.ScanRecoverySnapshotRestart{Allowed: IsTerminalStatus(t.Status), Reason: "重新执行沿用冻结的源码与配置，可能重复分析并再次产生费用；原执行记录保留。"},
@@ -110,6 +110,9 @@ func (s *Store) RecoverySnapshot(ctx context.Context, id int64, outputRoot strin
 		return v, e
 	}
 	if archive.Result != nil {
+		if archive.Result.Engine.Version != nil && (*archive.Result.Engine.Version == "0.1.25" || *archive.Result.Engine.Version == "0.5.0") {
+			v.SDKVersion = contracts.ScanRecoverySnapshotSDKVersion(*archive.Result.Engine.Version)
+		}
 		v.CommittedResult.State = "archived"
 		v.CommittedResult.Reason = "完整结果已入库，可查看原执行；无需重新调用模型。"
 		if v.Recovery != nil {

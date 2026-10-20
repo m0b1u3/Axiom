@@ -78,7 +78,7 @@ const WORKFLOW_PROMPT = [
   "- 预检完成后立即进入源码审计；复用宿主提供的 helper 结果和明确参数，不反复读取用法。",
   "工作范围：",
   "- 审计对象是 CODEX_SECURITY_REPOSITORY 下的目标源码。读完技能文档后立刻审仓库。",
-  "- 按技能要求调用插件 helper（config_preflight.py、resolve_security_md.py 等）；不要逐行切片阅读任何文件。",
+  "- 指导文件解析使用当前插件的 launch_codex_security_mcp --helper resolve-security-md，优先复用宿主已提供的解析结果；其他 helper 以当前插件文档为准。不要逐行切片阅读任何文件。",
 ].join("\n");
 
 export function isScanFocus(value: string): value is ScanFocus {

@@ -40,6 +40,15 @@ jobs:
       - name: Build production images
         working-directory: ${{ runner.temp }}/axiom-candidate-source
         run: docker compose --env-file "$RUNNER_TEMP/axiom-production.env" -f deploy/docker/compose.production.yml build
+      - name: Verify native SDK without models, network or persistent state
+        working-directory: ${{ runner.temp }}/axiom-candidate-source
+        run: |
+          docker run --rm --platform linux/amd64 --network none --read-only \
+            --tmpfs /tmp:rw,uid=1001,gid=1001,mode=1777 \
+            --tmpfs /app/data:rw,uid=1001,gid=1001,mode=0700 \
+            --env HOME=/tmp/empty-home --env CODEX_HOME=/tmp/empty-codex \
+            --env CODEX_SECURITY_STATE_DIR=/tmp/empty-state \
+            "axiom/agent:$(cat VERSION)" node deploy/sdk/verify-runtime.mjs
       - name: Verify static Web proxy with isolated mock identity
         working-directory: ${{ runner.temp }}/axiom-candidate-source
         run: python3 deploy/ops/static_web_acceptance.py --image "axiom/web:$(cat VERSION)" --work "$RUNNER_TEMP/axiom-static-web-acceptance"

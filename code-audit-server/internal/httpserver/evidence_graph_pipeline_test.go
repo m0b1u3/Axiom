@@ -24,6 +24,17 @@ import (
 )
 
 func TestEvidenceGraphPipeline(t *testing.T) {
+	runEvidenceGraphPipeline(t, false)
+}
+
+func TestSDK050EvidenceCompatibilityPipeline(t *testing.T) {
+	runEvidenceGraphPipeline(t, true)
+}
+
+func runEvidenceGraphPipeline(t *testing.T, sdk050 bool) {
+	if sdk050 {
+		t.Setenv("AXIOM_SDK050_FIXTURE", "1")
+	}
 	root, e := filepath.Abs("../../..")
 	if e != nil {
 		t.Fatal(e)
@@ -247,12 +258,28 @@ func TestEvidenceGraphPipeline(t *testing.T) {
 			cmd := exec.Command("node", "tests/evidence-graph-web-acceptance.mjs")
 			cmd.Dir = filepath.Join(root, "code-audit-web")
 			cmd.Env = append(os.Environ(), "AXIOM_TEST_WEB_URL="+ts.URL, "AXIOM_TEST_EVIDENCE_IDS="+string(data))
+			if sdk050 {
+				cmd.Env = append(cmd.Env, "AXIOM_TEST_EVIDENCE_REPORT_DIR="+filepath.Join(root, "output/sdk050/browser-evidence-050"))
+			}
 			if out, e := cmd.CombinedOutput(); e != nil {
 				t.Fatalf("evidence browser: %v %s", e, out)
 			} else {
 				t.Log(string(out))
 			}
 		})
+		if sdk050 {
+			t.Run("browser-sdk050-result-worker-and-usage", func(t *testing.T) {
+				data, _ := json.Marshal(ids)
+				cmd := exec.Command("node", "tests/sdk050-web-acceptance.mjs")
+				cmd.Dir = filepath.Join(root, "code-audit-web")
+				cmd.Env = append(os.Environ(), "AXIOM_TEST_WEB_URL="+ts.URL, "AXIOM_TEST_EVIDENCE_IDS="+string(data))
+				if out, err := cmd.CombinedOutput(); err != nil {
+					t.Fatalf("SDK 0.5 browser: %v %s", err, out)
+				} else {
+					t.Log(string(out))
+				}
+			})
+		}
 	}
 	for _, file := range calls {
 		assertSDKCallCount(t, file, 1)

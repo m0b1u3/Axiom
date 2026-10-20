@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v13/scanner-description.schema.json",
+  "title": "ScannerDescriptionV13",
+  "$ref": "#/$defs/ScannerDescriptionV13",
+  "$defs": {
+    "ContractVersionsV13": {
+      "type": "object",
+      "properties": {
+        "assignment": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/SchemaVersion"
+          },
+          "uniqueItems": true
+        },
+        "job": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8
+            ]
+          },
+          "uniqueItems": true
+        },
+        "progress": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "uniqueItems": true
+        },
+        "event": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "uniqueItems": true
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/SchemaVersion"
+          },
+          "uniqueItems": true
+        },
+        "completion": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/SchemaVersion"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "assignment",
+        "job",
+        "progress",
+        "event",
+        "result",
+        "completion"
+      ],
+      "additionalProperties": false
+    },
+    "RuntimeFormatsV13": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "string",
+          "enum": [
+            "scanner_job"
+          ]
+        },
+        "events": {
+          "type": "string",
+          "const": "scan_event"
+        },
+        "result": {
+          "type": "string",
+          "const": "scan_result"
+        },
+        "versions": {
+          "$ref": "#/$defs/ContractVersionsV13"
+        }
+      },
+      "required": [
+        "input",
+        "events",
+        "result",
+        "versions"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "properties": {
+            "versions": {
+              "properties": {
+                "assignment": {
+                  "const": [
+                    1
+                  ]
+                },
+                "job": {
+                  "const": [
+                    1,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7,
+                    8
+                  ]
+                },
+                "progress": {
+                  "const": [
+                    2
+                  ]
+                },
+                "event": {
+                  "const": [
+                    2
+                  ]
+                },
+                "result": {
+                  "const": [
+                    1
+                  ]
+                },
+                "completion": {
+                  "const": [
+                    1
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ScannerDescriptionV13": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 13
+        },
+        "name": {
+          "type": "string",
+          "const": "axiom-scanner"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baselineVersions": {
+          "$ref": "#/$defs/ContractVersionsV13"
+        },
+        "runtime": {
+          "$ref": "#/$defs/RuntimeFormatsV13"
+        },
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "describe": {
+              "type": "boolean",
+              "const": true
+            },
+            "jobFile": {
+              "type": "boolean",
+              "const": true
+            },
+            "structuredEvents": {
+              "type": "boolean",
+              "const": true
+            },
+            "versionedResults": {
+              "type": "boolean",
+              "const": true
+            },
+            "maxCostUsd": {
+              "type": "boolean",
+              "const": true
+            },
+            "atomicResultCommit": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": [
+            "describe",
+            "jobFile",
+            "structuredEvents",
+            "versionedResults",
+            "maxCostUsd",
+            "atomicResultCommit"
+          ],
+          "additionalProperties": false
+        },
+        "configuredSdk": {
+          "type": "object",
+          "properties": {
+            "package": {
+              "type": "string",
+              "const": "@openai/codex-security"
+            },
+            "version": {
+              "type": "string",
+              "const": "0.5.0"
+            }
+          },
+          "required": [
+            "package",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "sdkIdentityVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "sdkParametersVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "sdkConcurrencyVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "sdkResultAdapterVersion": {
+          "type": "integer",
+          "const": 2
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "name",
+        "version",
+        "baselineVersions",
+        "runtime",
+        "capabilities",
+        "configuredSdk",
+        "sdkIdentityVersion",
+        "sdkParametersVersion",
+        "sdkConcurrencyVersion",
+        "sdkResultAdapterVersion"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

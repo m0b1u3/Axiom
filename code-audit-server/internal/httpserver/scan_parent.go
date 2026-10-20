@@ -49,6 +49,9 @@ func (s *Server) loadParentState(r *http.Request, id int64) (*contracts.SDKParen
 	if e != nil || state.SourceHash != t.SourceContentHash {
 		return nil, nil, errors.New("父扫描状态的版本或执行身份不匹配")
 	}
+	if state.SDKVersion != contracts.CurrentSDKVersion {
+		return nil, nil, fmt.Errorf("父扫描 SDK %s 与当前 SDK %s 不兼容；历史报告仍可读取，请创建独立扫描。旧版私有工作台不会自动迁移", state.SDKVersion, contracts.CurrentSDKVersion)
+	}
 	commitRaw, e := parentFile(root, "normalized/result.commit.json", 1024*1024)
 	if e != nil {
 		return nil, nil, errors.New("父扫描结果提交标记不可用")
