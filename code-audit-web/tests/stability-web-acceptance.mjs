@@ -6,8 +6,10 @@ import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import path from 'node:path';
 const base = process.env.AXIOM_TEST_WEB_URL, project = process.env.AXIOM_TEST_STABILITY_PROJECT;
 const token = process.env.AXIOM_TEST_STABILITY_TOKEN, phase = process.env.AXIOM_TEST_STABILITY_PHASE;
+const sdk = process.env.AXIOM_TEST_STABILITY_SDK;
 const ids = JSON.parse(process.env.AXIOM_TEST_STABILITY_IDS || '{}'), out = process.env.AXIOM_TEST_STABILITY_REPORT;
 assert.ok(base && out && token && project?.startsWith('axiom-accept-stability-'));
+assert.match(sdk ?? '', /^\d+\.\d+\.\d+$/, 'the caller must provide the exact pinned SDK version');
 const origin = new URL(base).origin;
 assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(new URL(base).hostname) && !['', '5173', '5174', '8080'].includes(new URL(base).port));
 assert.ok(['running', 'completed', 'interrupt', 'recovery'].includes(phase)); await mkdir(out, {recursive: true});
@@ -47,7 +49,11 @@ try {
     await screenshot('long-task-running');
     await page.goto(origin + '/scans/' + ids.cancel);
     await page.getByRole('button', {name: '取消', exact: true}).click();
+    const canceled = page.waitForResponse(r => r.request().method() === 'POST' && new URL(r.url()).pathname === `/api/v1/scans/${ids.cancel}/cancel`);
     await page.getByRole('dialog', {name: '取消扫描', exact: true}).getByRole('button', {name: '确定', exact: true}).click();
+    const cancelResponse = await canceled;
+    assert.equal(cancelResponse.status(), 200);
+    assert.ok(['cancel_requested', 'canceled'].includes((await cancelResponse.json()).data.status));
     checks.push('same-model-same-project-parallelism-visible', 'live-activity-survives-route-refresh', 'cancel-through-Web-without-closing-other-tasks');
   } else if (phase === 'completed') {
     await page.goto(origin + '/scans/' + ids.long); await page.reload();
@@ -61,7 +67,7 @@ try {
     await page.goto(origin + '/scans/' + ids.fault);
     const recovery = page.getByRole('region', {name: '扫描中断与恢复', exact: true});
     await recovery.getByRole('button', {name: /^扫描中断与恢复/}).click();
-    await recovery.getByText('SDK 0.1.25 不支持', {exact: true}).waitFor();
+    await recovery.getByText(`SDK ${sdk} · 此入口不支持断点续扫`, {exact: true}).waitFor();
     // Leave the panel open while the genuine 60-second lease expires. No Agent
     // remains online to poll the queue or mutate the task status for this test.
     const interrupt = recovery.getByRole('button', {name: '登记租约过期中断', exact: true});
@@ -93,6 +99,10 @@ try {
     checks.push('unknown-fee-blocks-Web-retry', 'Web-reconciliation-retains-evidence', 'explicit-reexecution-requires-fee-acknowledgement');
   }
   assert.deepEqual(errors, []); assert.deepEqual(external, []); assert.deepEqual(forbidden, []);
-  await writeFile(path.join(out, 'browser.json'), JSON.stringify({status: 'passed', phase, checks, fixtureOnly: true, errors, external, forbidden, businessDatabaseAccess: false, realSDKLogins: 0, realAudits: 0, externalPublications: 0}, null, 2) + '\n');
-} catch (error) {if (page) await page.screenshot({path: path.join(out, 'failure.png'), fullPage: true}).catch(() => {}); throw error;}
+  await writeFile(path.join(out, 'browser.json'), JSON.stringify({status: 'passed', phase, sdkVersion: sdk, checks, fixtureOnly: true, errors, external, forbidden, businessDatabaseAccess: false, realSDKLogins: 0, realAudits: 0, externalPublications: 0}, null, 2) + '\n');
+} catch (error) {
+  await writeFile(path.join(out, 'browser.json'), JSON.stringify({status: 'failed', phase, sdkVersion: sdk, checks, fixtureOnly: true, error: String(error), errors, external, forbidden, businessDatabaseAccess: false, realSDKLogins: 0, realAudits: 0, externalPublications: 0}, null, 2) + '\n');
+  if (page) await page.screenshot({path: path.join(out, 'failure.png'), fullPage: true}).catch(() => {});
+  throw error;
+}
 finally {await browser.close();}

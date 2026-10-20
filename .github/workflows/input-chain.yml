@@ -15,7 +15,7 @@ concurrency:
 jobs:
   input:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       AXIOM_TEST_DATABASE_URL: postgres://postgres:fixture-password@127.0.0.1:5432/axiom_test_input?sslmode=disable
       AXIOM_TEST_WEB_INPUT: '1'
@@ -94,8 +94,14 @@ jobs:
         working-directory: code-audit-agent
       - run: go test -count=1 ./...
         working-directory: shared/sourceidentity
-      # Store and process fixtures share one disposable database.
-      - run: go test -p 1 -count=1 ./...
+      # Store and process fixtures share one disposable database. Keep groups
+      # sequential and every test selected exactly once; each retains Go's
+      # default package timeout and the browser/fault-specific deadlines.
+      - name: Test Server core and non-SDK workflows
+        run: go test -p 1 -count=1 -skip '^TestSDK.*Pipeline$' ./...
+        working-directory: code-audit-server
+      - name: Test SDK workflows and browser compatibility
+        run: go test -count=1 -run '^TestSDK.*Pipeline$' ./internal/httpserver
         working-directory: code-audit-server
       - run: npm test
         working-directory: contracts

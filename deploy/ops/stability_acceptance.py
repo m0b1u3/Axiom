@@ -79,6 +79,7 @@ def upload(web, archive):
 
 def suite(env_file, work, seconds=180, files=12000, mib=48, parallel=6, burst=1000):
     validate_profile(seconds, files, mib, parallel, burst)
+    sdk_version = json.loads((ROOT/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"]
     work = Path(work).resolve()
     if work.exists():
         raise ValueError("Stability work directory must be new")
@@ -132,7 +133,7 @@ networks:
     def browser(phase, ids):
         output = work/("browser-"+phase)
         env = {**os.environ, "AXIOM_TEST_WEB_URL":web.base, "AXIOM_TEST_STABILITY_TOKEN":web.token, "AXIOM_TEST_STABILITY_PROJECT":stack.project,
-               "AXIOM_TEST_STABILITY_IDS":json.dumps(ids), "AXIOM_TEST_STABILITY_FILES":str(files), "AXIOM_TEST_STABILITY_PHASE":phase, "AXIOM_TEST_STABILITY_REPORT":str(output)}
+               "AXIOM_TEST_STABILITY_IDS":json.dumps(ids), "AXIOM_TEST_STABILITY_FILES":str(files), "AXIOM_TEST_STABILITY_PHASE":phase, "AXIOM_TEST_STABILITY_REPORT":str(output), "AXIOM_TEST_STABILITY_SDK":sdk_version}
         with (work/("browser-"+phase+".log")).open("wb") as log:
             subprocess.run(["node", str(ROOT/"code-audit-web/tests/stability-web-acceptance.mjs")], env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
         assert json.loads((output/"browser.json").read_text())["status"] == "passed"
@@ -151,7 +152,7 @@ networks:
         network = next(iter(agent["NetworkSettings"]["Networks"]))
         assert json.loads(subprocess.check_output(["docker", "network", "inspect", network]))[0]["Internal"]
         assert agent["Config"]["User"] == "axiom" and agent["HostConfig"]["ReadonlyRootfs"]
-        assert stack.output("exec", "-T", "agent", "node", "-p", "require('/opt/axiom/code-audit-scanner/node_modules/@openai/codex-security/package.json').version") == json.loads((ROOT/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"]
+        assert stack.output("exec", "-T", "agent", "node", "-p", "require('/opt/axiom/code-audit-scanner/node_modules/@openai/codex-security/package.json').version") == sdk_version
         web = Web(stack); web.login()  # A newly generated synthetic console identity, never a business account.
         model = web.data("POST", "/api/v1/model-configs", {"name":"Fixtures / Mock stability", "provider":"openai", "model":"fixture-stability-model", "apiKey":"fixture-not-a-real-key"})
         web.data("PUT", f"/api/v1/model-configs/{model['id']}/enable", {"enabled":True})
@@ -274,7 +275,7 @@ networks:
             metadata = json.loads(subprocess.check_output(["docker","image","inspect",image["imageId"]]))[0]
             assert metadata["Os"] == "linux" and metadata["Architecture"] == "amd64"
             image.update(os=metadata["Os"], architecture=metadata["Architecture"])
-        report = {"status":"passed", "fixtureOnly":True, "sdk":json.loads((ROOT/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"], "checks":checks,
+        report = {"status":"passed", "fixtureOnly":True, "sdk":sdk_version, "checks":checks,
                   "profile":{"holdSeconds":seconds,"files":files,"sourceBytes":inventory["bytes"],"archiveBytes":large_path.stat().st_size,"parallel":parallel,"sessionBurstPerTask":burst,"defaultLeaseSeconds":60},
                   "observations":{"holdElapsedSeconds":round(hold_elapsed,2),"leaseExpiryAfterKillSeconds":round(lease_expiry_elapsed,2),"apiBatchP95Seconds":round(statistics.quantiles(latencies,n=20)[18] if len(latencies)>1 else max(latencies),3),"resourceSamples":samples},
                   "host":{"system":platform.system(),"machine":platform.machine(),"docker":json.loads(subprocess.check_output(["docker","info","--format","{{json .}}" ]))["Architecture"]},
