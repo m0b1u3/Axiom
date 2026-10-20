@@ -28,10 +28,12 @@ export function assertGeometry(g,count,{contained=true}={}){
 }
 
 async function settled(page){await page.evaluate(async()=>{await document.fonts.ready;for(let i=0;i<3;i++)await new Promise(r=>requestAnimationFrame(r));});}
-async function fits(page,region,count,failures){
+// ResizeObserver schedules the chart update on another animation frame. Poll
+// the rendered SVG with a bounded deadline instead of assuming a frame count.
+export async function waitForEvidenceGeometry(page,region,count,failures){
  const deadline=Date.now()+1500;let failure,last;
  do{await settled(page);last=await graphGeometry(region);try{assertGeometry(last,count);return last;}catch(e){failure=e;}}while(Date.now()<deadline);
- if(!failures)throw failure;
+ if(!failures){failure.geometry=last;throw failure;}
  failures.push({error:failure.message,width:last.width,height:last.height,clientHeight:last.clientHeight,inlineHeight:last.inlineHeight,svgHeight:last.svgHeight});return last;
 }
 async function shot(page,region,out,name){if(!out)return;await settled(page);await region.screenshot({path:path.join(out,name+'.png'),animations:'disabled'});}
@@ -39,7 +41,7 @@ const samePositions=(a,b)=>{assert.equal(a.nodes.length,b.nodes.length);for(let 
 
 export async function exerciseEvidenceLayout(page,region,graph,{screenshots}={}){
  const checks=[],measurements=[],geometryFailures=[],originalViewport=page.viewportSize(),originalStyle=await region.getAttribute('style');
- const checkFit=count=>fits(page,region,count,geometryFailures);
+ const checkFit=count=>waitForEvidenceGeometry(page,region,count,geometryFailures);
  const code=graph.nodes.find(n=>n.sdkEvidenceId==='E-source'),review=graph.nodes.find(n=>n.kind==='validation');
  const locator=region.getByLabel('定位节点或关系',{exact:true}),inspector=region.getByRole('region',{name:'选中证据详情',exact:true});
  await region.getByRole('button',{name:'证据关系',exact:true}).click();await region.getByRole('button',{name:'图谱',exact:true}).click();await locator.selectOption(code.id);

@@ -4,7 +4,7 @@ import {chromium} from 'playwright-core';
 import {mkdir,writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {graphGeometry,assertGeometry} from './evidence-layout-browser.mjs';
+import {waitForEvidenceGeometry} from './evidence-layout-browser.mjs';
 const base=process.env.AXIOM_TEST_WEB_URL,ids=JSON.parse(process.env.AXIOM_TEST_EVIDENCE_IDS??'{}');
 if(!base||!['127.0.0.1','localhost','[::1]'].includes(new URL(base).hostname)||!ids.rich||!ids.legacy)throw new Error('SDK 0.5 acceptance requires fresh loopback fixtures');
 const root=fileURLToPath(new URL('../../',import.meta.url));
@@ -37,13 +37,13 @@ try{
  await inspector.getByRole('button',{name:'查看对应原始数据',exact:true}).click();await inspector.getByRole('region',{name:'对应原始证据',exact:true}).waitFor();
  const cause=graph.nodes.find(n=>n.kind==='root_cause');assert.equal(cause.code,'database.execute(query);');await select.selectOption(cause.id);await inspector.getByRole('heading',{name:cause.label,exact:true}).waitFor();
  checks.push('canonical-dataflow-outcome-root-cause-code-and-exact-raw-pointer-remain-inspectable');
- await region.evaluate(el=>{el.style.width='550px';el.style.maxWidth='100%'});await page.evaluate(async()=>{await document.fonts.ready;for(let i=0;i<3;i++)await new Promise(r=>requestAnimationFrame(r))});assertGeometry(await graphGeometry(region),graph.nodes.length);
+ await region.evaluate(el=>{el.style.width='550px';el.style.maxWidth='100%'});await waitForEvidenceGeometry(page,region,graph.nodes.length);
  await region.screenshot({path:path.join(out,'sdk050-evidence-narrow.png'),animations:'disabled'});checks.push('canonical-0.5-graph-keeps-nodes-and-labels-separated-in-a-narrow-panel');
  await region.evaluate(el=>el.removeAttribute('style'));const native=page.getByRole('region',{name:'SDK 原生结果与导出',exact:true});await native.getByRole('button',{name:'预览 Markdown',exact:true}).click();await native.getByRole('region',{name:'原生产物预览',exact:true}).getByText(/No model called/).waitFor();await native.getByRole('button',{name:'预览 SARIF',exact:true}).click();await native.getByRole('region',{name:'原生产物预览',exact:true}).getByText(/"version":"2.1.0"/).waitFor();
  checks.push('native-markdown-and-sarif-previews-read-only-archived-fixture-bytes');
- await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:path.join(out,'sdk050-mobile.png'),fullPage:true,animations:'disabled'});await page.setViewportSize({width:1440,height:1000});
+ await page.setViewportSize({width:390,height:844});await waitForEvidenceGeometry(page,region,graph.nodes.length);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:path.join(out,'sdk050-mobile.png'),fullPage:true,animations:'disabled'});await page.setViewportSize({width:1440,height:1000});
  checks.push('token-observations-and-native-result-sections-remain-readable-on-mobile');
  await page.goto(base+'/scans/'+ids.legacy);const legacy=page.getByRole('region',{name:'漏洞证据链',exact:true});await legacy.getByRole('button',{name:'查看证据链',exact:true}).click();await legacy.getByText(/历史字段投影/).waitFor();checks.push('legacy-completion-and-report-reading-still-works');
  assert.deepEqual(writes,['/api/v1/auth/login'],'inspection must never submit a scan, SDK login, external publication or ledger edit');assert.deepEqual(errors,[]);
  await writeFile(path.join(out,'browser.json'),JSON.stringify({status:'passed',fixtureOnly:true,sdk:'0.5.0',checks,realModelCalls:0,realSDKLogins:0,externalPublications:0,businessDatabaseAccess:false},null,2)+'\n');console.log(JSON.stringify({status:'passed',checks}));
-}catch(error){await writeFile(path.join(out,'browser.json'),JSON.stringify({status:'failed',fixtureOnly:true,checks,error:String(error)},null,2));if(page){await page.screenshot({path:path.join(out,'failure.png'),fullPage:true});console.error((await page.locator('body').innerText()).slice(-6000))}throw error;}finally{await browser.close()}
+}catch(error){await writeFile(path.join(out,'browser.json'),JSON.stringify({status:'failed',fixtureOnly:true,checks,error:String(error),geometry:error.geometry??null},null,2));if(page){await page.screenshot({path:path.join(out,'failure.png'),fullPage:true});console.error((await page.locator('body').innerText()).slice(-6000))}throw error;}finally{await browser.close()}
