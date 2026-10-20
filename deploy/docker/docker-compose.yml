@@ -81,18 +81,28 @@ services:
     platform: linux/amd64
     build:
       context: ../..
-      dockerfile: deploy/docker/Dockerfile.web
+      dockerfile: deploy/docker/Dockerfile.web.production
       args:
         AXIOM_BUILD_VERSION: ${AXIOM_WEB_RELEASE:-${AXIOM_RELEASE:-local}}
     container_name: axiom-web
     depends_on:
       - server
     ports:
-      - "5173:5173"
-    environment:
-      AXIOM_API_TARGET: http://server:8080
-      NODE_ENV: development
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+      - "${AXIOM_WEB_PORT:-5173}:8080"
+    read_only: true
+    tmpfs: ["/tmp:uid=101,gid=101,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/readyz]
+      interval: 5s
+      timeout: 5s
+      start_period: 10s
+      retries: 6
+    stop_grace_period: 10s
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
     restart: unless-stopped
 
 volumes:

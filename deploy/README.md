@@ -1,12 +1,12 @@
 # Axiom 自托管部署
 
-正式配置为 `docker/compose.production.yml`：PostgreSQL、Go Server、Go Agent / Node Scanner、Nginx 静态 Web。现有 `docker/docker-compose.yml` 保留为开发配置。
+正式配置为 `docker/compose.production.yml`：PostgreSQL、Go Server、Go Agent / Node Scanner、Nginx 静态 Web。现有 `docker/docker-compose.yml` 保留迁移环境的后端、端口和数据卷，Web 同样默认使用静态 Nginx；Vite 通过显式开发覆盖配置启用。
 
-开发配置同样通过私有 `.env` 中的 `AXIOM_IMAGE_PREFIX` 和 `AXIOM_RELEASE` 选择版本镜像，默认前缀为 `axiom-local`。升级时使用唯一标签，保留旧镜像和原凭据；应用镜像固定 `linux/amd64`，与锁定的 SDK 运行基线一致。开发 Web 仍使用 5173 端口，PostgreSQL 与共享数据卷保持原配置。已部署版本可用 `docker compose --env-file deploy/docker/.env -p docker -f deploy/docker/docker-compose.yml up -d --no-build --no-deps server agent web` 重新应用；升级前仍须完成空队列一致性备份。
+迁移配置通过私有 `.env` 中的 `AXIOM_IMAGE_PREFIX` 和 `AXIOM_RELEASE` 选择版本镜像，默认前缀为 `axiom-local`。升级时使用唯一标签，保留旧镜像和原凭据；应用镜像固定 `linux/amd64`，与锁定的 SDK 运行基线一致。Web 宿主机端口仍为 5173（可用 `AXIOM_WEB_PORT` 调整），Nginx 容器内端口为 8080，PostgreSQL 与共享数据卷保持原配置。已部署版本可用 `docker compose --env-file deploy/docker/.env -p docker -f deploy/docker/docker-compose.yml up -d --no-build --no-deps server agent web` 重新应用；升级前仍须完成空队列一致性备份。旧 Vite 镜像需要先切换为配套静态镜像，不能直接套用新基础配置。
 
 [组件化审计执行](../docs/SDK_COMPONENT_SCANS.md) 需要同步更新 Server、Agent（包含 Node Scanner）和 Web：新增迁移 020，使用 input 6 / Job 8 / Scanner 描述 9，SDK 保持 0.1.25。开发和生产 Web Dockerfile 均安装合同包锁定的 AJV 运行时依赖。冻结组件计划后，用户在 Web 另行配置并启动组件审计；跨组件匹配费用未知，须明确确认，不能视为受扫描预算硬限制。升级前保留数据库、共享产物和旧镜像；创建新版计划或组件执行数据后，回退须使用独立恢复验证，不能只凭旧 Server 在空新增表上就绪就认定可写入兼容。
 
-只更新开发部署的 Web 时，在私有 `.env` 设置 `AXIOM_WEB_RELEASE` 为已验收的 Web 标签，再执行上述命令的 `web` 单服务版本：`docker compose --env-file deploy/docker/.env -p docker -f deploy/docker/docker-compose.yml up -d --no-build --no-deps web`。Server、Agent 和数据卷仍按原配置运行。该变量为空时跟随 `AXIOM_RELEASE`；后续整套升级时应清空它或明确选择配套 Web 版本。只涉及前端的回滚可将它改回备份记录中的旧 Web 标签，再重新应用 `web`；涉及数据库或合同变更时仍按下文恢复流程处理。
+只更新现有部署的 Web 时，在私有 `.env` 设置 `AXIOM_WEB_RELEASE` 为已验收的静态 Web 标签，再执行上述命令的 `web` 单服务版本：`docker compose --env-file deploy/docker/.env -p docker -f deploy/docker/docker-compose.yml up -d --no-build --no-deps web`。Server、Agent 和数据卷仍按原配置运行。该变量为空时跟随 `AXIOM_RELEASE`；后续整套升级时应清空它或明确选择配套 Web 版本。静态版本之间回滚可恢复旧 Web 标签；跨 Nginx/Vite 回滚须同时恢复对应 Compose 配置、启动命令与容器端口，见 [静态 Web 运行基线](../docs/STATIC_WEB_BASELINE.md)。涉及数据库或合同变更时仍按下文恢复流程处理。
 
 适用范围：可信用户、自托管，各服务共置于同一主机。当前 SDK 基线验证 Linux x64，正式配置固定 Server/Agent 为 `linux/amd64`；Apple Silicon Docker 使用模拟执行。真实模型任务仍待单独验收。
 
@@ -37,7 +37,7 @@ docker compose --env-file /absolute/private/path/production.env -f deploy/docker
 
 ## 配置与运行状态
 
-- 生产模式在连接数据库前校验密钥、密码、PostgreSQL 数据源及并发限制，开发模式保留旧默认值。
+- 生产模式在连接数据库前校验密钥、密码与 PostgreSQL 数据源，开发模式保留旧默认值。
 - `AXIOM_SCAN_MOCK=0` 为正式默认值。测试 SDK 替身不装入发布镜像。
 - `AXIOM_MAX_RECOVERIES=0` 为正式默认值，租约过期后由用户在 Web 决定重试。设置 1–10 可允许对应次数的自动重新执行。恢复创建新尝试，可能再次计费；启用任务总预算时，过期未知费用须先在 Web 核对，不自动恢复。
 - Web 可分别设置单次估算上限与任务总预算。重试取单次上限与剩余额度中的较小值；未知费用及耗尽状态会阻止累计预算重试。历史任务保持原有单次语义。费用均为估算，详见 [预算与对账基线](../docs/TASK_BUDGET_BASELINE.md)。
@@ -81,6 +81,14 @@ python3 deploy/ops/stack.py restore /absolute/private/path/backups/release-20261
 实际部署项目勿执行 `down -v`。测试清理仅作用于事先确认不存在的专用验收项目。
 
 ## 无费用验收
+
+静态 Web 代理可独立验收，不连接业务数据库或真实身份：
+
+```bash
+python3 deploy/ops/static_web_acceptance.py --image axiom/web:<release> --work /absolute/private/path/static-web-acceptance
+```
+
+测试在内部 Docker 网络启动模拟后端，浏览器使用显式 Fixtures / Mock 身份，检查 SPA 刷新、缓存、SSE、流式上传下载、故障恢复与后端 IP 变化；可用 `--baseline-image <previous-vite-image>` 额外验证旧 Web 回退。工作目录必须尚不存在。完整说明见 [静态 Web 运行基线](../docs/STATIC_WEB_BASELINE.md)。
 
 ```bash
 python3 deploy/ops/stack.py init /absolute/private/path/acceptance.env --project axiom-accept-local --port 0

@@ -1,13 +1,13 @@
-# Axiom 本地 Docker 迁移启动
+# Axiom Docker 迁移与开发
 
-此配置用于开发与迁移，Web 运行 Vite。正式自托管使用独立的 [部署指南](../README.md) 和 `compose.production.yml`，现有 `.env` 与开发服务无需更改。
+此配置保留迁移环境的端口和数据卷，Web 默认运行 Nginx 静态构建，宿主机端口仍为 5173。完整的自托管隔离与备份工具见 [部署指南](../README.md) 和 `compose.production.yml`；切换 Web 不等于已迁移整套生产配置。
 
 本目录提供从 VPS 迁移到本地 Docker 的最小运行栈：
 
 - PostgreSQL 16
 - Axiom Server
 - Axiom Agent
-- Axiom Web（Vite 开发态）
+- Axiom Web（Nginx 静态文件与同源 API 代理）
 
 ## 一次性准备
 
@@ -68,6 +68,17 @@ docker context use desktop-linux
 - 默认账号是 `admin / <AXIOM_ADMIN_PASSWORD>`
 
 ## 继续开发
+
+需要 Vite 时显式叠加开发配置（Docker Compose 2.24.4+），并使用独立的开发镜像标签：
+
+```bash
+AXIOM_WEB_RELEASE=web-development docker compose --env-file deploy/docker/.env -p docker \
+  -f deploy/docker/docker-compose.yml -f deploy/docker/compose.web-development.yml up -d --build --no-deps web
+```
+
+以上命令在仓库根目录执行，只替换 Web。开发覆盖恢复 Vite 的容器端口、可写根目录及启动命令，不改变 Server、Agent 或数据库。返回静态 Web 时使用已验收的静态镜像标签，并移除开发覆盖文件；不要让同一镜像标签在 Vite 与 Nginx 之间复用。
+
+已有部署只更新 Web 时，先备份私有 `.env`、旧 Compose 配置和旧镜像，设置 `AXIOM_WEB_RELEASE` 为新的静态镜像标签，再用基础配置执行 `up -d --no-build --no-deps web`。宿主机端口由 `AXIOM_WEB_PORT` 控制，默认为 5173；容器内端口为 8080。回退到旧 Vite 版本必须同时恢复旧配置和旧镜像，详见 [静态 Web 运行基线](../../docs/STATIC_WEB_BASELINE.md)。
 
 合同更新后，Server、Agent/Scanner 和 Web 应同步重建。Dockerfile 自动构建 contracts TS 包与 Scanner，Agent 优先启动编译后的 Scanner，SDK 固定为 0.1.25。Server 自动应用截至 `021_sdk_identities.sql` 的增量迁移，旧迁移及历史任务语义保持不变。组件审计任务仍使用 input v6 / job v8；当前 ScannerDescription v10 追加 SDK 身份版本 1，并保留历史描述与 Job 读取；网页会显示不兼容时的等待原因。用户在 Web 管理并冻结组件计划，再配置预算与并发、确认未知匹配费用后启动审计；失败组件重试、费用核对、历史证据与报告查看也在 Web 完成。Server 和 Agent 镜像仍安装 Git，原 base/head 差异流程继续保留。
 

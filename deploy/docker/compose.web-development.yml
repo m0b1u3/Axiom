@@ -1,0 +1,14 @@
+# Explicit Vite opt-in. Use with docker-compose.yml; requires Compose 2.24.4+.
+services:
+  web:
+    build:
+      dockerfile: deploy/docker/Dockerfile.web
+    ports: !override ["${AXIOM_WEB_PORT:-5173}:5173"]
+    environment:
+      AXIOM_API_TARGET: http://server:8080
+      NODE_ENV: development
+    command: [npm, run, dev, --, --host, "0.0.0.0", --port, "5173"]
+    read_only: false
+    tmpfs: !reset []
+    healthcheck:
+      disable: true
