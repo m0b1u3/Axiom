@@ -88,6 +88,8 @@ jobs:
         working-directory: code-audit-web
       - run: npx playwright-core install --with-deps chromium
         working-directory: code-audit-web
+      - run: npm run test:diagnostics
+        working-directory: code-audit-web
       - run: go test -count=1 ./...
         working-directory: code-audit-agent
       - run: go test -count=1 ./...
@@ -122,5 +124,7 @@ jobs:
             output/playwright/sdk-parameters/*.png
             output/playwright/unbounded-dispatch/*.json
             output/playwright/unbounded-dispatch/*.png
+            output/playwright/diagnostics-style/*.json
+            output/playwright/diagnostics-style/*.png
           retention-days: 14
           if-no-files-found: warn
