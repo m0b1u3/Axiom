@@ -99,3 +99,5 @@ python3 deploy/ops/acceptance.py --env /absolute/private/path/acceptance.env --w
 测试挂载明确标记 Fixture 的 SDK 替身，Agent 网络阻断外部连接。验证静态 Web、真实浏览器、重启/替换、数据库断连、备份恢复及损坏/覆盖保护。需要 Web 的 Playwright 依赖和 Chromium，CI 自动安装。结束后清理本轮项目与卷，测试备份和报告留在私有目录。
 
 配置依据：[Compose 就绪顺序](https://docs.docker.com/compose/how-tos/startup-order/)、[Docker 卷持久化](https://docs.docker.com/engine/storage/volumes/)、[Nginx 代理参数](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)。
+
+大源码、跨租约长任务、同模型并行、Agent 强制退出与 Web 恢复，以及固定内部提交的镜像安装升级回滚，见 [无模型稳定性与发布验收](../docs/STABILITY_RELEASE_BASELINE.md)。该流程使用新项目及合成数据，继续保留真实 SDK 与长期运行的验证边界。

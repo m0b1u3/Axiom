@@ -28,7 +28,7 @@ python3 deploy/release/source.py verify /absolute/private/candidate-source
 | `contracts.yml` | Go/TS 生成结果、共同样例和 Node 版本组合 |
 | `go-boundaries.yml` | 独立 Go 模块构建、数据库依赖边界 |
 | `input-chain.yml` | PostgreSQL、Go/TS、真实浏览器输入/结果/进度/权限/预算/存储回归 |
-| `production-stack.yml` | 从源码导出目录构建正式镜像，Fixture 整栈、备份恢复、冻结迁移升级 |
+| `production-stack.yml` | 从源码导出目录构建正式镜像，固定内部基线镜像升级与回滚、大源码与并行长任务、备份恢复、冻结迁移升级 |
 | `release-candidate.yml` | 许可证和发布边界、源码包与校验清单、源码交付拒绝保护 |
 
 发布前对**同一个完整提交 SHA** 检查全部工作流。失败的工作流修复后重新运行，不能用另一提交的成功记录替代。准备好 `gh` 认证后执行：
@@ -41,7 +41,7 @@ python3 deploy/release/check.py --remote --revision FULL_COMMIT_SHA --report /ab
 
 ## 安装、升级与回滚证据
 
-新安装、历史读取、容器替换与备份恢复由现有正式镜像验收覆盖。新增冻结迁移验收从原始 001–012 SQL 的固定哈希建立 PostgreSQL 样例，验证 013 的追加迁移、历史结果/HTML 报告、未知费用与重复启动；不启动 Agent。
+新安装、历史读取、容器替换与备份恢复由正式镜像验收覆盖。冻结迁移验收从原始 001–012 SQL 的固定哈希建立 PostgreSQL 样例，验证后续追加迁移、历史结果/HTML 报告、未知费用与重复启动；不启动 Agent。CI 另行从固定提交 `02515c1` 及源码树哈希构建独立基线镜像，执行基线安装、候选升级和原镜像备份回滚；合成私有 SDK 状态文件的内容、属主和权限必须保留。稳定性规模与运行命令见 [无模型稳定性与发布验收](STABILITY_RELEASE_BASELINE.md)。
 
 有可用的内部基线镜像时，可以追加实际镜像升级：先生成两个仅 `AXIOM_RELEASE` / `AXIOM_IMAGE_PREFIX` 不同的私有配置，分别选中基线和候选镜像，再运行：
 

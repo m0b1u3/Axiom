@@ -1,3 +1,18 @@
+import type {QueueOverview,QueueTask,ScanTask} from '../types';
+
+// Detail and overview requests can settle on opposite sides of a retry. Keep
+// an old queue observation out of the new execution's current-state display.
+export function queueForExecution(task:Pick<ScanTask,'id'|'status'|'startedAt'>,overview:QueueOverview|null):QueueTask|undefined {
+ const queued=overview?.tasks.find(row=>row.taskId===task.id);
+ if(!queued||queued.status!==task.status)return;
+ if(task.status==='pending'&&(!Number.isSafeInteger(queued.position)||queued.position<1))return;
+ if(task.status!=='pending'&&task.startedAt&&queued.startedAt){
+  const current=Date.parse(task.startedAt),observed=Date.parse(queued.startedAt);
+  if(Number.isFinite(current)&&Number.isFinite(observed)&&current!==observed)return;
+ }
+ return queued;
+}
+
 export const queueReasons: Record<string,string> = {
  sdk_concurrency_incompatible:"等待支持 SDK 原生并发参数的配套执行节点，请同步更新 Agent 与 Scanner",
  sdk_parameters_incompatible:"等待支持推理强度与组件知识、指令的配套执行节点",

@@ -33,10 +33,11 @@ def wait_for(check, seconds, message):
 
 
 class Web:
-    def __init__(self, stack):
+    def __init__(self, stack, timeout=10):
         self.base = "http://" + stack.output("port", "web", "8080").splitlines()[0]
         self.token = None
         self.values = stack.values
+        self.timeout = timeout
 
     def raw(self, method, path, payload=None, content_type="application/json"):
         body = payload if isinstance(payload, bytes) else (json.dumps(payload).encode() if payload is not None else None)
@@ -45,7 +46,7 @@ class Web:
             headers["Authorization"] = "Bearer " + self.token
         request = Request(self.base+path, data=body, headers=headers, method=method)
         try:
-            with urlopen(request, timeout=10) as response:
+            with urlopen(request, timeout=self.timeout) as response:
                 return response.status, response.read(), response.headers
         except HTTPError as error:
             return error.code, error.read(), error.headers
@@ -69,6 +70,19 @@ def task_wait(web, task_id):
         except (URLError, AssertionError):
             return None
     return wait_for(get, 50, "fixture scan did not reach a terminal state")
+
+
+def fixture_credentials(stack, create=False):
+    """Private, synthetic SDK-state sentinel; never authenticate with its content."""
+    assert stack.project.startswith("axiom-accept-")
+    script = """const fs=require('fs'),c=require('crypto'),path=require('path');
+const folder='/app/data/.sdk-identities/release-fixture',file=path.join(folder,'auth.json');
+if(CREATE){fs.mkdirSync(folder,{recursive:true,mode:448});fs.writeFileSync(file,JSON.stringify({fixtureOnly:true,credential:'synthetic-never-authenticate'}),{mode:384,flag:'wx'})}
+console.log(JSON.stringify({sha256:c.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),mode:fs.statSync(file).mode&511,directoryMode:fs.statSync(folder).mode&511,uid:fs.statSync(file).uid,gid:fs.statSync(file).gid}));
+""".replace("CREATE", "true" if create else "false")
+    result = json.loads(stack.output("exec", "-T", "agent", "node", "-e", script))
+    assert result["mode"] == 0o600 and result["directoryMode"] == 0o700
+    return result
 
 
 def verify_runtime_baseline(runtime, matrix, description, identity, parameters, concurrency, sdk_version, release):
@@ -126,6 +140,7 @@ networks:
         stack.call("up", "-d", "--no-build", "--wait", "--wait-timeout", "120")
         web = Web(stack)
         web.login()
+        credentials = fixture_credentials(stack, create=True)
         assert web.raw("GET", "/readyz")[0] == 200
         assert web.raw("GET", "/scans/new")[0] == 200
         assert b"/src/main.ts" not in web.raw("GET", "/")[1]
@@ -195,7 +210,7 @@ networks:
                            AXIOM_TEST_ADMIN_PASSWORD=values["AXIOM_ADMIN_PASSWORD"],
                            AXIOM_TEST_DEPLOYMENT_TASK=str(task_id))
         subprocess.run(["node", str(ROOT/"code-audit-web/tests/deployment-web-acceptance.mjs")], env=browser_env, check=True)
-        checks.append("real browser login, route refresh, archived result and JSON download on static Web")
+        checks.append("synthetic console browser login, route refresh, archived result and JSON download on static Web")
 
         budget_path = f"/api/v1/scans/{task_id}/budget"
         first_budget = web.data("GET", budget_path)
@@ -323,6 +338,7 @@ networks:
             assert web.data("GET", budget_path) == spent_budget and web.data("GET", unknown_path) == unknown_budget
             assert web.data("GET", "/api/v1/storage")["policy"] == storage_policy
             assert web.data("GET", f"/api/v1/storage/cleanup/{interrupted['id']}") == interrupted
+            assert fixture_credentials(candidate) == credentials, "upgrade changed private SDK credential bytes or permissions"
             def candidate_ready():
                 agents = web.data("GET", "/api/v1/executions/overview")["agents"]
                 return any(a.get("runtime", {}).get("agentBuild") == candidate_values["AXIOM_RELEASE"] for a in agents)
@@ -348,6 +364,7 @@ networks:
         other.token = web.token
         assert other.raw("GET", "/api/v1/auth/me")[0] == 401, "restore reactivated old sessions"
         other.login()
+        assert fixture_credentials(restored) == credentials, "rollback changed private SDK credential bytes or permissions"
         assert other.data("GET", result_path) == before, "restored result contract changed"
         assert other.raw("GET", artifact_path)[1] == artifact_bytes, "restored artifact changed"
         assert other.data("GET", "/api/v1/model-configs") == model_before, "model credential could not be restored"
@@ -379,9 +396,10 @@ networks:
         else:
             raise AssertionError("restore replaced existing data")
         checks.append("existing restore destination is preserved")
-        report = {"fixtureOnly":True, "modelCalls":0, "checks":checks,
+        report = {"status":"passed", "fixtureOnly":True, "modelCalls":0, "realSDKLogins":0, "externalPublications":0, "checks":checks,
                   "lifecycle":{"freshInstall":"passed", "upgrade":upgrade,
                                "rollback":{"status":"passed", "baselineImages":baseline_images},
+                               "privateSDKCredentialBytesAndPermissions":"preserved-synthetic-sentinel",
                                "previousPublicRelease":None}}
         (work/"report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
         print(json.dumps(report, ensure_ascii=False))

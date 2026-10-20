@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "internal-commit-baseline",
+  "repository": "https://github.com/m0b1u3/Axiom",
+  "revision": "02515c1eae9b87966d052252e9fa7c1425a90161",
+  "sourceTreeSha256": "4ccb13cb62ebea83ddaccde432dd97dd46138046acf34978be1f06d0736081c9",
+  "sdkVersion": "0.1.25",
+  "imageRelease": "baseline-02515c1",
+  "previousPublicRelease": null
+}

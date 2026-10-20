@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {ref,shallowRef,watch,onBeforeUnmount,nextTick} from 'vue';
+import {ref,shallowRef,watch,onMounted,onBeforeUnmount,nextTick} from 'vue';
 import type {ScanTask} from '../types';
 import type {ScanRecoverySnapshot,ScanRecoveryAction} from '../contracts';
 import {api,ApiError} from '../api';
@@ -13,8 +13,15 @@ const emit=defineEmits<{changed:[task:ScanTask,action:ScanRecoveryAction['action
 const snapshot=shallowRef<ScanRecoverySnapshot|null>(null),confirmation=shallowRef<ScanRecoverySnapshot|null>(null);
 const expanded=ref(['failed','partial','canceled','timeout'].includes(props.task.status));
 const loading=ref(false),busy=ref(false),error=ref(''),actionError=ref(''),restartOpen=ref(false),acknowledged=ref(false);
-let epoch=0,disposed=false;
-onBeforeUnmount(()=>{disposed=true;epoch++});
+let epoch=0,disposed=false,timer:ReturnType<typeof setInterval>|undefined;
+onMounted(()=>{
+ // With every Agent offline, neither status nor budget revision changes when
+ // the lease expires. Re-observe the open panel without starting any action.
+ timer=setInterval(()=>{
+  if(expanded.value&&!disposed&&!busy.value&&!loading.value&&!restartOpen.value&&['claimed','scanning','cancel_requested'].includes(props.task.status))void load();
+ },5000);
+});
+onBeforeUnmount(()=>{disposed=true;epoch++;clearInterval(timer)});
 
 async function load():Promise<ScanRecoverySnapshot|null>{
  const run=++epoch,{id,attempt,status}=props.task;loading.value=true;error.value='';

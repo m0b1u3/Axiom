@@ -43,9 +43,23 @@ jobs:
       - name: Verify static Web proxy with isolated mock identity
         working-directory: ${{ runner.temp }}/axiom-candidate-source
         run: python3 deploy/ops/static_web_acceptance.py --image "axiom/web:$(cat VERSION)" --work "$RUNNER_TEMP/axiom-static-web-acceptance"
+      - name: Check out immutable internal upgrade baseline
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: 02515c1eae9b87966d052252e9fa7c1425a90161
+          path: baseline-checkout
+          persist-credentials: false
+      - name: Build and verify pinned baseline source and images
+        working-directory: ${{ runner.temp }}/axiom-candidate-source
+        run: |
+          python3 deploy/ops/build_stability_baseline.py --repository "$GITHUB_WORKSPACE/baseline-checkout" --work "$RUNNER_TEMP/axiom-stability-baseline"
+          python3 deploy/ops/stack.py retarget "$RUNNER_TEMP/axiom-production.env" "$RUNNER_TEMP/axiom-baseline.env" --release baseline-02515c1
       - name: Verify production stack with isolated SDK fixture
         working-directory: ${{ runner.temp }}/axiom-candidate-source
-        run: python3 deploy/ops/acceptance.py --env "$RUNNER_TEMP/axiom-production.env" --work "$RUNNER_TEMP/axiom-production-acceptance"
+        run: python3 deploy/ops/acceptance.py --env "$RUNNER_TEMP/axiom-baseline.env" --candidate-env "$RUNNER_TEMP/axiom-production.env" --work "$RUNNER_TEMP/axiom-production-acceptance"
+      - name: Verify bounded stability with isolated large source and parallel SDK fixtures
+        working-directory: ${{ runner.temp }}/axiom-candidate-source
+        run: python3 deploy/ops/stability_acceptance.py --env "$RUNNER_TEMP/axiom-production.env" --work "$RUNNER_TEMP/axiom-stability-acceptance"
       - name: Verify frozen migration upgrade
         working-directory: ${{ runner.temp }}/axiom-candidate-source
         run: python3 deploy/ops/migration_acceptance.py --env "$RUNNER_TEMP/axiom-production.env" --work "$RUNNER_TEMP/axiom-migration-acceptance"
@@ -63,3 +77,7 @@ jobs:
             ${{ runner.temp }}/axiom-static-web-acceptance/report.json
             ${{ runner.temp }}/axiom-static-web-acceptance/browser/*.json
             ${{ runner.temp }}/axiom-static-web-acceptance/browser/*.png
+            ${{ runner.temp }}/axiom-stability-baseline/report.json
+            ${{ runner.temp }}/axiom-stability-acceptance/report.json
+            ${{ runner.temp }}/axiom-stability-acceptance/browser-*/browser.json
+            ${{ runner.temp }}/axiom-stability-acceptance/browser-*/*.png

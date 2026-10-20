@@ -20,6 +20,13 @@ REQUIRED = ["LICENSE", "NOTICE", "README.md", "CONTRIBUTING.md", "SECURITY.md", 
 def check(root=ROOT):
     root = Path(root).resolve()
     release = json.loads((root/"deploy/release/release.json").read_text())
+    baseline = json.loads((root/"deploy/release/stability-baseline.json").read_text())
+    if (baseline.get("schemaVersion") != 1 or baseline.get("kind") != "internal-commit-baseline"
+            or baseline.get("repository") != release.get("repository") or baseline.get("sdkVersion") != "0.1.25"
+            or not re.fullmatch(r"[a-f0-9]{40}", baseline.get("revision", ""))
+            or not re.fullmatch(r"[a-f0-9]{64}", baseline.get("sourceTreeSha256", ""))
+            or "ref: "+baseline["revision"] not in (root/".github/workflows/production-stack.yml").read_text()):
+        raise ValueError("Immutable stability baseline and CI checkout differ")
     if release.get("schemaVersion") != 1 or release.get("version") != version(root) or release.get("channel") != "beta":
         raise ValueError("Release metadata and VERSION disagree")
     if (release.get("platforms") != ["linux/amd64"] or release.get("deployment") != "single-host-trusted-users"

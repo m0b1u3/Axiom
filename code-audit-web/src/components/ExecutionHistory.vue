@@ -2,7 +2,7 @@
 import {computed,ref,shallowRef,watch} from 'vue';
 import type {ScanTask,ScanAttempt,AttemptResult,QueueOverview} from '../types';
 import {api} from '../api';
-import {elapsed,queueReasons,failureHelp} from '../utils/execution';
+import {elapsed,queueReasons,queueForExecution,failureHelp} from '../utils/execution';
 import {absoluteTime} from '../utils/time';
 import StatusBadge from './StatusBadge.vue';
 import ExecutionCompatibility from './ExecutionCompatibility.vue';
@@ -10,7 +10,7 @@ import Button from './ui/Button.vue';
 import Select from './ui/Select.vue';
 const props=defineProps<{task:ScanTask;attempts:ScanAttempt[];selectedAttempt:string;overview:QueueOverview|null}>();
 const emit=defineEmits<{select:[value:string]}>();
-const currentQueue=computed(()=>props.overview?.tasks.find(t=>t.taskId===props.task.id));
+const currentQueue=computed(()=>queueForExecution(props.task,props.overview));
 const selected=computed(()=>props.attempts.find(a=>a.attempt===Number(props.selectedAttempt)));
 const fault=computed(()=>failureHelp(selected.value?.errorCode??props.task.errorCode,selected.value?.status??props.task.status));
 const rawError=computed(()=>selected.value?.errorMessage??props.task.errorMessage);
@@ -37,7 +37,7 @@ function download(){if(!result.value||!selected.value)return;const blob=new Blob
   </div>
   <ExecutionCompatibility v-if="task.status==='pending' && currentQueue?.compatibility" :compatibility="currentQueue.compatibility" :agents="overview?.agents??[]" />
   <p v-if="task.status==='pending' && currentQueue && !currentQueue.compatibility" class="record-note" role="status">Server 未上报兼容诊断；任务状态与历史报告仍可读取。若任务持续等待，请更新 Server 和配套执行节点。</p>
-  <p v-if="task.status==='pending'" class="record-note">按本次入队时间排序；受模型或项目配额限制的任务会暂时跳过。位置不代表预计完成时间。</p>
+  <p v-if="task.status==='pending'" class="record-note">按本次入队时间排序；请结合执行节点和兼容诊断查看等待原因。位置不代表预计完成时间。</p>
   <div v-if="fault" class="failure-note" role="status"><strong>{{fault.title}}</strong><p>{{fault.action}}</p><details v-if="rawError"><summary>原始错误</summary><pre>{{rawError}}</pre></details></div>
   <details v-if="attempts.length" class="history-table-wrap">
    <summary>执行历史 <span>{{attempts.length}} 次</span></summary>
