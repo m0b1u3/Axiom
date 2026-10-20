@@ -126,5 +126,9 @@ jobs:
             output/playwright/unbounded-dispatch/*.png
             output/playwright/diagnostics-style/*.json
             output/playwright/diagnostics-style/*.png
+            output/sdk050/browser-evidence-050/*.json
+            output/sdk050/browser-evidence-050/*.png
+            output/sdk050/browser-sdk050/*.json
+            output/sdk050/browser-sdk050/*.png
           retention-days: 14
           if-no-files-found: warn

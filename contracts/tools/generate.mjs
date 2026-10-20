@@ -232,7 +232,7 @@ await emit('ts/src/schemas.gen.ts',schemaTS);
 await emit('go/types.gen.go',go);
 await emit('go/codec.gen.go',codec);
 await emit('go/schemas.gen.go',resources);
-await emit('../code-audit-scanner/src/runtime/contract-baseline.gen.ts',header+'\nexport const CONTRACT_BASELINE_VERSION = '+defs.SchemaVersion.const+' as const;\nexport const SCANNER_DESCRIPTION_VERSION = '+defs.ScannerDescriptionV13.properties.schemaVersion.const+' as const;\n');
+await emit('../code-audit-scanner/src/runtime/contract-baseline.gen.ts',header+'\nexport const CONTRACT_BASELINE_VERSION = '+defs.SchemaVersion.const+' as const;\nexport const SCANNER_DESCRIPTION_VERSION = '+defs.ScannerDescriptionV13.properties.schemaVersion.const+' as const;\nexport const SDK_RESULT_ADAPTER_VERSION = '+adapterPolicy.adapterVersion+' as const;\n');
 const matrixText=await readFile(path.join(root,'data/execution-compatibility.json'),'utf8');
 const matrix=JSON.parse(matrixText);
 if(matrix.matrixVersion!==1 || JSON.stringify(matrix.controlAPIs)!=='[1,2,3,4]' || matrix.profiles.length!==9)throw new Error('Invalid execution compatibility matrix');

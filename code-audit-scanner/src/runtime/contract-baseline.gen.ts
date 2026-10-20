@@ -3,3 +3,4 @@
 
 export const CONTRACT_BASELINE_VERSION = 1 as const;
 export const SCANNER_DESCRIPTION_VERSION = 13 as const;
+export const SDK_RESULT_ADAPTER_VERSION = 2 as const;

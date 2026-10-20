@@ -1,6 +1,5 @@
 import {readFile} from 'node:fs/promises';
-import {CONTRACT_BASELINE_VERSION,SCANNER_DESCRIPTION_VERSION} from './contract-baseline.gen.js';
-import {SDK_ADAPTER_POLICY} from '@axiom/contracts';
+import {CONTRACT_BASELINE_VERSION,SCANNER_DESCRIPTION_VERSION,SDK_RESULT_ADAPTER_VERSION} from './contract-baseline.gen.js';
 
 /** Reads package and generated baseline metadata without creating scan state. */
 export async function describeScanner() {
@@ -11,7 +10,7 @@ export async function describeScanner() {
   const baselineVersions={assignment:[version],job:[version,2,3,4,5,6,7,8],progress:[version,2],event:[version,2],result:[version],completion:[version]};
   return {
     schemaVersion:SCANNER_DESCRIPTION_VERSION,
- sdkResultAdapterVersion:SDK_ADAPTER_POLICY.adapterVersion,
+ sdkResultAdapterVersion:SDK_RESULT_ADAPTER_VERSION,
  sdkIdentityVersion:1,
  sdkParametersVersion:1,
  sdkConcurrencyVersion:1,
