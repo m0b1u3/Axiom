@@ -27,6 +27,8 @@ try{for(const version of ['v1','v2']){
  const upstream=createServer(async(req,res)=>{
   let bytes='';for await(const part of req)bytes+=part;const body=JSON.parse(bytes);calls++;
   assert.equal(req.headers.authorization,'Bearer fixture-selected-not-real');assert.equal(body.text.format.type,'json_schema');assert.equal(body.text.format.strict,true);assert.ok(body.tools.every(t=>t.type!=='namespace'));
+  assert.equal(body.client_metadata,undefined);assert.equal(body.reasoning?.summary,undefined);
+  assert.ok(body.input.filter(v=>v.type==='message'&&['user','developer','system'].includes(v.role)).every(v=>v.id===undefined));
   const wanted=version==='v1'?'axns_multi_agent_v1_close_agent_':'axns_collaboration_list_agents_';
   const selected=body.tools.find(t=>t.name?.startsWith(wanted));assert.ok(selected,'Namespace child must remain exposed');alias ||= selected.name;assert.equal(selected.name,alias);
   if(calls===2){

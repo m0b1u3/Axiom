@@ -141,6 +141,9 @@ export function buildCodexOverrides(task: ScanTask): JsonObject | undefined {
   const overrides: JsonObject = {
     model: task.model,
     model_provider: task.provider,
+    // Catalog defaults do not override the SDK default (detailed). Compatible
+    // endpoints have not established support for reasoning summaries.
+    model_reasoning_summary: "none",
  ...(effort?{model_reasoning_effort:effort}:{}),
     cli_auth_credentials_store: "file",
     model_providers: {
@@ -201,7 +204,7 @@ export function buildModelCatalog(task: ScanTask): JsonObject {
  ...(task.sdkParameters?.parameters.reasoningEffort && !["low","medium","high"].includes(task.sdkParameters.parameters.reasoningEffort)?[{description:"Explicit reasoning selection",effort:task.sdkParameters.parameters.reasoningEffort}]:[]),
       ],
       supports_parallel_tool_calls: true,
-      supports_reasoning_summaries: true,
+      supports_reasoning_summaries: false,
       supported_in_api: true,
       input_modalities: ["text"],
       experimental_supported_tools: [],

@@ -8,6 +8,7 @@ import {RequestGate,retryDelay,quotaExhausted} from './request-gate.js';
 import {UpstreamTurnDiagnostic,type TurnDiagnostic} from './turn-diagnostic.js';
 import {upstreamTransportDiagnostic,upstreamResponseDiagnostic} from './transport-diagnostic.js';
 import {NamespaceTools,NamespaceToolError} from './namespace-tools.js';
+import {prepareResponsesInput,ResponsesInputError} from './responses-input.js';
 
 /** Responses transport guard: preserve requests and require a completed answer. */
 export async function startReliableUpstream(upstream:string,gateFile:string,notice:(value:string)=>void=()=>{},observeTurn?:((value:TurnDiagnostic)=>void),outputMode:ValidationOutputMode='native_schema'):Promise<UpstreamProxy>{
@@ -26,8 +27,8 @@ export async function startReliableUpstream(upstream:string,gateFile:string,noti
   const endpoint=route!.endsWith('/responses/compact')?'/responses/compact':'/responses';
   const url=upstream.replace(/\/+$/,'').replace(/\/responses$/,'')+endpoint;
   let forwarded:Buffer, restore:(value:unknown)=>unknown;
-  try{const plan=namespaceTools.prepare(endpoint==='/responses/compact'?raw:validationJSONRequest(raw,outputMode),endpoint==='/responses/compact');forwarded=plan.body;restore=plan.restore;}
-  catch(e){res.writeHead(400,{'content-type':'application/json'});res.end(JSON.stringify({error:e instanceof NamespaceToolError?{code:'namespace_tool_incompatible',message:e.message}:{code:'validation_output_contract_unsupported',message:'JSON compatibility requires the recognized standalone validation contract.'}}));return;}
+  try{const plan=namespaceTools.prepare(prepareResponsesInput(endpoint==='/responses/compact'?raw:validationJSONRequest(raw,outputMode)),endpoint==='/responses/compact');forwarded=plan.body;restore=plan.restore;}
+  catch(e){res.writeHead(400,{'content-type':'application/json'});res.end(JSON.stringify({error:e instanceof ResponsesInputError?{code:e.code,param:e.path,message:e.message}:e instanceof NamespaceToolError?{code:'namespace_tool_incompatible',message:e.message}:{code:'validation_output_contract_unsupported',message:'JSON compatibility requires the recognized standalone validation contract.'}}));return;}
   const receipt=observeTurn?new UpstreamTurnDiagnostic(forwarded,'responses',observeTurn):null;
   const authorization=String(req.headers.authorization??'');
   const key=createHash('sha256').update(upstream+'\0'+String(body.model)+'\0'+authorization).digest('hex');

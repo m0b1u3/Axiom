@@ -29,7 +29,7 @@ test('parallel SDK requests across proxy instances have no platform concurrency 
  const base=`http://127.0.0.1:${(up.address() as import('node:net').AddressInfo).port}`;
  const a=await startReliableUpstream(base,path.join(dir,'shared.sqlite')),b=await startReliableUpstream(base,path.join(dir,'shared.sqlite'));
  const controller=new AbortController();let timeout:NodeJS.Timeout|undefined;
- const calls=Array.from({length:total},(_,i)=>fetch((i%2?a:b).baseUrl+'/responses',{method:'POST',headers:{authorization:'Bearer fixture-same-model-key'},body:'{"model":"fixture-native-concurrency"}',signal:controller.signal}).then(async response=>{assert.equal(response.status,200);assert.match(await response.text(),/response.completed/);}));
+ const calls=Array.from({length:total},(_,i)=>fetch((i%2?a:b).baseUrl+'/responses',{method:'POST',headers:{authorization:'Bearer fixture-same-model-key'},body:'{"model":"fixture-native-concurrency","input":"Fixtures / Mock"}',signal:controller.signal}).then(async response=>{assert.equal(response.status,200);assert.match(await response.text(),/response.completed/);}));
  const joined=Promise.allSettled(calls);
  try{
   await Promise.race([allReached,new Promise<never>((_,reject)=>{timeout=setTimeout(()=>reject(new Error(`Platform capped simultaneous requests at ${reached}/${total}`)),3000);})]);
@@ -65,7 +65,7 @@ test('429 is forwarded once and native SDK owns retry policy',async()=>{
  const up=createServer((_req,res)=>{calls++;res.writeHead(429,{'retry-after':'1'});res.end('limited');});
  await new Promise<void>(r=>up.listen(0,'127.0.0.1',r));
  const proxy=await startReliableUpstream(`http://127.0.0.1:${(up.address() as any).port}`,path.join(dir,'gate.sqlite'));
- try{const response=await fetch(proxy.baseUrl+'/responses',{method:'POST',body:'{"model":"fixture"}'});assert.equal(response.status,429);await response.text();assert.equal(calls,1);assert.equal(response.headers.get('retry-after'),'1');}
+ try{const response=await fetch(proxy.baseUrl+'/responses',{method:'POST',body:'{"model":"fixture","input":"Fixtures / Mock"}'});assert.equal(response.status,429);await response.text();assert.equal(calls,1);assert.equal(response.headers.get('retry-after'),'1');}
  finally{await proxy.close();up.closeAllConnections();await new Promise<void>(r=>up.close(()=>r()));rmSync(dir,{recursive:true,force:true});}
 });
 
@@ -75,7 +75,7 @@ for(const phase of ['headers','stream'] as const)test(`interrupted ${phase} pres
  await new Promise<void>(resolve=>up.listen(0,'127.0.0.1',resolve));
  const proxy=await startReliableUpstream(`http://127.0.0.1:${(up.address() as import('node:net').AddressInfo).port}`,path.join(dir,'gate.sqlite'),notice=>notices.push(notice));
  try{
-  const response=await fetch(proxy.baseUrl+'/responses',{method:'POST',headers:{authorization:'Bearer fixture-private-credential-never-log'},body:'{"model":"fixture-transport-error"}'});const text=await response.text();
+  const response=await fetch(proxy.baseUrl+'/responses',{method:'POST',headers:{authorization:'Bearer fixture-private-credential-never-log'},body:'{"model":"fixture-transport-error","input":"Fixtures / Mock"}'});const text=await response.text();
   assert.equal(calls,1,'A consumed turn must not be silently replayed');assert.equal(notices.length,1);assert.match(notices[0]!,new RegExp('"phase":"'+phase+'"'));assert.match(notices[0]!,/UND_ERR_SOCKET|ECONNRESET/);assert.doesNotMatch(notices[0]!,/fixture-private|Bearer|http:\/\//);
   if(phase==='headers'){assert.equal(response.status,502);assert.equal(JSON.parse(text).error.phase,'headers');}
   else{assert.equal(response.status,200);assert.match(text,/response.failed/);assert.doesNotMatch(text,/response.completed/);}
@@ -86,7 +86,7 @@ test('caller cancellation closes a pending upstream connection without a transpo
  const requestArrived=new Promise<void>(resolve=>arrived=resolve),requestClosed=new Promise<void>(resolve=>closed=resolve);
  const up=createServer((_req,res)=>{res.on('close',closed);arrived();});await new Promise<void>(resolve=>up.listen(0,'127.0.0.1',resolve));
  const proxy=await startReliableUpstream(`http://127.0.0.1:${(up.address() as import('node:net').AddressInfo).port}`,path.join(dir,'gate.sqlite'),notice=>notices.push(notice));
- const controller=new AbortController();const call=fetch(proxy.baseUrl+'/responses',{method:'POST',body:'{"model":"fixture-cancel"}',signal:controller.signal});
+ const controller=new AbortController();const call=fetch(proxy.baseUrl+'/responses',{method:'POST',body:'{"model":"fixture-cancel","input":"Fixtures / Mock"}',signal:controller.signal});
  try{await Promise.race([requestArrived,call.then(()=>{throw new Error('Upstream request was not dispatched')})]);controller.abort();await assert.rejects(call);await requestClosed;assert.deepEqual(notices,[]);}
  finally{controller.abort();await proxy.close();up.closeAllConnections();await new Promise<void>(resolve=>up.close(()=>resolve()));rmSync(dir,{recursive:true,force:true});}
 });
@@ -103,7 +103,7 @@ for(const kind of ['response.failed','response.incomplete','error'])test(`provid
  const up=createServer((_req,res)=>{calls++;res.writeHead(200,{'content-type':'text/event-stream'});res.end('event: '+kind+'\ndata: '+JSON.stringify(value)+'\n\n');});
  await new Promise<void>(r=>up.listen(0,'127.0.0.1',r));
  const proxy=await startReliableUpstream(`http://127.0.0.1:${(up.address() as any).port}`,path.join(dir,'gate.sqlite'),v=>notices.push(v));
- try{const response=await fetch(proxy.baseUrl+'/responses',{method:'POST',body:'{"model":"fixture"}'});const text=await response.text();assert.equal(calls,1);assert.match(text,/Upstream request failed/);assert.equal(notices.length,1);assert.match(notices[0]!,/server_error/);assert.doesNotMatch(notices[0]!,/fixture-private|Bearer|private.example/);}
+ try{const response=await fetch(proxy.baseUrl+'/responses',{method:'POST',body:'{"model":"fixture","input":"Fixtures / Mock"}'});const text=await response.text();assert.equal(calls,1);assert.match(text,/Upstream request failed/);assert.equal(notices.length,1);assert.match(notices[0]!,/server_error/);assert.doesNotMatch(notices[0]!,/fixture-private|Bearer|private.example/);}
  finally{await proxy.close();up.closeAllConnections();await new Promise<void>(r=>up.close(()=>r()));rmSync(dir,{recursive:true,force:true});}
 });
 
@@ -121,7 +121,7 @@ test('retired Chat endpoints never reach upstream and Responses exposes every na
  try{
   for(const route of ['/chat/completions','/v1/chat/completions']){const response=await fetch(proxy.baseUrl+route,{method:'POST',body:'{}'});assert.equal(response.status,404);await response.text();}
   assert.equal(calls,0);
-  const raw=JSON.stringify({model:'fixture',tools:[{type:'namespace',name:'multi_agent_v1',tools:[{type:'function',name:'spawn_agent',parameters:{type:'object'}}]}]});
+  const raw=JSON.stringify({model:'fixture',input:'Fixtures / Mock',tools:[{type:'namespace',name:'multi_agent_v1',tools:[{type:'function',name:'spawn_agent',parameters:{type:'object'}}]}]});
   const response=await fetch(proxy.baseUrl+'/responses',{method:'POST',body:raw});assert.equal(response.status,502);await response.text();assert.equal(calls,1);const sent=JSON.parse(received);assert.equal(sent.tools.length,1);assert.equal(sent.tools[0].type,'function');assert.match(sent.tools[0].name,/^axns_multi_agent_v1_spawn_agent_/);assert.deepEqual(sent.tools[0].parameters,{type:'object'});
  }finally{await proxy.close();upstream.closeAllConnections();await new Promise<void>(resolve=>upstream.close(()=>resolve()));rmSync(dir,{recursive:true,force:true});}
 });

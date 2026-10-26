@@ -93,3 +93,13 @@ test('compatible providers preserve native request and stream retry defaults',()
  test('legacy Chat provider configuration cannot reach the SDK',()=>{
  assert.throws(()=>buildCodexOverrides(task({wireApi:'chat'} as unknown as Partial<ScanTask>)),/Chat 协议适配已移除/);
 });
+
+
+test('compatible provider explicitly disables unverified summaries without changing the selected effort or native OpenAI defaults',()=>{
+ const params={schemaVersion:1,parameters:{reasoningEffort:'high'}} as const;
+ const config=buildCodexOverrides(task({sdkParameters:params}))!;
+ assert.equal(config.model_reasoning_summary,'none');assert.equal(config.model_reasoning_effort,'high');
+ const model=(buildModelCatalog(task()).models as Array<Record<string,unknown>>)[0]!;
+ assert.equal(model.default_reasoning_summary,'none');assert.equal(model.supports_reasoning_summaries,false);
+ assert.equal(buildCodexOverrides(task({provider:'openai'}))?.model_reasoning_summary,undefined);
+});

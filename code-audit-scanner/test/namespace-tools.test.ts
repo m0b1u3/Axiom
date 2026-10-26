@@ -10,7 +10,7 @@ const format={type:'json_schema',name:'fixture',strict:true,schema:{type:'object
 const tool={type:'function',name:'run',description:'Fixtures / Mock function',strict:true,parameters:{type:'object',properties:{text:{type:'string'}},required:['text'],additionalProperties:false}};
 const group=(name='one',nested:unknown[]=[tool])=>({type:'namespace',name,description:'Fixtures / Mock group',tools:nested});
 const raw=(v:unknown)=>Buffer.from(JSON.stringify(v));
-const request=(tools:unknown[]=[group()],input:unknown[]=[])=>({model:'fixture-only',tools,input,text:{format},stream:true,store:false,parallel_tool_calls:true});
+const request=(tools:unknown[]=[group()],input:unknown[]=[{role:'user',content:'Fixtures / Mock'}])=>({model:'fixture-only',tools,input,text:{format},stream:true,store:false,parallel_tool_calls:true});
 
 test('all namespace functions and custom tools remain exposed with stable collision-safe names',()=>{
  const mapper=new NamespaceTools(),body=request([tool,group(),group('two'),group('free',[{type:'custom',name:'run',format:{type:'grammar',syntax:'regex',definition:'[a-z]+'}}])]);

@@ -3,6 +3,7 @@ import {createHash,type Hash} from 'node:crypto';
 import {openSync,closeSync,writeSync,fsyncSync,mkdirSync} from 'node:fs';
 import path from 'node:path';
 import {SseParser} from './sse.js';
+import {responsesInputSummary} from './responses-input.js';
 
 type Json = Record<string,unknown>;
 const object=(v:unknown):Json=>v!==null&&typeof v==='object'&&!Array.isArray(v)?v as Json:{};
@@ -19,7 +20,7 @@ class TextDigest {
  value(){const copy=this.hash.copy();copy.update(this.pending);return {sha256:copy.digest('hex'),utf16Units:this.units,bytes:this.bytes+Buffer.byteLength(this.pending)};}
 }
 export interface TurnDiagnostic {
- schemaVersion:1;protocol:'responses'|'chat';request:{sha256:string;bytes:number;stream:boolean;format:string;formatSha256:string|null;validationContract:StandaloneValidationContractSummary|null;controls:StructuredOutputControls};
+ schemaVersion:1;protocol:'responses'|'chat';request:{sha256:string;bytes:number;input?:ReturnType<typeof responsesInputSummary>;stream:boolean;format:string;formatSha256:string|null;validationContract:StandaloneValidationContractSummary|null;controls:StructuredOutputControls};
  response:{httpStatus:number|null;contentType:string;rawSha256:string;rawBytes:number;events:Record<string,number>;invalidFrames:number;status:string|null;finishReason:string|null;deltaText:ReturnType<TextDigest['value']>;doneText:ReturnType<TextDigest['value']>;itemText:ReturnType<TextDigest['value']>;terminalText:ReturnType<TextDigest['value']>};cancelled:boolean;
 }
 /** A receipt of byte/text hashes, never a prompt, response body, URL, header,
@@ -34,7 +35,7 @@ export class UpstreamTurnDiagnostic {
   let body:Json={};try{body=object(JSON.parse(Buffer.from(raw).toString('utf8')));}catch{}
   const format=protocol==='responses'?object(object(body.text).format):object(body.response_format);
   const type=typeof format.type==='string'&&['json_schema','json_object','text'].includes(format.type)?format.type:'unspecified';
-  this.request={sha256:sha(raw),bytes:raw.byteLength,stream:body.stream===true,format:type,formatSha256:Object.keys(format).length?sha(JSON.stringify(format)):null,validationContract:standaloneValidationContract(format),controls:structuredOutputControls(body)};
+  this.request={sha256:sha(raw),bytes:raw.byteLength,input:responsesInputSummary(body),stream:body.stream===true,format:type,formatSha256:Object.keys(format).length?sha(JSON.stringify(format)):null,validationContract:standaloneValidationContract(format),controls:structuredOutputControls(body)};
  }
  headers(status:number,contentType:string){
   this.httpStatus=status;this.contentType=contentType.includes('text/event-stream')?'event_stream':contentType.includes('application/json')?'json':'other';

@@ -55,6 +55,6 @@ test('diagnostic callback faults do not alter output or replay a request',async(
  const text=JSON.stringify({disposition:'not_applicable',report:'## Assessment\nThe target does not contain the claimed file.'});
  const up=createServer((_req,res)=>{calls++;res.writeHead(200,{'content-type':'text/event-stream'});res.end(stream(text));});await new Promise<void>(resolve=>up.listen(0,'127.0.0.1',resolve));
  const proxy=await startReliableUpstream(`http://127.0.0.1:${(up.address() as any).port}/v1`,path.join(scratch,'gate.sqlite'),()=>{},()=>{throw new Error('Fixture write fault');});
- try{const response=await fetch(proxy.baseUrl+'/responses',{method:'POST',body:'{"model":"fixture"}'});const raw=await response.text();assert.equal(calls,1);assert.match(raw,/response.completed/);assert.doesNotMatch(raw,/response.failed/);}
+ try{const response=await fetch(proxy.baseUrl+'/responses',{method:'POST',body:'{"model":"fixture","input":"Fixtures / Mock"}'});const raw=await response.text();assert.equal(calls,1);assert.match(raw,/response.completed/);assert.doesNotMatch(raw,/response.failed/);}
  finally{await proxy.close();up.closeAllConnections();await new Promise<void>(resolve=>up.close(()=>resolve()));await rm(scratch,{recursive:true,force:true});}
 });
