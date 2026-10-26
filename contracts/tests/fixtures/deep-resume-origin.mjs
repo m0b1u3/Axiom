@@ -1,0 +1,21 @@
+// Fixtures / Mock: materialize an interrupted native checkpoint, never a model.
+import assert from 'node:assert/strict';
+import {readFile,writeFile,mkdir,realpath} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
+import {DatabaseSync} from 'node:sqlite';
+import {randomUUID} from 'node:crypto';
+import path from 'node:path';
+const claim=JSON.parse(await readFile(process.argv[2],'utf8'));
+assert.ok(claim.fixtureOnly);const {outputPath:output,sourcePath:source,sourceHash,configurationHash,model,execution,agentId}=claim;
+assert.ok(output.includes('attempt-1'));
+const state=path.join(output,'runtime/sdk'),raw=path.join(output,'raw/codex-security'),home=path.join(state,'codex-home');
+for(const p of [state,raw,home,path.join(output,'runtime/sdk-cwd/.codex')])await mkdir(p,{recursive:true,mode:0o700});
+await writeFile(path.join(output,'runtime/deep-resume.json'),JSON.stringify({schemaVersion:1,context:{schemaVersion:1,execution,agentId,configurationHash},sourceHash,identity:null,stateRoot:await realpath(state),rawDir:await realpath(raw),sourcePath:source,model})+'\n',{mode:0o600});
+const recipe={repository:source,mode:'deep',target:{kind:'repository',paths:[]},config:{model},scanInputs:{knowledgeBase:null}};
+const run=spawnSync(process.env.PYTHON??'python3',[new URL('../../../code-audit-scanner/node_modules/@openai/codex-security/_bundled_plugin/scripts/workbench_db.py',import.meta.url).pathname,'register-cli-scan','--repository',source,'--scan-dir',raw,'--registration-json-stdin'],{input:JSON.stringify({recipe,userContext:'Fixtures / Mock original prompt'}),env:{PATH:process.env.PATH,CODEX_SECURITY_STATE_DIR:state,CODEX_HOME:home},encoding:'utf8'});assert.equal(run.status,0,run.stderr);
+const {scanId}=JSON.parse(run.stdout),threadId=randomUUID();
+const db=new DatabaseSync(path.join(state,'workbench.sqlite3'));db.prepare('UPDATE scans SET continuation_thread_id=?,deep_scan_owner_thread_id=? WHERE id=?').run(threadId,threadId,scanId);db.close();
+const dir=path.join(home,'sessions/2026/10/21');await mkdir(dir,{recursive:true,mode:0o700});const usage={input_tokens:1000,cached_input_tokens:500,cache_write_input_tokens:0,output_tokens:50,reasoning_output_tokens:0,total_tokens:1050};
+await writeFile(path.join(dir,'rollout-'+threadId+'.jsonl'),[{type:'session_meta',timestamp:'2026-10-21T07:00:00Z',payload:{id:threadId,cwd:raw,timestamp:'2026-10-21T07:00:00Z'}},{type:'token_usage_record',timestamp:'2026-10-21T07:00:01Z',payload:{thread_id:threadId,response_id:'fixture-original-response',usage,thread_token_usage:usage}}].map(v=>JSON.stringify(v)+'\n').join(''),{mode:0o600});
+await writeFile(path.join(raw,'fixture-checkpoint.json'),JSON.stringify({fixtureOnly:true,scanId,threadId,completedWorkers:['fixture-completed-worker']}));
+console.log(JSON.stringify({fixtureOnly:true,scanId,threadId,modelCalls:0}));

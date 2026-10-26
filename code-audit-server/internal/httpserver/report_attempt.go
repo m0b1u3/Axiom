@@ -15,7 +15,7 @@ func (s *Server) reportInput(w http.ResponseWriter, r *http.Request, id int64) (
 		httputil.Error(w, 404, 40002, "scan not found")
 		return nil, nil, false
 	}
-	if task.SDKOperation != nil || task.ComponentPlanning != nil {
+	if (task.SDKOperation != nil && (task.InterimReviewGroupID == 0 || task.FindingCount == 0)) || task.ComponentPlanning != nil {
 		httputil.Error(w, 409, 40900, "SDK 独立操作没有扫描报告，请查看其原始操作报告")
 		return nil, nil, false
 	}

@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "mode": "offline",
+  "catalogSha256": "47e413c682d15a6403c73707866d59589c0c767cf6f5d2068fb6316b0889d141",
+  "protocol": "responses",
+  "scenario": "title_only",
+  "apiKey": "fixtures-only-never-log"
+}

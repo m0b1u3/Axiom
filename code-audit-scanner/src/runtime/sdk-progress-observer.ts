@@ -4,8 +4,8 @@ import path from 'node:path';
 import type {ObserverProgress} from './contract-progress.js';
 
 // SDK storage is private to Scanner. This adapter never writes another projection.
-export function readSdkProgress(output:string):ObserverProgress|null {
- const dbPath=path.join(output,'runtime/sdk/workbench.sqlite3');if(!existsSync(dbPath))return null;
+export function readSdkProgress(output:string,stateRoot?:string):ObserverProgress|null {
+ const dbPath=path.join(stateRoot??path.join(output,'runtime/sdk'),'workbench.sqlite3');if(!existsSync(dbPath))return null;
  const db=new DatabaseSync(dbPath,{readOnly:true});
  try{
   const row=db.prepare(`SELECT s.phase,s.updated_at AS phase_updated_at,p.scope_file_count,
@@ -18,9 +18,9 @@ export function readSdkProgress(output:string):ObserverProgress|null {
   return {phase:typeof row.phase==='string'?row.phase:'unreported',phaseReportedAt:time(row.phase_updated_at),filesTotal:count(row.scope_file_count),completed:count(row.phase_items_completed),total:count(row.phase_items_total),unit:typeof row.phase_progress_unit==='string'?row.phase_progress_unit:null,reportedAt:time(row.updated_at)};
  }finally{db.close();}
 }
-export function observeSdkProgress(output:string,accept:(progress:ObserverProgress)=>Promise<void>,warning:(message:string)=>void):()=>void{
+export function observeSdkProgress(output:string,accept:(progress:ObserverProgress)=>Promise<void>,warning:(message:string)=>void,stateRoot?:string):()=>void{
  let warned=false,stopped=false;
- const tick=()=>{try{const value=readSdkProgress(output);if(value)void accept(value).then(()=>{warned=false;}).catch(fail);}catch{fail();}};
+ const tick=()=>{try{const value=readSdkProgress(output,stateRoot);if(value)void accept(value).then(()=>{warned=false;}).catch(fail);}catch{fail();}};
  function fail(){if(!stopped&&!warned){warned=true;warning('SDK 工作台进度暂不可用，继续显示最近已观测状态');}}
  tick();const timer=setInterval(tick,3000);timer.unref();return ()=>{stopped=true;clearInterval(timer);};
 }

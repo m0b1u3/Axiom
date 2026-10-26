@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "17",
+    "attempt": 2
+  },
+  "sourceContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "sdkVersion": "0.5.0",
+  "revision": 2,
+  "observedAt": "2026-10-21T08:00:00Z",
+  "state": "observed",
+  "documents": [
+    {
+      "sourcePath": "raw/codex-security/artifacts/checkpoints/worker.json",
+      "sourceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "observedAt": "2026-10-21T08:00:00Z",
+      "sourceModifiedAt": null,
+      "kind": "checkpoint",
+      "label": "Fixtures / Mock Worker",
+      "threadId": null,
+      "truncated": false,
+      "artifact": {
+        "kind": "engine_raw",
+        "relativePath": "checkpoints/interim/objects/e3cd8c4e3264ca266fab2bc051e48a4bf6bc45cc998d64b9d292566c7b980f65.json",
+        "sizeBytes": 580,
+        "sha256": "e3cd8c4e3264ca266fab2bc051e48a4bf6bc45cc998d64b9d292566c7b980f65"
+      },
+      "candidateCount": 1
+    }
+  ],
+  "candidates": [
+    {
+      "id": "7530191b41aa68818ed011905a80942acfbf45ad8e2981a63ae48a0fa02f1460",
+      "artifact": "e3cd8c4e3264ca266fab2bc051e48a4bf6bc45cc998d64b9d292566c7b980f65",
+      "pointer": "/candidates/0",
+      "title": "Fixtures / Mock candidate",
+      "summary": null,
+      "claimId": "C1",
+      "reportedStatus": "verified",
+      "reportedSeverity": "high",
+      "evidence": [
+        "src/query.ts:2-4"
+      ],
+      "omittedEvidence": 0,
+      "truncated": false,
+      "assessment": "unverified"
+    }
+  ],
+  "issues": []
+}

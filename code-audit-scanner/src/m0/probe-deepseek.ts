@@ -23,11 +23,6 @@ async function main(): Promise<void> {
     input: "ping",
     max_output_tokens: 16,
   });
-  await probe("POST", "/chat/completions", {
-    model: MODEL,
-    messages: [{ role: "user", content: "ping" }],
-    max_tokens: 8,
-  });
 }
 
 async function probe(method: string, path: string, body?: unknown): Promise<void> {

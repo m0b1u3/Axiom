@@ -2,18 +2,25 @@
   "schemaVersion": 1,
   "sdkVersion": "0.5.0",
   "pluginVersion": "0.1.95",
-  "checkpointResume": false,
+  "checkpointResume": true,
   "files": {
     "dist/api.d.ts": "0bc773664af6157516e49a8de49bd56df19327522d04955a4199f17d7696251a",
     "dist/scan-settings.d.ts": "62b608407c6f02bec66a299687e66c729226afc39d05b832ab2c32a28b6ab947",
     "dist/api.js": "a4de2811ddfb5bae0ba7e9c49e56295c5f2d4b708afd3abd634c7b2a81ccf34a",
     "dist/index.d.ts": "750e337abee78517d4a82202bc0defc246bdadb4b167396090bb9a05aec1b3ce",
-    "dist/cli.js": "3e253641b91817382bb755e87bedcfdf214b9e1b5a028c339edefcecef511e03"
+    "dist/cli.js": "3e253641b91817382bb755e87bedcfdf214b9e1b5a028c339edefcecef511e03",
+    "dist/cost.js": "4f7d39f796a79d43ade451f5c5e2825cbbb8c034401b97d1dcdb7b2ace579635",
+    "dist/scan-logs.js": "e4bf42a54e575d07c5974fffefa0ed4948db890f5048e49d436a7f0652fcc1ec",
+    "dist/scan-inputs.js": "56d7370d252a718bcb90b1050fe09d10268d4843e8fc194133ecf237ccf2aa65",
+    "_bundled_plugin/scripts/workbench_scan_history.py": "5baef5341726d440f26218ad66f7196896dd805cbf96b8142ba27177bd5167cd",
+    "_bundled_plugin/scripts/workbench_db.py": "6ff4e7f1db0558540eec3c59e26ad168d342fea63eb26072c0a6910234b42d8e"
   },
   "conclusions": {
     "run": "Local SDK starts a new scan unless undocumented CLI-internal options are supplied.",
     "publicAPI": "CodexSecurity and ScanOptions have no public resume() / resumeScanId entry point.",
-    "cli": "Upstream CLI supports eligible running Deep scans; not exposed through this Web adapter.",
-    "applicationRecovery": "Restore only a verified complete result commit, otherwise require explicit reexecution and preserve evidence."
-  }
+    "cli": "Upstream CLI supports eligible running Deep scans; the exact-version Web adapter uses the same internal SDK continuation path without a user CLI.",
+    "applicationRecovery": "Exact-version Deep continuation bridge, fenced to original running scan/session/source/checkpoints; legacy result restore and reexecution stay separate."
+  },
+  "publicSDKResume": false,
+  "adapter": "sdk050-internal-deep-only-v1"
 }

@@ -35,6 +35,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		capabilities.Result = contracts.NoResultCapabilities()
 		capabilities.Observation = contracts.NoObservationCapabilities()
 	}
+	client.SDKDeepResumeVersion = capabilities.DeepResumeVersion
 	client.SDKConcurrencyVersion = capabilities.ConcurrencyVersion
 	client.SDKParametersVersion = capabilities.ParametersVersion
 	client.SDKIdentityVersion = capabilities.IdentityVersion
@@ -140,6 +141,21 @@ func dispatch(ctx context.Context, poll time.Duration, next func(context.Context
 }
 
 func (w *Worker) nextExecution(ctx context.Context, c *execution.Client) (func() error, error) {
+	if c.SDKDeepResumeVersion == 1 {
+		claim, e := c.ClaimDeepResumeCheck(ctx, w.Cfg.AgentID)
+		if e == nil && claim != nil {
+			return func() error {
+				probeCtx, cancel := context.WithTimeout(ctx, 75*time.Second)
+				defer cancel()
+				report, e := scanner.RunDeepResumeProbe(probeCtx, *claim, w.Cfg.DataDir, w.Cfg.ScannerDir, w.Cfg.NodePath)
+				if e != nil {
+					report = &contracts.DeepResumeProbeReport{SchemaVersion: 1, ID: claim.ID, LeaseToken: claim.LeaseToken, AgentID: claim.AgentID, Inspection: contracts.DeepResumeInspection{SchemaVersion: 1, SDKVersion: "0.5.0", Execution: claim.Execution, Origin: claim.Origin, AgentID: claim.AgentID, CheckedAt: contracts.Timestamp(time.Now().UTC().Format(time.RFC3339Nano)), SourceHash: claim.SourceHash, ConfigurationHash: claim.ConfigurationHash, Reason: "原 Agent 未完成原生恢复检查；源码、状态或检查进程不可用。"}}
+				}
+				return c.ReportDeepResumeCheck(ctx, *report)
+			}, nil
+		}
+	}
+
 	if c.SDKIdentityVersion == 1 {
 		claim, err := c.ClaimSDKIdentity(ctx, w.Cfg.AgentID)
 		if err != nil && ctx.Err() == nil {
@@ -234,7 +250,7 @@ func (w *Worker) execute(ctx context.Context, c *execution.Client, lease *execut
 				if a.Credential.Present {
 					overrides[a.Credential.Value.EnvName] = a.Credential.Value.Value
 				}
-				result, err = scanner.Run(runCtx, scanner.Request{SDKParameters: lease.SDKParameters, SDKIdentity: lease.SDKIdentity, DataDir: w.Cfg.DataDir, AgentID: w.Cfg.AgentID, ComponentScan: lease.ComponentScan, ComponentPlanning: lease.ComponentPlanning, GitTarget: gitTargetFromLease(lease), SDKOperation: lease.SDKOperation, ParentState: parentStateFromLease(lease), ScanInput: scanInputFromLease(lease), ObservationContractVersion: task.ObservationContractVersion, ResultContractVersion: task.ResultContractVersion, Job: job, TaskID: task.NumericTaskID(), Attempt: int(task.Execution.Attempt), OutputPath: task.OutputPath, Provider: string(a.Model.ProviderID), ScannerDir: w.Cfg.ScannerDir, NodePath: w.Cfg.NodePath, EnvOverrides: overrides, Mock: os.Getenv("AXIOM_SCAN_MOCK") == "1"})
+				result, err = scanner.Run(runCtx, scanner.Request{DeepResumeContext: lease.DeepResumeContext, DeepResume: lease.DeepResume, SDKParameters: lease.SDKParameters, SDKIdentity: lease.SDKIdentity, DataDir: w.Cfg.DataDir, AgentID: w.Cfg.AgentID, ComponentScan: lease.ComponentScan, ComponentPlanning: lease.ComponentPlanning, GitTarget: gitTargetFromLease(lease), SDKOperation: lease.SDKOperation, ParentState: parentStateFromLease(lease), ScanInput: scanInputFromLease(lease), ObservationContractVersion: task.ObservationContractVersion, ResultContractVersion: task.ResultContractVersion, Job: job, TaskID: task.NumericTaskID(), Attempt: int(task.Execution.Attempt), OutputPath: task.OutputPath, Provider: string(a.Model.ProviderID), ScannerDir: w.Cfg.ScannerDir, NodePath: w.Cfg.NodePath, EnvOverrides: overrides, Mock: os.Getenv("AXIOM_SCAN_MOCK") == "1"})
 			}
 		} else {
 			result, err = w.runLegacy(runCtx, task.Legacy)

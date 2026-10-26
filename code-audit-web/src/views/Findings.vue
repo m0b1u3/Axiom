@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, h, onMounted, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
+import InterimFindingCatalog from "../components/InterimFindingCatalog.vue";
 import type { ColumnDef } from "@tanstack/vue-table";
 import { api } from "../api";
 import type { FindingSummary } from "../types";
@@ -16,7 +17,10 @@ import type {Project} from "../types";
 import { relativeTime, absoluteTime } from "../utils/time";
 
 /* 漏洞池：跨扫描按指纹去重的全局风险视图 */
-const router = useRouter();
+const router = useRouter(), route = useRoute();
+const interimView = computed(() => route.query.view === 'interim');
+function setView(interim:boolean){void router.push({query:{...route.query,view:interim?'interim':undefined}});}
+function viewKey(event:KeyboardEvent){if(['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){event.preventDefault();const next=event.key==='Home'?false:event.key==='End'?true:!interimView.value;setView(next);document.getElementById(next?'interim-tab':'final-findings-tab')?.focus();}}
 const {result, loading, error:loadError, search, filters, sorting, load, filter, sort, page, change} = useCatalog<FindingSummary>(api.findingPage, ['severity','status','projectId','sourceSnapshotId','sourcePath'], 'severity', 'asc');
 const projects = ref<Project[]>([]), projectError = ref('');
 async function loadProjects() {
@@ -75,6 +79,7 @@ const columns: ColumnDef<FindingSummary>[] = [
           { class: "dt-cell-text", title: row.original.title, style: { fontWeight: 500, color: "var(--text-primary)", lineHeight: 1.4 } },
           row.original.title,
         ),
+        (row.original.raw as {archive?:{assessment?:string}}|null)?.archive?.assessment==='sdk_reportable' ? h('small',{style:{color:'var(--text-secondary)'}},'SDK 可报告 · 未复现') : null,
         row.original.cwe?.length
           ? h("span", { class: "mono", style: { fontSize: "10px", color: "var(--text-tertiary)" } }, row.original.cwe.join(", "))
           : null,
@@ -115,7 +120,12 @@ onMounted(loadProjects);
   <div>
     <div v-if="loadError" class="request-error" role="alert"><span>数据加载失败：{{loadError}}</span><Button variant="outline" size="sm" @click="load">重试</Button></div>
     <div v-if="projectError" class="request-error" role="alert">项目筛选读取失败：{{projectError}}<Button variant="outline" size="sm" @click="loadProjects">重读项目筛选</Button></div>
-    <PageHeader title="漏洞" description="全局风险视图：跨扫描按指纹去重" />
+    <PageHeader title="漏洞" description="最终归档漏洞与扫描中间发现，分开展示并保留证据。" />
+    <div class="finding-views" role="tablist" aria-label="漏洞结果类型" @keydown="viewKey">
+      <button id="final-findings-tab" type="button" role="tab" :aria-selected="!interimView" :tabindex="interimView?-1:0" aria-controls="final-findings-panel" @click="setView(false)">已归档漏洞</button>
+      <button id="interim-tab" type="button" role="tab" :aria-selected="interimView" :tabindex="interimView?0:-1" aria-controls="global-interim-panel" @click="setView(true)">中间发现</button>
+    </div>
+    <section id="final-findings-panel" role="tabpanel" aria-labelledby="final-findings-tab" v-show="!interimView">
 
     <div class="toolbar">
       <div class="filters">
@@ -157,13 +167,16 @@ onMounted(loadProjects);
       :columns="columns"
       :row-click="gotTo"
       empty-title="暂无匹配漏洞"
-      empty-hint="漏洞在扫描完成后按指纹聚合到此处。"
+      empty-hint="这里显示已归档漏洞。失败或超时的候选与证据，请在“中间发现”查看。"
     />
     <CatalogPagination label="漏洞分页" :page="result?.page" :page-size="result?.pageSize" :total="result?.total" :loading="loading" :unavailable="!!loadError" @change="page" />
+    </section>
+    <section id="global-interim-panel" :role="interimView?'tabpanel':undefined" :aria-labelledby="interimView?'interim-tab':undefined"><InterimFindingCatalog :active="interimView" :projects="projects" @open="setView(true)"/></section>
   </div>
 </template>
 
 <style scoped>
+.finding-views{display:flex;gap:var(--space-4);border-bottom:1px solid var(--border-default);margin-bottom:var(--space-3)}.finding-views button{font-size:var(--font-size-sm);padding-block:var(--space-2);color:var(--text-secondary);border-bottom:2px solid transparent}.finding-views button[aria-selected="true"]{color:var(--accent-primary);border-bottom-color:var(--accent-primary);font-weight:var(--font-weight-medium)}.finding-views button:focus-visible{outline:2px solid var(--border-focus);outline-offset:2px}
 .toolbar {
   display: flex;
   align-items: center;

@@ -13,6 +13,7 @@ export const router = createRouter({
       path: "/",
       component: () => import("./components/AppLayout.vue"),
       children: [
+        {path:"settings/structured-output",name:"structured-output-diagnostic",component:()=>import("./components/StructuredOutputDiagnostic.vue"),meta:{title:"结构化输出诊断",description:"固定样例与离线请求对照"}},
  {path:"component-plans",name:"component-plans",component:()=>import("./views/ComponentPlans.vue"),meta:{title:"组件计划",description:"编辑、校验和确认不可变源码的组件边界"}},
  {path:"component-plans/:id([1-9]\\d*)",name:"component-plan",component:()=>import("./views/ComponentPlans.vue"),meta:{title:"组件计划",description:"草稿校验与冻结版本"}},
         {
@@ -53,6 +54,12 @@ export const router = createRouter({
           meta: { title: "资产", description: "全部代码快照的统一管理" },
         },
         {
+          path: "models",
+          name: "models-authorization",
+          component: () => import("./components/ModelsAndAuthorization.vue"),
+          meta: { title: "模型与授权", description: "管理扫描模型与独立授权账户" },
+        },
+        {
           path: "settings",
           name: "settings",
           component: () => import("./views/Settings.vue"),
@@ -61,7 +68,10 @@ export const router = createRouter({
         {
           path: "settings/model-configs",
           name: "model-configs",
-          redirect: to => ({path:'/settings',query:{...to.query,section:'models',tab:'models'},hash:to.hash}),
+          redirect: to => {
+            const {section: _section, ...query} = to.query;
+            return {path:'/models',query:{...query,tab:'models'},hash:to.hash};
+          },
         },
         {
           path: "scans/new",
@@ -90,5 +100,8 @@ router.beforeEach((to) => {
   if (to.name !== "login" && !getToken()) {
     return { name: "login", query: { redirect: to.fullPath } };
   }
-  if(to.name==='settings'&&to.query.section==='sdk-identities')return {path:'/settings',query:{...to.query,section:'models',tab:'accounts'},hash:to.hash};
+  if(to.name==='settings'&&['models','sdk-identities'].includes(String(to.query.section))){
+    const {section, ...query}=to.query;
+    return {path:'/models',query:{...query,tab:section==='sdk-identities'?'accounts':query.tab==='accounts'?'accounts':'models'},hash:to.hash};
+  }
 });

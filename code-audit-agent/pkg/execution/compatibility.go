@@ -92,6 +92,9 @@ func (c *Client) Negotiate(ctx context.Context, id string, slots int) error {
 		if v.Data.SDKParametersVersion != 1 {
 			c.SDKParametersVersion = 0
 		}
+		if v.Data.SDKDeepResumeVersion != 1 {
+			c.SDKDeepResumeVersion = 0
+		}
 		if v.Data.SDKIdentityVersion != 1 {
 			c.SDKIdentityVersion = 0
 		}
@@ -114,6 +117,7 @@ func (c *Client) Negotiate(ctx context.Context, id string, slots int) error {
 	if c.DispatchMode == control.DispatchUnbounded {
 		return &ProtocolError{Code: contracts.ErrorCodeProtocolVersionUnsupported, Origin: contracts.ErrorOriginAgent, Message: "Server 未声明无配额调度能力，请同步更新配套组件。", Retryable: false}
 	}
+	c.SDKDeepResumeVersion = 0
 	c.SDKIdentityVersion = 0
 	c.SDKParametersVersion = 0
 	c.SDKConcurrencyVersion = 0

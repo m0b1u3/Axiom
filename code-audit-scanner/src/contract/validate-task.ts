@@ -23,6 +23,7 @@ export function validateScanTask(task: ScanTask): void {
   if (!Number.isFinite(task.timeoutMinutes) || task.timeoutMinutes <= 0 || task.timeoutMinutes > 600) {
     throw new Error("ScanTask.timeoutMinutes must be positive");
   }
+  if ((task.wireApi !== undefined && task.wireApi !== "responses") || (task.resolvedModel && task.resolvedModel.wireApi !== "responses")) throw new Error("Chat 协议适配已移除；请配置支持 Responses 的模型接口。");
   if(!['standard','deep'].includes(task.scanMode))throw new Error("Unsupported scan mode");
   if (task.workers !== undefined && (task.scanMode!=="deep" || !Number.isSafeInteger(task.workers) || task.workers < 1)) {
     throw new Error("ScanTask.workers must be >= 1 for deep scans");

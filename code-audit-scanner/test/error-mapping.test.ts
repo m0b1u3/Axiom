@@ -51,6 +51,12 @@ test("message classifier covers 401 / 429 / 500 / timeout", () => {
   assert.equal(mapEngineError(new Error("aborted by user")).code, "canceled");
 });
 
+test('namespace compatibility failures retain the original error and identify provider format failure',()=>{
+ for(const text of ['{"error":{"code":"1214","message":"tools[4].type:type is illegal"}}','namespace_tool_incompatible']){
+  const mapped=mapEngineError(new Error(text));assert.equal(mapped.status,'failed');assert.equal(mapped.code,'provider_error');assert.match(mapped.message,/工具格式不兼容/);assert.ok(mapped.message.includes(text));
+ }
+});
+
 test("stale workbench running row maps to incomplete, not unknown", () => {
   const mapped = mapEngineError(
     new Error("Could not save the Codex Security scan: Cannot archive the output of a running scan."),

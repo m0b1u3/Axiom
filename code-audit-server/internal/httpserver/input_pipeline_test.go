@@ -131,7 +131,7 @@ func TestInputPipelineToSDK(t *testing.T) {
 			model := store.ModelConfigRow{Name: "Fixture " + test.name, Provider: test.provider, Model: "fixture-selected-" + test.name, ApiKeyEncrypted: encrypted, WireAPI: "responses"}
 			if test.provider == "custom" {
 				model.BaseURL = "https://fixture.invalid/v1"
-				model.WireAPI = "chat"
+				model.WireAPI = "responses"
 			}
 			cfg, err := s.CreateModelConfig(t.Context(), model)
 			if err != nil {

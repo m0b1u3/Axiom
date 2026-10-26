@@ -27,6 +27,8 @@ axios.defaults.adapter = async config => {
 };
 let js = ts.transpileModule(await readFile(new URL('../src/api.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
 js = js.replace('from "axios"',`from ${JSON.stringify(import.meta.resolve('axios'))}`);
+const diagnosticJS=ts.transpileModule(await readFile(new URL('../src/utils/structured-output.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+js=js.replace('from "./utils/structured-output"',`from "data:text/javascript;base64,${Buffer.from(diagnosticJS).toString('base64')}"`);
 const {api,setToken,getToken,ApiError} = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
 
 test('real API client preserves payloads, authorization, envelopes and blobs', async () => {
@@ -143,4 +145,19 @@ test('storage policy and cleanup actions preserve revisions and only submit obje
  await api.previewCleanup('scan',9);assert.deepEqual(JSON.parse(last.data),{kind:'scan',resourceId:9});
  await api.executeCleanup('fixture-job',4);assert.equal(last.url,'/storage/cleanup/fixture-job/execute');assert.deepEqual(JSON.parse(last.data),{revision:4});
  await api.cancelCleanup('fixture-job',5);assert.deepEqual(JSON.parse(last.data),{revision:5});assert.equal(last.url,'/storage/cleanup/fixture-job/cancel');
+});
+
+test('offline diagnostic API sends only the fixed selection and preserves redacted records',async()=>{
+ const fixture=async name=>JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/'+name+'.json',import.meta.url),'utf8'));
+ const request=await fixture('structured-request'),record=await fixture('structured-record-title_only');
+ response={data:record};assert.deepEqual(await api.runStructuredDiagnostic(request),record);assert.equal(last.url,'/diagnostics/structured-output/records');assert.equal(last.method,'post');assert.deepEqual(JSON.parse(last.data),request);assert.ok(!last.data.includes('apiKey')&&!last.data.includes('bodyJson'));
+ response={data:await fixture('structured-page')};assert.equal((await api.structuredDiagnosticRecords(2)).page,1);assert.equal(last.params.page,2);assert.equal(last.params.pageSize,10);
+ response={data:{catalog:await fixture('structured-catalog'),catalogSha256:request.catalogSha256}};assert.equal((await api.structuredDiagnosticCatalog()).catalog.sdkVersion,'0.5.0');
+});
+
+test('model configuration exposes only Responses and submits the explicit protocol',async()=>{
+ const source=await readFile(new URL('../src/views/ModelConfigs.vue',import.meta.url),'utf8');
+ assert.doesNotMatch(source,/WIRE_API_OPTIONS|wireApiEffective/);
+ assert.match(source,/wireApi: "responses"/);
+ assert.match(source,/模型接口须支持 Responses/);
 });

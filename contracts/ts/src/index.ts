@@ -9,6 +9,7 @@ import type {ContractKind, ContractTypes, ExecutionRef, ErrorCode, TerminalStatu
 export * from './types.gen.js';
 export * from './matrix.gen.js';
 export * from './component-scan.js';
+export * from './validation-report.js';
 export * from './sdk-concurrency.gen.js';
 import {componentAllocations,componentReserved} from './component-scan.js';
 
@@ -223,3 +224,6 @@ function validateComponentScan(kind:ContractKind,object:Record<string,unknown>,e
  if(kind==='ProgressSnapshotV2'&&isObject(object.extensions)&&object.extensions.componentScan!==undefined)validate('ComponentScanSnapshot',object.extensions.componentScan,execution);
  if(kind==='ScanResult'&&isObject(object.extensions)&&object.extensions.componentScan!==undefined)validate('ComponentScanResult',object.extensions.componentScan,execution);
 }
+
+export {structuredDiagnosticCatalog,runStructuredDiagnostic,checkStructuredDiagnosticReply} from './structured-output.js';
+export {STRUCTURED_DIAGNOSTIC_CATALOG_HASH} from './structured-output.gen.js';

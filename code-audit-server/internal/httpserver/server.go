@@ -43,6 +43,9 @@ type Server struct {
 
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/v1/diagnostics/structured-output", s.withAuth(s.structuredDiagnosticCatalog))
+	mux.HandleFunc("GET /api/v1/diagnostics/structured-output/records", s.withAuth(s.listStructuredDiagnostics))
+	mux.HandleFunc("POST /api/v1/diagnostics/structured-output/records", s.withAuth(s.createStructuredDiagnostic))
 	mux.HandleFunc("GET /api/v1/sdk-identities", s.withAuth(s.listSDKIdentities))
 	mux.HandleFunc("POST /api/v1/sdk-identities", s.withAuth(s.createSDKIdentity))
 	mux.HandleFunc("GET /api/v1/sdk-identities/{id}/operations", s.withAuth(s.sdkIdentityOperations))
@@ -74,6 +77,14 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /api/v1/settings/execution", s.withAuth(s.queueSettings))
 	mux.HandleFunc("PUT /api/v1/settings/execution", s.withAuth(s.saveQueueSettings))
 	mux.HandleFunc("GET /api/v1/scans/{id}/coverage", s.withAuth(s.scanCoverage))
+	mux.HandleFunc("POST /api/v1/scans/{id}/interim-reviews", s.withAuth(s.createInterimReview))
+	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/interim-reviews", s.withAuth(s.interimReviews))
+	mux.HandleFunc("GET /api/v1/interim-review-groups/{group}", s.withAuth(s.interimReviewView))
+	mux.HandleFunc("POST /api/v1/interim-review-groups/{group}/retry", s.withAuth(s.retryInterimReview))
+	mux.HandleFunc("POST /api/v1/interim-review-groups/{group}/archive", s.withAuth(s.archiveInterimReview))
+	mux.HandleFunc("GET /api/v1/findings/interim", s.withAuth(s.interimExecutionCatalog))
+	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/interim", s.withAuth(s.interimFindings))
+	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/interim/{artifact}", s.withAuth(s.interimEvidence))
 	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/sdk-sessions", s.withAuth(s.sdkSessions))
 	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/result", s.withAuth(s.attemptResult))
 	mux.HandleFunc("GET /api/v1/scans/{id}/attempts/{attempt}/evidence-graph", s.withAuth(s.findingEvidenceGraph))
@@ -115,6 +126,11 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /api/v1/scans", s.withAuth(s.createScan))
 	mux.HandleFunc("GET /api/v1/scans", s.withAuth(s.listScans))
 	mux.HandleFunc("GET /api/v1/scans/{id}", s.withAuth(s.getScan))
+	mux.HandleFunc("GET /api/v1/scans/{id}/deep-resume", s.withAuth(s.deepResumeSnapshot))
+	mux.HandleFunc("POST /api/v1/scans/{id}/deep-resume/check", s.withAuth(s.deepResumeCheck))
+	mux.HandleFunc("POST /api/v1/scans/{id}/deep-resume", s.withAuth(s.resumeDeep))
+	mux.HandleFunc("POST /api/internal/deep-resume/claim", s.agentOnly(s.claimDeepResumeCheck))
+	mux.HandleFunc("POST /api/internal/deep-resume/report", s.agentOnly(s.reportDeepResumeCheck))
 	mux.HandleFunc("GET /api/v1/scans/{id}/parent-state", s.withAuth(s.scanParentState))
 	mux.HandleFunc("GET /api/v1/scans/{id}/budget", s.withAuth(s.taskBudget))
 	mux.HandleFunc("PUT /api/v1/scans/{id}/budget", s.withAuth(s.updateTaskBudget))
@@ -629,11 +645,10 @@ func (s *Server) enableModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 	httputil.OK(w, row)
 }
 
-// normalizeModelBaseURL 容忍用户粘贴完整端点 URL：剥掉尾部 /chat/completions、
-// /responses（系统内部只做 base + 路径拼接，带后缀会拼出 /chat/completions/responses）。
+// normalizeModelBaseURL accepts a full Responses endpoint; Chat endpoints are rejected.
 func normalizeModelBaseURL(u string) string {
 	u = strings.TrimRight(strings.TrimSpace(u), "/")
-	for _, suffix := range []string{"/chat/completions", "/responses"} {
+	for _, suffix := range []string{"/responses"} {
 		if strings.HasSuffix(u, suffix) {
 			u = strings.TrimSuffix(u, suffix)
 			u = strings.TrimRight(u, "/")
@@ -711,8 +726,12 @@ func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		httputil.Error(w, http.StatusBadRequest, 40000, "baseUrl required for this provider")
 		return
 	}
-	if body.WireAPI != "" && body.WireAPI != "responses" && body.WireAPI != "chat" {
-		httputil.Error(w, http.StatusBadRequest, 40006, "wireApi must be responses or chat")
+	if strings.HasSuffix(strings.TrimRight(strings.TrimSpace(body.BaseURL), "/"), "/chat/completions") {
+		httputil.Error(w, http.StatusBadRequest, 40006, "Chat Completions 地址不再支持；请填写 Responses 的接口地址")
+		return
+	}
+	if body.WireAPI != "" && body.WireAPI != "responses" {
+		httputil.Error(w, http.StatusBadRequest, 40006, "Chat 协议适配已移除；wireApi 仅支持 responses")
 		return
 	}
 	if body.SDKIdentityOnly && (body.ApiKey != "" || body.Provider != "openai" || (body.BaseURL != "" && normalizeModelBaseURL(body.BaseURL) != "https://api.openai.com/v1") || (body.WireAPI != "" && body.WireAPI != "responses")) {
@@ -738,7 +757,7 @@ func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		ApiKeyEncrypted: enc,
 		Remark:          strings.TrimSpace(body.Remark),
 		WebsiteURL:      strings.TrimSpace(body.WebsiteURL),
-		WireAPI:         strings.TrimSpace(body.WireAPI),
+		WireAPI:         "responses",
 	})
 	if err != nil {
 		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
@@ -770,8 +789,12 @@ func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		httputil.Error(w, http.StatusBadRequest, 40000, "name required")
 		return
 	}
-	if body.WireAPI != "" && body.WireAPI != "responses" && body.WireAPI != "chat" {
-		httputil.Error(w, http.StatusBadRequest, 40006, "wireApi must be responses or chat")
+	if strings.HasSuffix(strings.TrimRight(strings.TrimSpace(body.BaseURL), "/"), "/chat/completions") {
+		httputil.Error(w, http.StatusBadRequest, 40006, "Chat Completions 地址不再支持；请填写 Responses 的接口地址")
+		return
+	}
+	if body.WireAPI != "" && body.WireAPI != "responses" {
+		httputil.Error(w, http.StatusBadRequest, 40006, "Chat 协议适配已移除；wireApi 仅支持 responses")
 		return
 	}
 	previous, e := s.Store.GetModelConfig(r.Context(), id)
@@ -807,7 +830,7 @@ func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		CompatibilityStatus: strings.TrimSpace(body.CompatibilityStatus),
 		Remark:              strings.TrimSpace(body.Remark),
 		WebsiteURL:          strings.TrimSpace(body.WebsiteURL),
-		WireAPI:             strings.TrimSpace(body.WireAPI),
+		WireAPI:             "responses",
 	}); err != nil {
 		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
 		return
@@ -844,6 +867,10 @@ func (s *Server) testModelConfig(w http.ResponseWriter, r *http.Request, _ *stor
 		httputil.Error(w, http.StatusNotFound, 40002, "model config not found")
 		return
 	}
+	if row.WireAPI != "" && row.WireAPI != "responses" {
+		httputil.Error(w, http.StatusBadRequest, 40006, "Chat 协议适配已移除；请先更新为支持 Responses 的模型配置")
+		return
+	}
 	if row.ApiKeyEncrypted == "" {
 		httputil.Error(w, http.StatusConflict, 40900, "此模型通过 SDK 执行身份提供凭据，请在 Web 身份管理中查询绑定节点的账户状态")
 		return
@@ -857,40 +884,26 @@ func (s *Server) testModelConfig(w http.ResponseWriter, r *http.Request, _ *stor
 		httputil.OK(w, map[string]any{"ok": false, "error": "baseUrl and model required"})
 		return
 	}
-	// 协议按配置覆盖 → 注册表预设 → responses（chat 供应商打 /responses 必然 404）
-	wire := row.WireAPI
-	if wire == "" {
-		wire = providers.WireAPI(row.Provider)
-	}
 	base := strings.TrimRight(row.BaseURL, "/")
-	var endpoint, payload string
-	if wire == "chat" {
-		endpoint = base + "/chat/completions"
-		payload = fmt.Sprintf(`{"model":%q,"messages":[{"role":"user","content":"ping"}],"max_tokens":4}`, row.Model)
-	} else {
-		endpoint = base + "/responses"
-		payload = fmt.Sprintf(`{"model":%q,"input":"ping","max_output_tokens":4}`, row.Model)
-	}
+	endpoint := base + "/responses"
+	payload := fmt.Sprintf(`{"model":%q,"input":"ping","max_output_tokens":4}`, row.Model)
 	client := &http.Client{Timeout: 12 * time.Second}
 	req, _ := http.NewRequestWithContext(r.Context(), http.MethodPost, endpoint, strings.NewReader(payload))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	resp, err := client.Do(req)
 	if err != nil {
-		_ = s.Store.SetModelConfigCompatibility(r.Context(), id, "experimental")
-		httputil.OK(w, map[string]any{"ok": false, "error": friendlyUpstreamError(err)})
+		httputil.OK(w, map[string]any{"ok": false, "error": friendlyUpstreamError(err), "scope": "connectivity_only", "compatibilityVerified": false})
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		// 连通性实测通过 → 回写 supported（列表「兼容性」列不再是死的 experimental）
-		_ = s.Store.SetModelConfigCompatibility(r.Context(), id, "supported")
-		httputil.OK(w, map[string]any{"ok": true, "status": resp.StatusCode})
+		// Reachability does not verify SDK tools, Schema or report quality.
+		httputil.OK(w, map[string]any{"ok": true, "status": resp.StatusCode, "scope": "connectivity_only", "compatibilityVerified": false, "message": "接口连接成功；本次仅验证连通性，尚未验证 SDK 工具、Schema 和完整复核能力。"})
 		return
 	}
-	_ = s.Store.SetModelConfigCompatibility(r.Context(), id, "experimental")
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 256))
-	httputil.OK(w, map[string]any{"ok": false, "status": resp.StatusCode, "error": strings.TrimSpace(string(body))})
+	httputil.OK(w, map[string]any{"ok": false, "status": resp.StatusCode, "error": strings.TrimSpace(string(body)), "scope": "connectivity_only", "compatibilityVerified": false})
 }
 
 // fetchProviderModels 从供应商拉取模型清单（cc-switch「获取模型列表」同款）。

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import SDKIdentityBinding from "../components/SDKIdentityBinding.vue";
 import SDKSessionEvents from "../components/SDKSessionEvents.vue";
+import InterimReviewDetails from "../components/InterimReviewDetails.vue";
 import SDKOperations from "../components/SDKOperations.vue";
 import SDKValidationAction from "../components/SDKValidationAction.vue";
 const sdkOperationRevision=ref(0);
@@ -14,6 +15,7 @@ import ExploitabilityReview from "../components/ExploitabilityReview.vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, shallowRef, shallowReactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import FindingEvidenceGraph from '../components/FindingEvidenceGraph.vue';
+import InterimFindings from '../components/InterimFindings.vue';
 import { RotateCcw, Download, FileText, FileDown, Trash2, X, ChevronRight, Search } from "lucide-vue-next";
 import { api } from "../api";
 import type { QueueOverview, Finding, Progress, ScanCompare, ScanAttempt, ScanLogEvent, ScanTask } from "../types";
@@ -488,14 +490,14 @@ async function cancelScan(): Promise<void> {
 async function retryScan(): Promise<void> {
   if (!mutationBusy) await recoveryPanel.value?.requestRestart();
 }
-function onRecoveryChanged(next:ScanTask,action:'restore_result'|'restart'|'interrupt_expired'):void {
+function onRecoveryChanged(next:ScanTask,action:'restore_result'|'restart'|'interrupt_expired'|'resume_deep'):void {
   loadGeneration++;
   task.value=next;
   selectedAttempt.value='current';
   findings.value=[];findingsError.value='';compareError.value='';
   progress.value=null;compare.value=null;selected.value=null;logEpoch.value++;
   sdkOperationRevision.value++;
-  message.success(action==='restore_result'?'已恢复原执行结果，未调用模型':action==='restart'?'已确认重新执行并排队':'已登记执行中断，未启动新扫描');
+  message.success(action==='resume_deep'?'已确认原会话续扫，等待原 Agent 领取':action==='restore_result'?'已恢复原执行结果，未调用模型':action==='restart'?'已确认重新执行并排队':'已登记执行中断，未启动新扫描');
   if (!timer) timer=window.setInterval(()=>void load(),3000);
   void loadAttempts();void load();
 }
@@ -581,7 +583,7 @@ function sourceName(t: ScanTask): string {
       <div class="exec-actions">
         <Button v-if="canOperate && canCancel" variant="outline" @click="cancelScan"><X :size="14" />取消</Button>
         <Button v-if="canOperate && canRetry && !task.sdkOperation && !task.componentPlanning && !task.componentScan" :disabled="budget?.accountingVersion===1 && !budget.retryAllowed" variant="secondary" @click="retryScan"><RotateCcw :size="14" />重新执行</Button>
-        <DropdownMenu v-if="!task.sdkOperation && !task.componentPlanning && !unavailableAttempt" :items="exportItems" @select="onExportSelect">
+        <DropdownMenu v-if="(!task.sdkOperation || (task.interimReviewGroupId && task.findingCount>0)) && !task.componentPlanning && !unavailableAttempt" :items="exportItems" @select="onExportSelect">
           <Button variant="secondary" :loading="exporting || exportingPdf"><Download :size="14" />导出</Button>
         </DropdownMenu>
         <Button v-if="canAdmin && canRetry && !task.componentPlanning" variant="destructive" @click="deleteScan"><Trash2 :size="14" />删除</Button>
@@ -594,16 +596,18 @@ function sourceName(t: ScanTask): string {
     <p v-if="task.sdkOperation" class="deep-policy-summary">{{task.sdkOperation.kind==='validate'?'SDK 独立复核 · 完整源码快照 · 费用未知，不支持费用上限，不能自动重跑':'SDK 原生预检 · 只检查本地输入与配置，不启动模型'}} <RouterLink v-if="task.sdkOperation.origin" :to="'/scans/'+task.sdkOperation.origin.taskId+'?attempt='+task.sdkOperation.origin.attempt">来源执行 #{{task.sdkOperation.origin.taskId}} / {{task.sdkOperation.origin.attempt}}</RouterLink></p>
     <p v-else-if="task.componentPlanning" class="deep-policy-summary">{{task.componentPlanning.kind==='normalize'?'组件计划本地校验 · 不调用模型':'组件划分建议 · 费用未知'}} · <RouterLink :to="'/component-plans/'+task.componentPlanning.planId">返回组件计划</RouterLink></p>
     <SDKOperations v-else-if="task.inputContractVersion && task.sourceSnapshotId && !task.componentScan" :task="task" :revision="sdkOperationRevision"/>
+    <InterimReviewDetails v-if="task.interimReviewGroupId" :group-id="task.interimReviewGroupId" @archived="loadFindings();load()"/>
     <ExecutionBudget v-if="task.sdkOperation?.kind!=='preflight'" :limits-unsupported="!!task.sdkOperation && !task.componentPlanning" :scan-id="id" :status="task.status" :attempt="task.attempt" :progress-revision="task.progress?.revision" @snapshot="budget=$event" @select-attempt="selectedAttempt=String($event)" />
     <p v-if="task.maxCostUsd!=null && (!budget || budget.accountingVersion===0)" class="deep-policy-summary">本次扫描的估算费用预算：{{task.maxCostUsd}} USD · 依据引擎估算，供应商实际账单可能不同。</p>
     <p v-if="task.scanMode==='deep'" class="deep-policy-summary">发现时限 {{task.timeoutMinutes}} 分钟 · 汇总宽限最多 10 分钟 · 最多发现 {{task.deepMaxDiscoveryRuns||'SDK 默认'}} 次 · 连续无新增 {{task.deepStopAfterNoNew||'SDK 默认'}} 次后停止 · worker {{task.workers??'SDK 默认'}}</p>
+    <p v-if="task.scanMode==='standard' && task.attempt>0 && !task.sdkOperation && !task.componentScan && !task.componentPlanning" class="text-sm"><a href="#interim-findings" class="text-primary underline underline-offset-4">查看已保存的中间发现与证据</a></p>
     <ExecutionHistory :task="task" :attempts="attempts" :selected-attempt="selectedAttempt" :overview="queueOverview" @select="selectedAttempt=$event" />
     <ComponentExecutions v-if="task.componentScan" :task="task" :attempt="historicalAttempt?.attempt" :can-operate="canOperate" :budget="budget" @changed="load" @select-attempt="selectedAttempt=String($event)"/>
     <ExecutionRecovery v-if="!task.sdkOperation && !task.componentPlanning" ref="recoveryPanel" :task="task" :can-operate="canOperate" :budget-revision="budget?.revision" @changed="onRecoveryChanged" />
     <!-- 摘要指标带 -->
     <div v-if="!task.sdkOperation && !task.componentPlanning" class="f-ribbon">
       <div class="f-cell">
-        <span class="f-tag">{{historicalAttempt?'所选执行检出':'当前任务检出'}}</span>
+        <span class="f-tag">{{historicalAttempt?'所选执行归档漏洞':'当前归档漏洞'}}</span>
         <span class="f-val mono">{{ historicalAttempt?.findingCount ?? task.findingCount }}</span>
       </div>
       <div class="f-cell">
@@ -639,7 +643,9 @@ function sourceName(t: ScanTask): string {
     <ScanActivity :operation-kind="task.componentPlanning ? 'component_'+task.componentPlanning.kind : task.sdkOperation?.kind" v-if="!unavailableAttempt" :key="`${id}-${logEpoch}-${selectedAttempt}-${task.attempt}`" :scan-id="id" :attempt="historicalAttempt?.attempt ?? (task.status==='pending' ? undefined : task.attempt)" :running="isRunning && (!historicalAttempt || historicalAttempt.attempt===task.attempt)" :status="historicalAttempt?.status ?? task.status" :diagnostic="historicalAttempt ? historicalAttempt.progressDiagnostic : task.progressDiagnostic" :progress="historicalAttempt ? progressView(historicalAttempt.progress,historicalAttempt.progressJson) : progress" />
 
     <SDKSessionEvents v-if="isRunning && task.attempt>0 && !task.sdkOperation && !task.componentPlanning && !historicalAttempt" :scan-id="id" :attempt="task.attempt"/>
-    <div v-if="!unavailableAttempt && !task.sdkOperation && !task.componentPlanning" class="split" :class="{ 'inspector-open': selected }">
+    <InterimFindings v-if="!unavailableAttempt && task.scanMode==='standard' && !task.sdkOperation && !task.componentPlanning && !task.componentScan && task.attempt>0 && task.sourceContentHash" :scan-id="id" :attempt="historicalAttempt?.attempt ?? task.attempt" :source-hash="task.sourceContentHash" :running="isRunning && (!historicalAttempt || historicalAttempt.attempt===task.attempt)"/>
+    <h2 v-if="(!task.sdkOperation || task.interimReviewGroupId) && !task.componentPlanning" class="text-sm font-medium">{{task.interimReviewGroupId?'独立复核归档 · 可报告，未复现':'最终结果'}}</h2>
+    <div v-if="!unavailableAttempt && (!task.sdkOperation || task.interimReviewGroupId) && !task.componentPlanning" class="split" :class="{ 'inspector-open': selected }">
       <!-- PrimaryDataSurface：findings grid -->
       <div class="surface pane">
         <div class="toolbar">
@@ -694,8 +700,8 @@ function sourceName(t: ScanTask): string {
             </div>
           </template>
           <div v-else-if="!findLoading && !findingsError" class="empty-state">
-            <p class="empty-title">{{ findings.length ? "没有匹配的漏洞" : "暂无漏洞" }}</p>
-            <p class="empty-hint">扫描完成后漏洞按指纹聚合在此处。</p>
+            <p class="empty-title">{{ findings.length ? "没有匹配的漏洞" : "尚无已归档漏洞" }}</p>
+            <p class="empty-hint">{{task.interimReviewGroupId?'尚无正式归档；只有成功且可报告的独立复核结论可以归档，原生 SDK 结果保持不变。':'此处仅展示已归档的结构化结果；中间候选记录在上方单独展示。'}}</p>
           </div>
         </Loading>
 

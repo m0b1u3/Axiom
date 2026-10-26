@@ -1,0 +1,122 @@
+[
+  {
+    "name": "empty",
+    "report": "",
+    "state": "empty"
+  },
+  {
+    "name": "whitespace",
+    "report": " \r\n\t",
+    "state": "empty"
+  },
+  {
+    "name": "comment-only",
+    "report": "<!-- hidden -->",
+    "state": "empty"
+  },
+  {
+    "name": "rule-only",
+    "report": "---\n***\n___",
+    "state": "empty"
+  },
+  {
+    "name": "retained-review-9",
+    "report": "## 静态发现评估：用户输入直接拼接进 SQL 语句（CWE-89）",
+    "state": "title_only"
+  },
+  {
+    "name": "retained-review-10",
+    "report": "## Static Finding Assessment — 用户输入直接拼接进 SQL 语句 (CWE-89)",
+    "state": "title_only"
+  },
+  {
+    "name": "heading-with-source-reference",
+    "report": "## SQL injection `src/query.ts:2-4`",
+    "state": "title_only"
+  },
+  {
+    "name": "multiple-headings",
+    "report": "# Finding\n\n## Evidence\n\n## Conclusion",
+    "state": "title_only"
+  },
+  {
+    "name": "setext-heading",
+    "report": "Static assessment\n=================",
+    "state": "title_only"
+  },
+  {
+    "name": "HTML-heading",
+    "report": "<h2>Assessment</h2>",
+    "state": "title_only"
+  },
+  {
+    "name": "quoted-heading",
+    "report": "> ## Assessment",
+    "state": "title_only"
+  },
+  {
+    "name": "fenced-heading",
+    "report": "```markdown\n## Assessment\n```",
+    "state": "title_only"
+  },
+  {
+    "name": "short-real-body",
+    "report": "## Assessment\nTarget is a test fixture.",
+    "state": "body_present"
+  },
+  {
+    "name": "short-Chinese-body",
+    "report": "## 结论\n仅为测试样例。",
+    "state": "body_present"
+  },
+  {
+    "name": "source-supported-body",
+    "report": "## Finding\n`src/query.ts:2-4` joins input into SQL; deployment and database implementation are unknown.",
+    "state": "body_present"
+  },
+  {
+    "name": "counterevidence",
+    "report": "The claimed file does not exist in the frozen source.",
+    "state": "body_present"
+  },
+  {
+    "name": "quoted-body",
+    "report": "> ## Assessment\n> The guard rejects untrusted input.",
+    "state": "body_present"
+  },
+  {
+    "name": "evidence-code",
+    "report": "## Evidence\n```ts\nreturn db.execute(sql);\n```",
+    "state": "body_present"
+  },
+  {
+    "name": "HTML-body",
+    "report": "<h2>Assessment</h2>\n<p>Deployment is unknown.</p>",
+    "state": "body_present"
+  },
+  {
+    "name": "literal-hash-is-body",
+    "report": "#not-a-Markdown-heading",
+    "state": "body_present"
+  },
+  {
+    "name": "flattened-multisection-report",
+    "report": "## Assessment ### Root cause Untrusted input is joined into SQL. ### Evidence - `src/query.ts:2-4` is a source location; runtime behavior is unknown.",
+    "state": "body_present"
+  },
+  {
+    "name": "Unicode-BOM-heading",
+    "report": "﻿## Assessment",
+    "state": "title_only"
+  },
+  {
+    "name": "Unicode-NEL-heading",
+    "report": "## Assessment",
+    "state": "title_only"
+  },
+  {
+    "name": "retained-review-11",
+    "report": "## SQL Injection in `lookup()` (`a036597803b7bd848456a8ddfe314614ae901dbc6baad40631c55f7b77a44ae0` — 用户输入直接拼接进 SQL 语句)",
+    "state": "title_only"
+  }
+]

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import ModelsAndAuthorization from "../components/ModelsAndAuthorization.vue";
 import AdvancedDiagnostics from "../components/AdvancedDiagnostics.vue";
 import StorageMaintenance from "../components/StorageMaintenance.vue";
 import ExecutionSettings from "../components/ExecutionSettings.vue";
@@ -22,7 +21,7 @@ const {user, roleLabel, canAdmin} = useAuth();
 const { isDark, setTheme } = useTheme();
 const passwordOpen = ref(false);
 const groups = computed(() => [
- {label:'日常设置',items:[{id:'models',label:'模型与授权'},{id:'execution',label:'扫描执行'},{id:'storage',label:'存储与清理'},{id:'account',label:'账户与外观'}]},
+ {label:'日常设置',items:[{id:'execution',label:'扫描执行'},{id:'storage',label:'存储与清理'},{id:'account',label:'账户与外观'}]},
  ...(canAdmin.value?[{label:'管理员',items:[{id:'users',label:'账户管理'},{id:'operations',label:'操作日志'}]}]:[]),
  {label:'高级',items:[{id:'diagnostics',label:'高级诊断'},{id:'about',label:'关于系统'}]},
 ]);
@@ -30,19 +29,18 @@ const sections = computed(()=>groups.value.flatMap(group=>group.items));
 const route = useRoute(), router = useRouter();
 const activeSection = computed({
   get: () => ['users','operations'].includes(String(route.query.section)) || sections.value.some(section => section.id === route.query.section) ? String(route.query.section) : 'account',
-  set: section => { void router.replace({query: {section,...(section==='models'?{tab:'models'}:{})}}); },
+  set: section => { void router.replace({query: {section}}); },
 });
 const adminDenied=computed(()=>!canAdmin.value&&['users','operations'].includes(activeSection.value));
 </script>
 
 <template>
   <div class="settings-col">
-    <PageHeader title="系统设置" description="管理模型连接、扫描偏好和工作空间账户。" />
+    <PageHeader title="系统设置" description="管理扫描执行、存储策略与工作空间账户。" />
     <div class="settings-layout">
     <nav class="settings-nav" aria-label="设置分类"><section v-for="group in groups" :key="group.label" :aria-label="group.label"><h2>{{group.label}}</h2><div><button v-for="section in group.items" :key="section.id" type="button" :aria-current="activeSection === section.id ? 'page' : undefined" @click="activeSection = section.id">{{ section.label }}</button></div></section></nav>
     <div class="settings-wrap">
       <p v-if="adminDenied" role="alert" class="request-error">需要管理员权限才能访问此设置。请从左侧选择你有权使用的功能。</p>
-      <ModelsAndAuthorization v-if="activeSection==='models'"/>
       <KeepAlive><ExecutionSettings v-if="activeSection === 'execution'" /></KeepAlive>
       <AdvancedDiagnostics v-if="activeSection === 'diagnostics'"/>
       <StorageMaintenance v-if="activeSection === 'storage'" />

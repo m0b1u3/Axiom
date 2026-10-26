@@ -509,18 +509,23 @@
     },
     {
       "id": "unsupported.resume",
-      "label": "暂停与原会话续扫",
+      "label": "公开 resume() 方法",
       "api": [
         "CodexSecurity.resume"
       ],
       "status": "not_public",
       "phase": 6,
-      "notes": "0.5.0 上游 CLI 与内部路径可恢复符合条件的 Deep Scan；公开 CodexSecurity/ScanOptions 没有稳定 resume 方法。本产品继续区分恢复完整结果入库与显式重新执行，不调用 CLI 或内部恢复参数。",
+      "notes": "0.5.0 公开 CodexSecurity/ScanOptions 没有稳定 resume 方法，仍归类 not_public。Axiom 另外通过精确版本和源码指纹锁定的内部适配器，为满足原生条件的独立 Deep 扫描提供纯 Web 原会话续扫；通用暂停、Standard 续扫和跨 SDK 会话迁移不开放。",
       "evidence": [
         "deploy/sdk/recovery-baseline.json",
         "deploy/sdk/recovery-check.mjs",
         "code-audit-scanner/test/sdk-recovery.test.ts",
-        "docs/SCAN_RECOVERY.md"
+        "docs/SCAN_RECOVERY.md",
+        "code-audit-scanner/src/runtime/deep-resume.ts",
+        "code-audit-server/internal/store/deep_resume.go",
+        "code-audit-web/src/components/DeepResumeControls.vue",
+        "deploy/sdk/native-deep-resume-acceptance.mjs",
+        "docs/DEEP_SCAN_RESUME.md"
       ]
     },
     {

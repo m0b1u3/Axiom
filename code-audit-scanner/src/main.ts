@@ -1,6 +1,7 @@
 import { hardTimeoutMinutes } from "./contract/deep-policy.js";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
+import { enterSDKWorkingDirectory } from "./runtime/sdk-working-directory.js";
 import { superviseAgent } from "./runtime/agent-lifecycle.js";
 import { flagEnabled, parseArgs } from "./cli/args.js";
 import { describeScanner } from "./runtime/describe-scanner.js";
@@ -26,10 +27,12 @@ async function main(): Promise<void> {
     process.stdout.write(`${JSON.stringify(await describeScanner(), null, 2)}\n`);
     return;
   }
+  if(args['export-saved-interim']!==undefined){if(Object.keys(args).length!==1)throw new Error('Evidence export cannot be mixed with scans');await (await import('./runtime/interim-findings.js')).exportSavedInterim(args['export-saved-interim']);return;}
+  if(args['deep-resume-probe']!==undefined){if(Object.keys(args).length!==1)throw new Error('Resume inspection cannot be mixed with scans');await (await import('./runtime/deep-resume.js')).runDeepProbe(args['deep-resume-probe']);return;}
   if(args['identity-operation']!==undefined){if(Object.keys(args).length!==1)throw new Error('Identity operation cannot be mixed with scans');await (await import('./runtime/sdk-identity.js')).runIdentityOperation(args['identity-operation']);return;}
  let task: ScanTask;
   if(args.job!==undefined) {
-    const extra=Object.keys(args).filter(key=>!['job','mock','describe','identity','sdk-parameters'].includes(key));
+    const extra=Object.keys(args).filter(key=>!['job','mock','describe','identity','sdk-parameters','deep-resume-context','deep-resume'].includes(key));
     if(extra.length)throw new Error("Scanner job cannot be mixed with legacy scan flags");
     const {loadScannerJob,scanTaskFromJob}=await import("./contract/scanner-job.js");
     task=scanTaskFromJob(await loadScannerJob(args.job));
@@ -64,8 +67,9 @@ async function main(): Promise<void> {
   if (args["credential-env"]) {
     task.credentialEnv = args["credential-env"];
   }
-  if (args["wire-api"] === "responses" || args["wire-api"] === "chat") {
-    task.wireApi = args["wire-api"];
+  if (args["wire-api"] !== undefined) {
+    if (args["wire-api"] !== "responses") throw new Error("Only Responses model connections are supported; Chat adaptation was removed.");
+    task.wireApi = "responses";
   }
   if (args["display-name"]) {
     task.displayName = args["display-name"];
@@ -91,10 +95,13 @@ async function main(): Promise<void> {
 
   }
   if(args['sdk-parameters']!==undefined){if(args.job===undefined)throw new Error('SDK parameters require a versioned job');await (await import('./runtime/sdk-parameters.js')).loadSDKParameters(args['sdk-parameters'],task);}
+ await (await import('./runtime/deep-resume.js')).loadDeepSidecars(args['deep-resume-context'],args['deep-resume'],task);
  if(args['identity']!==undefined){if(args.job===undefined)throw new Error('SDK identity requires a versioned job');await (await import('./runtime/sdk-identity.js')).loadTaskIdentity(args['identity'],task);}
  // Resolve and validate input before loading the SDK or creating its state.
   const {validateScanTask}=await import("./contract/validate-task.js");
   validateScanTask(task);
+  const entryDirectory = process.cwd();
+  const restoreWorkingDirectory = await enterSDKWorkingDirectory(task.deepResume?(await import('./runtime/deep-resume.js')).originOutput(task.outputPath,task.deepResume.inspection.origin.attempt):task.outputPath);
   const { CodexSecurityEngine, SCAN_EXIT_CODES } = await import("./engine/codex-security-engine.js");
   const engine = new CodexSecurityEngine();
   const controller = new AbortController();
@@ -111,7 +118,7 @@ async function main(): Promise<void> {
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     if (!task.mock && process.env["AXIOM_FIXTURE_SCORE"] === "1") {
       try {
-        const fixtures = await loadFixtureManifest(defaultFixtureManifestPath());
+        const fixtures = await loadFixtureManifest(defaultFixtureManifestPath(entryDirectory));
         const score = scoreFixtures(result.findings, fixtures);
         process.stderr.write(
           `fixture-score ${score.hits}/${score.total} ${score.results
@@ -128,6 +135,7 @@ async function main(): Promise<void> {
     clearTimeout(timer);
     process.off("SIGINT", onSignal);
     process.off("SIGTERM", onSignal);
+    restoreWorkingDirectory();
   }
 }
 

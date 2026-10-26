@@ -11,6 +11,7 @@ export async function loadScannerJob(file: string): Promise<ScannerJob|ScannerJo
 
 /** Maps only validated execution input. Credentials stay in process.env. */
 export function scanTaskFromJob(job: ScannerJob|ScannerJobV2|ScannerJobV3|ScannerJobV4|ScannerJobV5|ScannerJobV6|ScannerJobV7|ScannerJobV8): ScanTask {
+  if (job.model.wireApi !== "responses") throw new Error("Chat 协议适配已移除；旧任务不能自动切换协议，请使用 Responses 配置创建新任务。");
   return {
     ...(job.schemaVersion===8?{componentScan:job.componentScan}:{}),
     ...(job.schemaVersion===7?{componentPlanning:job.componentPlanning}:{}),

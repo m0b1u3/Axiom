@@ -15,6 +15,8 @@ export type ScanProvider = string;
 export type ScanMode = "standard" | "deep";
 
 export interface ScanTask {
+ deepResumeContext?: import("@axiom/contracts").DeepResumeContext;
+ deepResume?: import("@axiom/contracts").DeepResumeAssignment;
  sdkParameters?:import("@axiom/contracts").SDKParametersAssignment;
  sdkIdentity?:SDKTaskIdentity;
   componentScan?:import("@axiom/contracts").ComponentScanRequest;

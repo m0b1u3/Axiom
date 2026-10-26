@@ -1,4 +1,5 @@
 import axios from "axios";
+import {structuredCatalogView,structuredPageView,structuredRecordView} from "./utils/structured-output";
 import type {ContractError,ScanInput} from './contracts';
 import type { Account, LoginSession, OperationRecord, QueueOverview, QueueSettings, AttemptResult, Dashboard, Finding, FindingSummary, Project, ScanCompare, ScanAttempt, ScanLogEvent, ScanTask, User } from "./types";
 
@@ -170,6 +171,18 @@ export interface CreateScanInput {
 }
 
 export const api = {
+  structuredDiagnosticCatalog: async () => structuredCatalogView(await http.get('/diagnostics/structured-output')),
+  structuredDiagnosticRecords: async (page=1) => structuredPageView(await http.get('/diagnostics/structured-output/records',{params:{page,pageSize:10}})),
+  runStructuredDiagnostic: async (request:import('./contracts').StructuredDiagnosticRequest) => structuredRecordView(await http.post('/diagnostics/structured-output/records',request)),
+
+  async interimFindings(id:number,attempt:number,params:{page?:number;pageSize?:number;search?:string;documentPage?:number;severity?:string;duplicates?:string}={}){return http.get(`/scans/${id}/attempts/${attempt}/interim`,{params}) as Promise<import("./contracts").InterimPage>;},
+  async createInterimReview(id:number,request:import('./contracts').InterimReviewRequest){return http.post(`/scans/${id}/interim-reviews`,request) as Promise<{taskId:number;groupId:number}>;},
+  async interimReviews(id:number,attempt:number){return http.get(`/scans/${id}/attempts/${attempt}/interim-reviews`) as Promise<number[]>;},
+  async interimReview(group:number){return http.get(`/interim-review-groups/${group}`) as Promise<import('./utils/interim-review').InterimReviewView>;},
+  async retryInterimReview(group:number,requestId:string){return http.post(`/interim-review-groups/${group}/retry`,{requestId,acknowledgeUnknownCost:true}) as Promise<{taskId:number;groupId:number}>;},
+  async archiveInterimReview(group:number,body:{reviewTaskId:number;reviewAttempt:number;reportSha256:string;title:string;severity:string;description:string}){return http.post(`/interim-review-groups/${group}/archive`,body) as Promise<Finding>;},
+  async interimEvidenceDownload(id:number,attempt:number,artifact:string){return http.get(`/scans/${id}/attempts/${attempt}/interim/${encodeURIComponent(artifact)}`,{params:{download:1},responseType:'blob'}) as Promise<Blob>;},
+  async interimEvidence(id:number,attempt:number,artifact:string){return http.get(`/scans/${id}/attempts/${attempt}/interim/${encodeURIComponent(artifact)}`) as Promise<import("./contracts").InterimDocument>;},
  async sdkIdentities():Promise<import('./contracts').SDKIdentitySnapshot[]>{return http.get('/sdk-identities') as never;},
  async createSDKIdentity(value:{name:string;agentId:string;kind:string}):Promise<import('./contracts').SDKIdentitySnapshot>{return http.post('/sdk-identities',value) as never;},
  async sdkIdentityOperations(id:string):Promise<import('./contracts').SDKIdentityOperation[]>{return http.get('/sdk-identities/'+id+'/operations') as never;},
@@ -286,6 +299,9 @@ export const api = {
   async retryScan(scanId: number): Promise<ScanTask> {
     return http.post(`/scans/${scanId}/retry`) as Promise<ScanTask>;
   },
+  async deepResume(id:number):Promise<import('./contracts').DeepResumeSnapshot>{return http.get(`/scans/${id}/deep-resume`) as Promise<import('./contracts').DeepResumeSnapshot>},
+  async checkDeepResume(id:number,execution:import('./contracts').ExecutionRef):Promise<import('./contracts').DeepResumeSnapshot>{return http.post(`/scans/${id}/deep-resume/check`,execution) as Promise<import('./contracts').DeepResumeSnapshot>},
+  async resumeDeep(id:number,action:import('./contracts').DeepResumeAction):Promise<ScanTask>{return http.post(`/scans/${id}/deep-resume`,action) as Promise<ScanTask>},
   async scanRecovery(id:number):Promise<import('./contracts').ScanRecoverySnapshot>{return http.get(`/scans/${id}/recovery`) as Promise<import('./contracts').ScanRecoverySnapshot>;},
   async recoverScan(id:number,action:import('./contracts').ScanRecoveryAction):Promise<ScanTask>{return http.post(`/scans/${id}/recovery`,action) as Promise<ScanTask>;},
   async deleteScan(scanId: number): Promise<{ id: number }> {
@@ -303,6 +319,9 @@ export const api = {
   },
   async snapshotPage(query: SnapshotQuery): Promise<CatalogPage<SnapshotInfo>> {
     return catalogResponse(await http.get('/snapshots', {params:{page:1,pageSize:50,...query}}) as CatalogPage<SnapshotInfo>);
+  },
+  async interimExecutionPage(query: CatalogQuery & {status?:string}): Promise<CatalogPage<import('./utils/interim-findings').InterimExecutionSummary>> {
+    return catalogResponse(await http.get('/findings/interim',{params:{page:1,pageSize:20,...query}}) as CatalogPage<import('./utils/interim-findings').InterimExecutionSummary>);
   },
   async findingPage(query: FindingQuery): Promise<CatalogPage<FindingSummary>> {
     return catalogResponse(await http.get('/findings', {params:{page:1,pageSize:50,...query}}) as CatalogPage<FindingSummary>, true);
@@ -331,7 +350,7 @@ export const api = {
   async deleteModelConfig(id: number): Promise<{ id: number }> {
     return http.delete(`/model-configs/${id}`) as Promise<{ id: number }>;
   },
-  async testModelConfig(id: number): Promise<{ ok: boolean; status?: number; error?: string }> {
+  async testModelConfig(id: number): Promise<{ ok: boolean; status?: number; error?: string; scope?:'connectivity_only'; compatibilityVerified?:boolean; message?:string }> {
     return http.post(`/model-configs/${id}/test`) as Promise<{ ok: boolean; status?: number; error?: string }>;
   },
   /** 从供应商拉取模型清单（cc-switch「获取模型列表」）；编辑场景可传 modelConfigId 用已存 key */

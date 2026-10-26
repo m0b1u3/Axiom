@@ -18,7 +18,7 @@ watch(()=>props.native,value=>{if(!value)emit('update:modelValue','')});onMounte
   <p v-else>可选择已认证的 API Key 或 ChatGPT 身份。SDK 身份与 Axiom 账户登录分开管理。</p>
   <p v-if="modelValue&&(!selected||!usableIdentity(selected))" role="alert">选定身份不可用，请刷新并核对登录状态。</p>
   <p v-if="error" role="alert" class="request-error">{{error}} <Button variant="ghost" size="sm" @click="load">重读执行身份</Button></p>
-  <RouterLink to="/settings?section=models&tab=accounts">管理授权账户</RouterLink>
+  <RouterLink to="/models?tab=accounts">管理授权账户</RouterLink>
  </section>
 </template>
 <style scoped>

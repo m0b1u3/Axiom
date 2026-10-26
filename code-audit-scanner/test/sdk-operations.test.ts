@@ -24,7 +24,10 @@ test('pinned SDK native preflight is local and keeps authentication unverified',
  const archived=decode('ScanResult',await readFile(path.join(output,'normalized/result.json')),task.sdkOperation!.execution);assert.ok(archived.extensions?.sdkOperation);assert.equal(archived.extensions?.sdkNative,undefined);
 });
 test('mock validation cannot fall through to the non-mock public validate API',async t=>{
+ const previousMode=process.env.AXIOM_VALIDATION_OUTPUT_MODE;process.env.AXIOM_VALIDATION_OUTPUT_MODE='json_object';t.after(()=>{if(previousMode===undefined)delete process.env.AXIOM_VALIDATION_OUTPUT_MODE;else process.env.AXIOM_VALIDATION_OUTPUT_MODE=previousMode;});
  const root=await scratch(t),source=path.join(root,'source');await mkdir(source);
  const task:ScanTask={taskId:'43',executionAttempt:1,resultSchemaVersion:1,sourcePath:source,outputPath:path.join(root,'output'),provider:'openai',model:'fixture-model',scanMode:'standard',timeoutMinutes:1,mock:true,resolvedModel:{providerId:'openai',connectionType:'openai',model:'fixture-model',wireApi:'responses',credentialEnv:'OPENAI_API_KEY',configurationRevision:'fixture'},sdkOperation:{schemaVersion:1,execution:{taskId:'43',attempt:1},kind:'validate',origin:{taskId:'42',attempt:1},findingId:'1',finding:{title:'Fixture only'},acknowledgeUnknownCost:true}};
  const result=await runSDKOperation(task,new AbortController().signal);assert.equal(result.status,'completed');assert.equal(result.sdkOperation!.cost.estimatedUsd,null);assert.equal(result.sdkOperation!.validation!.disposition,'deferred');assert.match(result.sdkOperation!.validation!.report,/Fixtures \/ Mock/);assert.equal(result.cost,undefined);
+ const saved=JSON.parse(await readFile(path.join(task.outputPath,'logs/validation-output-mode.json'),'utf8'));assert.equal(saved.mode,'native_schema');
+ const rejected=await runSDKOperation({...task,mock:false,outputPath:path.join(root,'rejected')},new AbortController().signal);assert.equal(rejected.status,'failed');assert.match(rejected.error!.message,/JSON 兼容模式仅支持/);assert.equal(rejected.sdkOperation!.validation,null);
 });

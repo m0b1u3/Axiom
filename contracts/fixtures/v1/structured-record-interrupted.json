@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "11111111111111111111111111111111",
+  "createdAt": "2026-10-22T08:00:00.000Z",
+  "sdkVersion": "0.5.0",
+  "mode": "offline",
+  "catalogSha256": "47e413c682d15a6403c73707866d59589c0c767cf6f5d2068fb6316b0889d141",
+  "sourceSha256": "bf10594f163c4ebd8c911014ebac02a48c539c512871181cfc3381e58f603c9b",
+  "protocol": "responses",
+  "scenario": "interrupted",
+  "upstreamContacted": false,
+  "providerCompatibility": "not_tested",
+  "model": "not_loaded",
+  "inputTokens": 0,
+  "outputTokens": 0,
+  "estimatedUsd": 0,
+  "credentialLoaded": false,
+  "results": [
+    {
+      "profile": "native_schema",
+      "requestSha256": "5c8ad888f9b6b8d1eb995857178a3e8c06e74508cf7faaf5c9662599f5ed9daa",
+      "formatSha256": "146d5f8d876052c923acf7d97fdcfeb2cc5aee884e23736a42310a4ebe1b5d23",
+      "responseSha256": "f1a78607bbe6c07933ee0a44ea65e93f50aef27046079f9026f3c52de597bc98",
+      "transport": "interrupted",
+      "httpStatus": 200,
+      "jsonValid": null,
+      "schemaValid": null,
+      "bodyState": "not_evaluated",
+      "disposition": null,
+      "errorCode": "transport_incomplete"
+    },
+    {
+      "profile": "described_schema",
+      "requestSha256": "bc9c9365bbff4123dca9e4ef28d6ebfa79d37e0b13f33fa8bb8789e4904ef65b",
+      "formatSha256": "62da42f8fad41d154458385c2a81d79c5c50ca4f09f4162149c5525101d59f86",
+      "responseSha256": "f1a78607bbe6c07933ee0a44ea65e93f50aef27046079f9026f3c52de597bc98",
+      "transport": "interrupted",
+      "httpStatus": 200,
+      "jsonValid": null,
+      "schemaValid": null,
+      "bodyState": "not_evaluated",
+      "disposition": null,
+      "errorCode": "transport_incomplete"
+    },
+    {
+      "profile": "json_object",
+      "requestSha256": "7cfc136c96c778f971221e6953c80fecdb928012ad79504ff190d9a04cedd336",
+      "formatSha256": "376bde7986cc2f8fd182f04e745c607933760bea7c306ea6e8e992b7f70be25a",
+      "responseSha256": "f1a78607bbe6c07933ee0a44ea65e93f50aef27046079f9026f3c52de597bc98",
+      "transport": "interrupted",
+      "httpStatus": 200,
+      "jsonValid": null,
+      "schemaValid": null,
+      "bodyState": "not_evaluated",
+      "disposition": null,
+      "errorCode": "transport_incomplete"
+    }
+  ]
+}

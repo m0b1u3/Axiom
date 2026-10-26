@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "requestId": "12345678-1234-4123-8123-123456789abc",
+  "members": [
+    {
+      "execution": {
+        "taskId": "17",
+        "attempt": 2
+      },
+      "candidateId": "7530191b41aa68818ed011905a80942acfbf45ad8e2981a63ae48a0fa02f1460",
+      "artifactSha256": "f850865e4ff60e7930937b2a7ae614141492b6071dd28f0a870fde1c276fdafd"
+    }
+  ],
+  "grouping": "exact",
+  "groupingReason": "",
+  "acknowledgeUnknownCost": true
+}

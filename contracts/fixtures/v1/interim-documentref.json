@@ -1,0 +1,17 @@
+{
+  "sourcePath": "raw/codex-security/artifacts/checkpoints/worker.json",
+  "sourceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "observedAt": "2026-10-21T08:00:00Z",
+  "sourceModifiedAt": null,
+  "kind": "checkpoint",
+  "label": "Fixtures / Mock Worker",
+  "threadId": null,
+  "truncated": false,
+  "artifact": {
+    "kind": "engine_raw",
+    "relativePath": "checkpoints/interim/objects/e3cd8c4e3264ca266fab2bc051e48a4bf6bc45cc998d64b9d292566c7b980f65.json",
+    "sizeBytes": 580,
+    "sha256": "e3cd8c4e3264ca266fab2bc051e48a4bf6bc45cc998d64b9d292566c7b980f65"
+  },
+  "candidateCount": 1
+}

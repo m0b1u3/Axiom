@@ -1,0 +1,8 @@
+# Overlay after the deployment's existing Compose files. Keep it for every up.
+# Absolute seccomp path is on the Docker daemon host. Install the pinned
+# AppArmor profile first; see docs/SDK_NATIVE_EXECUTION.md.
+services:
+  agent:
+    security_opt:
+      - seccomp:${AXIOM_SDK_SECCOMP_PROFILE:?Set the absolute pinned SDK seccomp profile path}
+      - apparmor:codex-security-container

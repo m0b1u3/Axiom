@@ -4,7 +4,6 @@ import {mkdtemp,mkdir,writeFile,rm,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';import path from 'node:path';
 import {loadSDKParameters} from '../src/runtime/sdk-parameters.js';
 import {buildCodexOverrides,buildModelCatalog} from '../src/provider/model-provider.js';
-import {convertResponsesRequestToChat} from '../src/proxy/chat-shim.js';
 import {validateScanTask} from '../src/contract/validate-task.js';
 import type {ScanTask} from '../src/contract/scan-task.js';
 
@@ -14,13 +13,10 @@ test('explicit effort reaches native and compatible SDK configuration; unset ret
  for(const reasoningEffort of ['none','minimal','low','medium','high','xhigh'] as const){
   const task={...base,sdkParameters:{schemaVersion:1 as const,execution:{taskId:'42',attempt:2},parameters:{schemaVersion:1 as const,reasoningEffort}}};
   validateScanTask(task);assert.equal(buildCodexOverrides(task)?.model_reasoning_effort,reasoningEffort);
-  const compatible={...task,provider:'custom',connectionType:'openai_compatible' as const,baseUrl:'https://fixture.invalid/v1',wireApi:'chat' as const,credentialEnv:'CUSTOM_API_KEY'};
+  const compatible={...task,provider:'custom',connectionType:'openai_compatible' as const,baseUrl:'https://fixture.invalid/v1',wireApi:'responses' as const,credentialEnv:'CUSTOM_API_KEY'};
   assert.equal(buildCodexOverrides(compatible)?.model_reasoning_effort,reasoningEffort);
   assert.equal((buildModelCatalog(compatible).models as Array<Record<string,unknown>>)[0]?.default_reasoning_level,reasoningEffort);
  }
- assert.equal(convertResponsesRequestToChat({model:'fixture',reasoning:{effort:'high'}}).reasoning_effort,undefined);
- assert.equal(convertResponsesRequestToChat({model:'fixture'},'medium').reasoning_effort,'medium');
- assert.equal(convertResponsesRequestToChat({model:'fixture',reasoning:{effort:'low'}},'medium').reasoning_effort,'low');
 });
 test('sidecar rejects foreign execution, unknown settings, misplaced files and component inputs on ordinary scans before the SDK',async t=>{
  const root=await mkdtemp(path.join(tmpdir(),'axiom-sdk-parameters-'));t.after(()=>rm(root,{recursive:true,force:true}));

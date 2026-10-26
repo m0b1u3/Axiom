@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/interim-review-envelope.schema.json",
+  "title": "InterimReviewEnvelope",
+  "$ref": "https://axiom.invalid/contracts/v1/interim-review-definitions.schema.json#/$defs/InterimReviewEnvelope"
+}

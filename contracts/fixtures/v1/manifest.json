@@ -2778,6 +2778,280 @@
         "taskId": "42",
         "attempt": 2
       }
+    },
+    {
+      "id": "deep-resume-inspection",
+      "kind": "DeepResumeInspection",
+      "file": "deep-resume-inspection.json",
+      "valid": true
+    },
+    {
+      "id": "deep-resume-assignment",
+      "kind": "DeepResumeAssignment",
+      "file": "deep-resume-assignment.json",
+      "valid": true
+    },
+    {
+      "id": "deep-resume-snapshot",
+      "kind": "DeepResumeSnapshot",
+      "file": "deep-resume-snapshot.json",
+      "valid": true
+    },
+    {
+      "id": "deep-resume-claim",
+      "kind": "DeepResumeProbeClaim",
+      "file": "deep-resume-claim.json",
+      "valid": true
+    },
+    {
+      "id": "deep-resume-report",
+      "kind": "DeepResumeProbeReport",
+      "file": "deep-resume-report.json",
+      "valid": true
+    },
+    {
+      "id": "deep-resume-action",
+      "kind": "DeepResumeAction",
+      "file": "deep-resume-action.json",
+      "valid": true
+    },
+    {
+      "id": "deep-resume-context",
+      "kind": "DeepResumeContext",
+      "file": "deep-resume-context.json",
+      "valid": true
+    },
+    {
+      "id": "deep-resume-inspection-no-proof",
+      "kind": "DeepResumeInspection",
+      "file": "invalid/deep-resume-inspection-no-proof.json",
+      "valid": false
+    },
+    {
+      "id": "deep-resume-action-no-ack",
+      "kind": "DeepResumeAction",
+      "file": "invalid/deep-resume-action-no-ack.json",
+      "valid": false
+    },
+    {
+      "id": "deep-resume-snapshot-wrong-state",
+      "kind": "DeepResumeSnapshot",
+      "file": "invalid/deep-resume-snapshot-wrong-state.json",
+      "valid": false
+    },
+    {
+      "id": "deep-resume-future-sdk",
+      "kind": "DeepResumeInspection",
+      "file": "invalid/deep-resume-future-sdk.json",
+      "valid": false
+    },
+    {
+      "id": "deep-resume-negative-usage",
+      "kind": "DeepResumeInspection",
+      "file": "invalid/deep-resume-negative-usage.json",
+      "valid": false
+    },
+    {
+      "id": "interim-candidate",
+      "kind": "InterimCandidate",
+      "file": "interim-candidate.json",
+      "valid": true
+    },
+    {
+      "id": "interim-documentref",
+      "kind": "InterimDocumentRef",
+      "file": "interim-documentref.json",
+      "valid": true
+    },
+    {
+      "id": "interim-document",
+      "kind": "InterimDocument",
+      "file": "interim-document.json",
+      "valid": true
+    },
+    {
+      "id": "interim-snapshot",
+      "kind": "InterimSnapshot",
+      "file": "interim-snapshot.json",
+      "valid": true
+    },
+    {
+      "id": "interim-observation",
+      "kind": "InterimObservation",
+      "file": "interim-observation.json",
+      "valid": true
+    },
+    {
+      "id": "interim-page",
+      "kind": "InterimPage",
+      "file": "interim-page.json",
+      "valid": true
+    },
+    {
+      "id": "interim-invalid-verified",
+      "kind": "InterimCandidate",
+      "file": "invalid/interim-verified.json",
+      "valid": false
+    },
+    {
+      "id": "interim-invalid-foreign-execution",
+      "kind": "InterimDocument",
+      "file": "invalid/interim-foreign-execution.json",
+      "valid": false,
+      "expectedExecution": {
+        "taskId": "17",
+        "attempt": 2
+      }
+    },
+    {
+      "id": "interim-invalid-future-sdk",
+      "kind": "InterimSnapshot",
+      "file": "invalid/interim-future-sdk.json",
+      "valid": false
+    },
+    {
+      "id": "interim-invalid-negative-records",
+      "kind": "InterimObservation",
+      "file": "invalid/interim-negative-records.json",
+      "valid": false
+    },
+    {
+      "id": "interim-review-input",
+      "file": "interim-review-input.json",
+      "kind": "InterimReviewInput",
+      "valid": true
+    },
+    {
+      "id": "interim-review-input-invalid-version",
+      "file": "invalid/interim-review-input.json",
+      "kind": "InterimReviewInput",
+      "valid": false
+    },
+    {
+      "id": "interim-review-envelope",
+      "file": "interim-review-envelope.json",
+      "kind": "InterimReviewEnvelope",
+      "valid": true
+    },
+    {
+      "id": "interim-review-envelope-invalid-version",
+      "file": "invalid/interim-review-envelope.json",
+      "kind": "InterimReviewEnvelope",
+      "valid": false
+    },
+    {
+      "id": "interim-review-request",
+      "file": "interim-review-request.json",
+      "kind": "InterimReviewRequest",
+      "valid": true
+    },
+    {
+      "id": "interim-review-request-invalid-version",
+      "file": "invalid/interim-review-request.json",
+      "kind": "InterimReviewRequest",
+      "valid": false
+    },
+    {
+      "id": "interim-review-outcome",
+      "file": "interim-review-outcome.json",
+      "kind": "InterimReviewOutcome",
+      "valid": true
+    },
+    {
+      "id": "interim-review-outcome-invalid-version",
+      "file": "invalid/interim-review-outcome.json",
+      "kind": "InterimReviewOutcome",
+      "valid": false
+    },
+    {
+      "id": "interim-review-archive",
+      "file": "interim-review-archive.json",
+      "kind": "InterimReviewArchive",
+      "valid": true
+    },
+    {
+      "id": "interim-review-archive-invalid-version",
+      "file": "invalid/interim-review-archive.json",
+      "kind": "InterimReviewArchive",
+      "valid": false
+    },
+    {
+      "id": "interim-review-source-check",
+      "kind": "InterimReviewSourceCheck",
+      "file": "interim-review-source-check.json",
+      "valid": true
+    },
+    {
+      "id": "interim-review-source-check-verified",
+      "kind": "InterimReviewSourceCheck",
+      "file": "invalid/interim-review-source-check-verified.json",
+      "valid": false
+    },
+    {
+      "id": "structured-catalog",
+      "kind": "StructuredDiagnosticCatalog",
+      "file": "structured-catalog.json",
+      "valid": true
+    },
+    {
+      "id": "structured-request",
+      "kind": "StructuredDiagnosticRequest",
+      "file": "structured-request.json",
+      "valid": true
+    },
+    {
+      "id": "structured-request-live",
+      "kind": "StructuredDiagnosticRequest",
+      "file": "structured-request-live.json",
+      "valid": false
+    },
+    {
+      "id": "structured-request-key",
+      "kind": "StructuredDiagnosticRequest",
+      "file": "structured-request-key.json",
+      "valid": false
+    },
+    {
+      "id": "structured-request-unknown",
+      "kind": "StructuredDiagnosticRequest",
+      "file": "structured-request-unknown.json",
+      "valid": false
+    },
+    {
+      "id": "structured-record-title_only",
+      "kind": "StructuredDiagnosticRecord",
+      "file": "structured-record-title_only.json",
+      "valid": true
+    },
+    {
+      "id": "structured-record-complete",
+      "kind": "StructuredDiagnosticRecord",
+      "file": "structured-record-complete.json",
+      "valid": true
+    },
+    {
+      "id": "structured-record-interrupted",
+      "kind": "StructuredDiagnosticRecord",
+      "file": "structured-record-interrupted.json",
+      "valid": true
+    },
+    {
+      "id": "structured-record-real",
+      "kind": "StructuredDiagnosticRecord",
+      "file": "structured-record-real.json",
+      "valid": false
+    },
+    {
+      "id": "structured-record-usage",
+      "kind": "StructuredDiagnosticRecord",
+      "file": "structured-record-usage.json",
+      "valid": false
+    },
+    {
+      "id": "structured-page",
+      "kind": "StructuredDiagnosticPage",
+      "file": "structured-page.json",
+      "valid": true
     }
   ]
 }

@@ -38,3 +38,38 @@ func TestProgressReaderChecksIdentitySchemaAndBoundedBytes(t *testing.T) {
 		t.Fatal("oversized progress accepted")
 	}
 }
+
+func TestInterimObservationUsesPortableContractAndRejectsForeignAttempt(t *testing.T) {
+	raw, e := os.ReadFile("../../../contracts/fixtures/v1/observation-null.json")
+	if e != nil {
+		t.Fatal(e)
+	}
+	p, e := contracts.DecodeProgressSnapshotV2(raw, nil)
+	if e != nil {
+		t.Fatal(e)
+	}
+	interim, e := os.ReadFile("../../../contracts/fixtures/v1/interim-observation.json")
+	if e != nil {
+		t.Fatal(e)
+	}
+	v, e := contracts.DecodeInterimObservation(interim, nil)
+	if e != nil {
+		t.Fatal(e)
+	}
+	v.Execution = p.Execution
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "state"), 0700)
+	for _, bad := range []bool{false, true} {
+		if bad {
+			v.Execution.Attempt++
+		}
+		interim, _ = contracts.EncodeJSON(v)
+		p.Extensions = contracts.Some(contracts.JSONObject{"standardInterim": interim})
+		raw, _ = contracts.EncodeJSON(p)
+		os.WriteFile(filepath.Join(dir, LayoutProgress), raw, 0600)
+		_, e = ReadContractProgress(dir, p.Execution)
+		if (e != nil) != bad {
+			t.Fatalf("foreign=%v err=%v", bad, e)
+		}
+	}
+}

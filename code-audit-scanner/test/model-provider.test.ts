@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import {statSync} from "node:fs";
+import path from "node:path";
 import { test } from "node:test";
 import { buildCodexOverrides, buildModelCatalog, DeepSeekProvider } from "../src/provider/model-provider.js";
 import type { ScanTask } from "../src/contract/scan-task.js";
@@ -24,16 +26,20 @@ test("native OpenAI receives the selected model; mock does not emit provider ove
   assert.equal(buildCodexOverrides(task({ mock: true })), undefined);
 });
 
-test("deepseek overrides use Responses wire_api and env_key, never the secret", () => {
+test("compatible provider uses native command authentication, never an ambient OpenAI login or secret in config", () => {
   const overrides = buildCodexOverrides(task());
   assert.ok(overrides);
   assert.equal(overrides["model_provider"], "deepseek");
   assert.equal(overrides["model"], "deepseek-v4-flash");
-  const providers = overrides["model_providers"] as Record<string, Record<string, string>>;
+  const providers = overrides["model_providers"] as Record<string, Record<string, any>>;
   const deepseek = providers["deepseek"];
   assert.ok(deepseek);
   assert.equal(deepseek["base_url"], "https://api.deepseek.com");
-  assert.equal(deepseek["env_key"], "DEEPSEEK_API_KEY");
+  assert.equal(deepseek["env_key"], undefined);
+  assert.equal(deepseek["auth"].command,process.execPath);
+  assert.equal(path.isAbsolute(deepseek["auth"].cwd),true);assert.equal(statSync(deepseek["auth"].cwd).isDirectory(),true);
+  assert.equal(deepseek["auth"].args[1], "DEEPSEEK_API_KEY");
+  assert.equal(deepseek["requires_openai_auth"],false);
   assert.equal(deepseek["wire_api"], "responses");
   assert.equal(overrides["cli_auth_credentials_store"], "file");
   assert.equal(JSON.stringify(overrides).includes("sk-"), false);
@@ -69,11 +75,21 @@ test("deepseek overrides carry inline model_catalog_json with the configured mod
 
 test("task-carried provider spec wins over built-in registry (decoupled)", () => {
   const overrides = buildCodexOverrides(
-    task({ credentialEnv: "MOONSHOT_API_KEY", wireApi: "chat", displayName: "Kimi" }),
+    task({ credentialEnv: "MOONSHOT_API_KEY", wireApi: "responses", displayName: "Kimi" }),
   );
-  const providers = overrides?.["model_providers"] as Record<string, Record<string, string>>;
+  const providers = overrides?.["model_providers"] as Record<string, Record<string, any>>;
   const deepseek = providers["deepseek"];
-  assert.equal(deepseek["env_key"], "MOONSHOT_API_KEY");
-  assert.equal(deepseek["wire_api"], "chat");
+  assert.equal(deepseek["auth"].args[1], "MOONSHOT_API_KEY");
+  assert.equal(deepseek["wire_api"], "responses");
   assert.equal(deepseek["name"], "Kimi");
+});
+
+test('compatible providers preserve native request and stream retry defaults',()=>{
+ const config=buildCodexOverrides({provider:'custom',model:'fixture-native-retries',baseUrl:'https://fixture.invalid',connectionType:'openai_compatible',credentialEnv:'CUSTOM_API_KEY',wireApi:'responses'} as any)!;
+ const provider=(config['model_providers'] as Record<string,Record<string,unknown>>)['custom']!;
+ assert.equal(Object.hasOwn(provider,'request_max_retries'),false);assert.equal(Object.hasOwn(provider,'stream_max_retries'),false);
+});
+
+ test('legacy Chat provider configuration cannot reach the SDK',()=>{
+ assert.throws(()=>buildCodexOverrides(task({wireApi:'chat'} as unknown as Partial<ScanTask>)),/Chat 协议适配已移除/);
 });

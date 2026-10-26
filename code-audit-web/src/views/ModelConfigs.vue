@@ -73,12 +73,6 @@ const probeResult = ref<{ ok: boolean; msg: string } | null>(null);
 const presetOf = computed(() => presets.value.find((p) => p.key === form.provider));
 const presetLabel = (key: string): string => presets.value.find((p) => p.key === key)?.label ?? key;
 
-/* 上游协议：表单覆盖优先，否则预设默认（responses） */
-const wireApiEffective = computed(() => form.wireApi || presetOf.value?.wireApi || "responses");
-const WIRE_API_OPTIONS = [
-  { value: "responses", label: "Responses（原生）" },
-  { value: "chat", label: "Chat Completions" },
-];
 /* 下拉只展示点「获取模型列表」之后的在线结果，不把预设提示混进去 */
 const fetchedModelItems = computed(() => fetchedModels.value.map((m) => ({ key: m, label: m })));
 
@@ -94,8 +88,7 @@ async function probeConnection(): Promise<void> {
   try {
     if (editing.value) {
       const r = await api.testModelConfig(editingId.value);
-      probeResult.value = r.ok ? { ok: true, msg: `连接正常（${r.status}）` } : { ok: false, msg: r.error || "连接失败" };
-      void load(); // 服务端按测试结果回写 compatibilityStatus，刷新列表列
+      probeResult.value = r.ok ? { ok: true, msg: r.message || "接口连接成功；SDK 工具和完整复核能力尚未验证。" } : { ok: false, msg: r.error || "连接失败" };
     } else {
       if (!form.provider) {
         probeResult.value = { ok: false, msg: "请先选择供应商" };
@@ -111,7 +104,7 @@ async function probeConnection(): Promise<void> {
         apiKey: form.apiKey.trim(),
       });
       probeResult.value = r.ok
-        ? { ok: true, msg: `连接正常（发现 ${r.models?.length ?? 0} 个模型）` }
+        ? { ok: true, msg: `已获取 ${r.models?.length ?? 0} 个模型；SDK 工具和完整复核能力尚未验证。` }
         : { ok: false, msg: r.error || "连接失败" };
     }
   } catch (error) {
@@ -252,7 +245,7 @@ async function save(): Promise<void> {
       model: form.model.trim(),
       remark: form.remark.trim(),
       websiteUrl: form.websiteUrl.trim(),
-      wireApi: form.wireApi,
+      wireApi: "responses",
  reasoningEffort:form.reasoningEffort==="sdk-default"?"":form.reasoningEffort,
       ...(form.apiKey ? { apiKey: form.apiKey } : {}),
     };
@@ -475,8 +468,9 @@ onMounted(() => {
           </label>
           <label class="field">
             <span class="lab">协议</span>
-            <Select :model-value="wireApiEffective" :options="WIRE_API_OPTIONS" @change="(v: string) => (form.wireApi = v)" />
-            <span class="hint">选择与接口兼容的协议类型。</span>
+            <span>Responses</span>
+            <span v-if="form.wireApi && form.wireApi !== 'responses'" class="hint">此配置使用已移除的 Chat 协议。请填写支持 Responses 的接口地址后保存。</span>
+            <span v-else class="hint">模型接口须支持 Responses。</span>
           </label>
         </div>
 

@@ -7,9 +7,10 @@ import {recoveryView,recoveryAction} from '../utils/scan-recovery';
 import {absoluteTime} from '../utils/time';
 import Button from './ui/Button.vue';
 import Dialog from './ui/Dialog.vue';
+import DeepResumeControls from './DeepResumeControls.vue';
 
 const props=defineProps<{task:ScanTask;canOperate:boolean;budgetRevision?:number}>();
-const emit=defineEmits<{changed:[task:ScanTask,action:ScanRecoveryAction['action']]}>();
+const emit=defineEmits<{changed:[task:ScanTask,action:ScanRecoveryAction['action']|'resume_deep']}>();
 const snapshot=shallowRef<ScanRecoverySnapshot|null>(null),confirmation=shallowRef<ScanRecoverySnapshot|null>(null);
 const expanded=ref(['failed','partial','canceled','timeout'].includes(props.task.status));
 const loading=ref(false),busy=ref(false),error=ref(''),actionError=ref(''),restartOpen=ref(false),acknowledged=ref(false);
@@ -70,7 +71,7 @@ async function act(action:ScanRecoveryAction['action']){
    <div v-if="error" class="recovery-error" role="alert">{{error}} <Button variant="ghost" size="sm" :disabled="loading" @click="load">重新核验</Button></div>
    <template v-if="snapshot">
     <dl class="recovery-properties">
-     <div><dt>断点续扫</dt><dd><strong>SDK {{snapshot.sdkVersion}} · 此入口不支持断点续扫</strong><p>{{snapshot.checkpointResume.reason}}</p></dd></div>
+     <div><dt>断点续扫</dt><dd><DeepResumeControls v-if="task.scanMode==='deep'&&task.attempt>0" :task="task" :can-operate="canOperate" :budget-revision="budgetRevision" @changed="next=>emit('changed',next,'resume_deep')"/><template v-else><strong>SDK {{snapshot.sdkVersion}} · Standard 不支持断点续扫</strong><p>{{snapshot.checkpointResume.reason}}</p></template></dd></div>
      <div><dt>原执行结果</dt><dd><p>{{snapshot.committedResult.reason}}</p><Button v-if="canOperate && snapshot.committedResult.state==='recoverable'" variant="outline" size="sm" :disabled="busy||loading" :loading="busy" @click="act('restore_result')">恢复结果入库</Button><details v-if="snapshot.committedResult.sha256"><summary>提交结果 SHA-256</summary><code>{{snapshot.committedResult.sha256}}</code></details></dd></div>
      <div v-if="snapshot.interruption.allowed"><dt>执行失联</dt><dd><p>{{snapshot.interruption.reason}}</p><Button v-if="canOperate" variant="outline" size="sm" :disabled="busy||loading" @click="act('interrupt_expired')">登记租约过期中断</Button></dd></div>
      <div><dt>重新执行</dt><dd><p>{{snapshot.restart.reason}}</p><Button v-if="canOperate" variant="outline" size="sm" :disabled="busy||loading||!snapshot.restart.allowed" @click="requestRestart">重新执行…</Button></dd></div>

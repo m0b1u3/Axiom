@@ -207,7 +207,7 @@ try {
   await button('隐藏 API Key', dialog).click();
   await dialog.getByPlaceholder('https://api.example.com/v1', {exact: true}).fill(process.env.AXIOM_TEST_FRONTEND_PROVIDER);
   await dialog.getByPlaceholder('模型 ID', {exact: true}).fill('fixture-ui-model');
-  await button('测试连接', dialog).click(); await dialog.getByText(/连接正常/).waitFor();
+  await button('测试连接', dialog).click(); await dialog.getByText(/SDK 工具和完整复核能力尚未验证/).waitFor();
   await button('获取列表', dialog).click();
   await button('获取列表', dialog).click(); await page.getByRole('menuitem', {name: 'fixture-ui-model', exact: true}).click();
   undo = await fault('/model-configs', 'POST', 503, 'Fixture 模型保存失败');
@@ -221,7 +221,7 @@ try {
   await button('编辑', modelRow).click(); dialog = page.getByRole('dialog', {name: '编辑模型配置', exact: true});
   undo = await fault('/model-configs/2/test', 'POST', 500, 'Fixture 连接测试失败');
   await button('测试已存配置',dialog).click(); await dialog.getByRole('alert').filter({hasText:'Fixture 连接测试失败'}).waitFor(); await undo();
-  await button('测试已存配置',dialog).click(); await dialog.getByRole('status').filter({hasText:'连接正常'}).waitFor();
+  await button('测试已存配置',dialog).click(); await dialog.getByRole('status').filter({hasText:'本次仅验证连通性'}).waitFor();
   const saved = page.waitForRequest(request => request.method() === 'PUT' && /\/api\/v1\/model-configs\/\d+$/.test(new URL(request.url()).pathname));
   await button('保存', dialog).click(); assert.ok(!Object.hasOwn((await saved).postDataJSON(), 'apiKey'));
   await dialog.waitFor({state: 'hidden'});

@@ -45,7 +45,11 @@ async function nativeExport(task:ScanTask,format:'markdown'|'sarif',snapshot:Rec
   if(supplied===null)return unavailable('not_generated','SDK 未生成该格式的原生产物。');
   const candidate=typeof supplied==='string'?supplied:path.join(task.outputPath,'raw/codex-security',format==='markdown'?'report.md':'exports/results.sarif');
   const root=path.resolve(task.outputPath),physicalRoot=await realpath(root);
-  const absolute=path.resolve(candidate),physical=await realpath(absolute).catch(()=>null);
+  let absolute=path.resolve(candidate);
+  // Native JSON keeps the original canonical paths. Only the certified
+  // continuation may remap an original raw report to its byte-identical copy.
+  if(task.deepResume){const origin=task.deepResume.inspection.origin.attempt;const old=path.join(path.dirname(physicalRoot),'attempt-'+origin,'raw/codex-security');const candidatePhysical=await realpath(absolute).catch(()=>absolute);const rel=path.relative(old,candidatePhysical);if(rel!==''&&rel!=='..'&&!rel.startsWith('../')&&!path.isAbsolute(rel))absolute=path.join(root,'raw/codex-security',rel);}
+  const physical=await realpath(absolute).catch(()=>null);
   const within=(relative:string)=>relative!==''&&relative!=='..'&&!relative.startsWith('../')&&!path.isAbsolute(relative);
   const relativeTo=(base:string,file:string)=>path.relative(base,file).split(path.sep).join('/');
   // The SDK canonicalizes output paths. Resolve /var -> /private/var aliases

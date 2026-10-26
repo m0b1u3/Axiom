@@ -47,7 +47,8 @@
           "type": "string",
           "enum": [
             "native_evidence",
-            "legacy_projection"
+            "legacy_projection",
+            "review_archive"
           ]
         },
         "completeness": {

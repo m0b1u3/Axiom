@@ -20,4 +20,4 @@ func DescriptionSupportsSDKIdentity(version int64) bool {
 }
 
 // Description 13 adds the 0.5.0 result adapter without imposing new concurrency caps.
-func DescriptionSupportsSDKConcurrency(version int64) bool { return version == SDKConcurrencyDescriptionVersion || version == SDKAdapterDescriptionVersion }
+func DescriptionSupportsSDKConcurrency(version int64) bool { return version == SDKConcurrencyDescriptionVersion || version == SDKAdapterDescriptionVersion || version == 14 }

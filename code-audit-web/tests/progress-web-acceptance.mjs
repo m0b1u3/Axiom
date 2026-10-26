@@ -8,7 +8,12 @@ try{
  page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(10000);page.on('pageerror',e=>errors.push(e.message));
  await page.addInitScript(()=>{window.__progressToasts=[];document.addEventListener('DOMContentLoaded',()=>new MutationObserver(()=>{for(const node of document.querySelectorAll('[data-sonner-toast][data-type="error"]')){if(node.textContent&&!window.__progressToasts.includes(node.textContent))window.__progressToasts.push(node.textContent)}}).observe(document.body,{childList:true,subtree:true}));});
  await page.goto(base+'/login');await page.getByLabel('用户名',{exact:true}).fill('input-fixture-admin');await page.getByLabel('密码',{exact:true}).fill('fixture-password');await page.getByRole('button',{name:'登录控制台',exact:true}).click();await page.waitForURL(u=>!u.pathname.endsWith('/login'));
- await page.goto(base+'/scans/'+id);const panel=page.getByRole('region',{name:'扫描活动与日志',exact:true});
+ // Fixtures / Mock: reproduce the same selected value changing its label
+ // when a queued task starts, without writing any task state on the Server.
+ await page.route(base+'/api/v1/scans/'+id,async route=>{const response=await route.fetch(),body=await response.json();body.data={...body.data,status:'pending',currentStage:'',progress:null};await route.fulfill({response,json:body});},{times:1});
+ await page.goto(base+'/scans/'+id);
+ const execution=page.getByRole('combobox',{name:'选择执行记录',exact:true});await execution.getByText('当前任务 · 等待领取',{exact:true}).waitFor();await execution.getByText('当前执行 · 第 1 次',{exact:true}).waitFor();
+ const panel=page.getByRole('region',{name:'扫描活动与日志',exact:true});
  await panel.locator('.phase').filter({hasText:'阶段未知 · fixture_native_phase'}).waitFor();await panel.getByText('SDK 上报 0 / 2 文件 · 未核验覆盖',{exact:true}).waitFor();
  await panel.getByText('阶段进度：0 / 3 项审查回执',{exact:true}).waitFor();await panel.getByText(/SDK 工作台观察/).waitFor();
  await panel.locator('.execution-observations').getByText(/\$1.1250 · 输入 0 \/ 输出 17 Token/).waitFor();
@@ -21,5 +26,5 @@ try{
  const downloadPromise=page.waitForEvent('download');await panel.getByRole('button',{name:'下载已加载日志',exact:true}).click();const download=await downloadPromise;const records=(await readFile(await download.path(),'utf8')).trim().split('\n').map(JSON.parse);assert.ok(records.length>5);assert.ok(records.every(e=>e.schemaVersion===2&&e.execution.taskId===id));assert.equal(new Set(records.map(e=>`${e.execution.attempt}:${e.sequence}`)).size,records.length,'reconnect duplicated events');assert.ok(records.some(e=>e.type==='scan.error'&&e.data.code==='rate_limit'));
  await panel.getByRole('button',{name:'全部记录',exact:true}).click();const tool=panel.locator('.event').filter({hasText:'Fixture only: inspecting source; failed is just text'}).filter({hasText:'执行中'}).first();await tool.locator('summary').first().click();await tool.locator('.event-raw summary').click();await tool.getByText(/"status": "running"/).waitFor();
  await page.getByRole('button',{name:'取消',exact:true}).first().click();await page.getByRole('dialog').getByRole('button',{name:'确定',exact:true}).click();await page.locator('.badge').filter({hasText:'已取消'}).first().waitFor();
- assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.__progressToasts),[]);process.stdout.write(JSON.stringify({fixtureOnly:true,livePhase:true,workers:true,zeroCounts:true,cost:true,structuredErrors:true,reconnect:true,webCancellation:true})+'\n');
+ assert.deepEqual(errors,[]);assert.deepEqual(await page.evaluate(()=>window.__progressToasts),[]);process.stdout.write(JSON.stringify({fixtureOnly:true,livePhase:true,executionLabelReactive:true,workers:true,zeroCounts:true,cost:true,structuredErrors:true,reconnect:true,webCancellation:true})+'\n');
 }catch(e){if(page)process.stderr.write('Fixture page: '+page.url()+'\n'+(await page.locator('body').innerText()).slice(0,5500)+'\n'+JSON.stringify(await page.evaluate(()=>window.__progressToasts))+'\n');throw e;}finally{await browser.close();}

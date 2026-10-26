@@ -100,6 +100,7 @@ type RuntimeReport struct {
 	Runtime contracts.AgentRuntime `json:"runtime"`
 }
 type ServerDescription struct {
+	SDKDeepResumeVersion  int    `json:"sdkDeepResumeVersion,omitempty"`
 	SDKConcurrencyVersion int    `json:"sdkConcurrencyVersion,omitempty"`
 	TaskDispatch          string `json:"taskDispatch,omitempty"`
 	SDKParametersVersion  int    `json:"sdkParametersVersion,omitempty"`

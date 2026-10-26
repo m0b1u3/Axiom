@@ -186,8 +186,21 @@ func (s *Store) CleanupResourcePaths(ctx context.Context, kind string, id int64,
 		return nil, ErrStorageProtected
 	}
 	if kind == "scan" {
+		var resumeBusy int
+		if e := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM deep_resume_checks WHERE task_id=? AND ((state='queued' AND updated_at>=?) OR (state='checking' AND lease_until>=?) OR (state='ready' AND updated_at>=? AND inspection_json LIKE '%"eligible":true%'))`, id, time.Now().UTC().Add(-2*time.Minute).Format(time.RFC3339Nano), time.Now().UTC().Format(time.RFC3339Nano), time.Now().UTC().Add(-2*time.Minute).Format(time.RFC3339Nano)).Scan(&resumeBusy); e != nil {
+			return nil, e
+		}
+		if resumeBusy > 0 {
+			return nil, ErrStorageProtected
+		}
 		var related int
-		if e := s.db.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM sdk_operations WHERE origin_task_id=?)+(SELECT COUNT(*) FROM component_operations WHERE task_id=?)`, id, id).Scan(&related); e != nil {
+		relatedQuery := `SELECT (SELECT COUNT(*) FROM sdk_operations WHERE origin_task_id=?)+(SELECT COUNT(*) FROM component_operations WHERE task_id=?)`
+		relatedArgs := []any{id, id}
+		if s.IsPostgres() {
+			relatedQuery += `+(SELECT COUNT(*) FROM interim_reviews WHERE task_id=?)`
+			relatedArgs = append(relatedArgs, id)
+		}
+		if e := s.db.QueryRowContext(ctx, relatedQuery, relatedArgs...).Scan(&related); e != nil {
 			return nil, e
 		}
 		if related > 0 {

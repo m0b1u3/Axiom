@@ -15,7 +15,7 @@ import {ContractProgressSink} from '../runtime/contract-progress.js';
 import {SDKSessionJournal,sanitizeSDKData} from '../runtime/sdk-session-journal.js';
 import {convertCodexResult} from '../converter/codex-finding-converter.js';
 import {buildCodexOverrides,nativeOpenAI} from '../provider/model-provider.js';
-import {ensureModelCatalog,maybeStartChatShim} from './codex-security-engine.js';
+import {ensureModelCatalog,startResponsesTransport} from './codex-security-engine.js';
 import {withIsolatedScanEnvironment} from '../runtime/scan-environment.js';
 import {contractError,publishResult} from '../artifact/result-publisher.js';
 
@@ -49,7 +49,7 @@ export async function runComponentAudit(task:ScanTask,signal:AbortSignal,deps:De
  const state:ComponentScanSnapshot={schemaVersion:1,execution,planId:version.planId,version:version.version,versionSha256:version.sha256,source:version.source,phase:'preparing',observedAt:startedAt,grantMicros:request.grantMicros,reservedMicros:componentReserved(receipts),observedMicros:0,components:receipts,matching:{status:'not_started',costState:'known',reason:'尚未进行跨组件匹配；已知费用为 $0。',native:null}};
  const result:ScanResult={taskId:task.taskId,status:'completed',startedAt,finishedAt:startedAt,engine:{name:'codex-security',version:VERSION},model:{provider:task.provider,model:task.model},findings:[],rawArtifactDir:'raw/codex-security',normalizedResultPath:'normalized/result.json'};
  const roots:Record<string,string>={[task.sourcePath]:'$SOURCE',[task.outputPath]:'$OUTPUT'};
- let writes=Promise.resolve(),writeError:unknown,summary:NativeSummary|undefined,shim:Awaited<ReturnType<typeof maybeStartChatShim>>=null;
+ let writes=Promise.resolve(),writeError:unknown,summary:NativeSummary|undefined,shim:Awaited<ReturnType<typeof startResponsesTransport>>=null;
  const safe=(value:unknown)=>sanitizeSDKData(value,roots);
  const queue=(work:()=>Promise<void>)=>{writes=writes.then(work).catch(error=>{writeError=error;controller.abort(error)});};
  const snapshot=(message:string,index?:number)=>{
@@ -70,7 +70,7 @@ export async function runComponentAudit(task:ScanTask,signal:AbortSignal,deps:De
   Object.assign(process.env,{GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:process.platform==='win32'?'NUL':'/dev/null',GIT_CONFIG_SYSTEM:process.platform==='win32'?'NUL':'/dev/null',GIT_TERMINAL_PROMPT:'0',GIT_OPTIONAL_LOCKS:'0',GIT_NO_REPLACE_OBJECTS:'1',GIT_ALLOW_PROTOCOL:''});
   const overrides=buildCodexOverrides(task);
   if(overrides){const catalog=await ensureModelCatalog(task);if(catalog)overrides.model_catalog_json=catalog.replaceAll('\\','/');}
-  shim=await maybeStartChatShim(task,overrides,()=>undefined);
+  shim=await startResponsesTransport(task,overrides,()=>undefined);
   await writeFile(path.join(raw,'component-request.json'),JSON.stringify(request)+'\n',{mode:0o600});
   await writeFile(path.join(raw,'component-map.json'),JSON.stringify(receipts.map((r,i)=>({sdkComponentId:`component-${i+1}`,componentIndex:r.index,versionSha256:version.sha256})))+'\n',{mode:0o600});
   state.phase='scanning';snapshot('已预留组件预算，开始执行冻结计划');

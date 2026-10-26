@@ -30,6 +30,9 @@ func (s *Store) completeContractExecution(ctx context.Context, full contracts.Ex
 	if err != nil {
 		return ErrInvalidResult
 	}
+	if err := s.validateDeepResumeResult(ctx, id, full); err != nil {
+		return err
+	}
 	if err := s.validateIdentityResult(ctx, id, full); err != nil {
 		return err
 	}
@@ -40,6 +43,9 @@ func (s *Store) completeContractExecution(ctx context.Context, full contracts.Ex
 		return err
 	}
 	if err := s.validateOperationCompletion(ctx, id, full); err != nil {
+		return err
+	}
+	if err := s.validateInterimReviewCompletion(ctx, id, full); err != nil {
 		return err
 	}
 	if err := s.validateGitCompletion(ctx, id, full); err != nil {

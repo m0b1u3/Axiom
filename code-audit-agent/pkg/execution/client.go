@@ -17,6 +17,7 @@ import (
 var ErrUnauthorized = errors.New("agent authentication rejected")
 
 type Client struct {
+	SDKDeepResumeVersion    int
 	SDKConcurrencyVersion   int
 	DispatchMode            string
 	SDKParametersVersion    int

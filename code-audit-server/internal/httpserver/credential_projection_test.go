@@ -23,7 +23,7 @@ func TestFrozenParametersAndCredentialRotationAtServerBoundary(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			row, err := st.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture", Provider: "custom", BaseURL: "https://fixture.invalid/v1", WireAPI: "chat", Model: "fixture-frozen-model", ApiKeyEncrypted: oldKey})
+			row, err := st.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture", Provider: "custom", BaseURL: "https://fixture.invalid/v1", WireAPI: "responses", Model: "fixture-frozen-model", ApiKeyEncrypted: oldKey})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -48,7 +48,7 @@ func TestFrozenParametersAndCredentialRotationAtServerBoundary(t *testing.T) {
 			case "changed-destination":
 				updated.BaseURL = "https://other-fixture.invalid/v1"
 			case "changed-protocol":
-				updated.WireAPI = "responses"
+				updated.WireAPI = "chat"
 			case "changed-provider":
 				updated.Provider = "deepseek"
 			}

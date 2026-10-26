@@ -30,6 +30,24 @@ func main() {
 			encoder.Encode(response{Code: "invalid_request"})
 			continue
 		}
+		if input.Kind == "StructuredDiagnosticOfflineTest" {
+			request, err := contracts.DecodeStructuredDiagnosticRequest([]byte(input.JSON), nil)
+			if err != nil {
+				encoder.Encode(response{Code: "invalid_contract"})
+				continue
+			}
+			record, err := contracts.RunStructuredDiagnostic(request, "11111111111111111111111111111111", "2026-10-22T08:00:00.000Z")
+			if err != nil {
+				encoder.Encode(response{Code: "invalid_contract"})
+				continue
+			}
+			data, err := contracts.EncodeJSON(record)
+			if err != nil {
+				os.Exit(2)
+			}
+			encoder.Encode(response{Valid: true, Document: data})
+			continue
+		}
 		data, err := contracts.RoundTrip(input.Kind, []byte(input.JSON), input.Expected)
 		if err != nil {
 			var validation *contracts.ValidationError

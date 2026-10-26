@@ -38,8 +38,9 @@ export class CodexSecurity {
     await this.captureOperation('validate',options.repositoryPath,options);
     const scenario=process.env.AXIOM_OPERATION_TEST_SCENARIO??'reportable';
     if(scenario==='validation-hold')await new Promise((resolve,reject)=>{const timer=setTimeout(resolve,15000);options.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(new ScanInterruptedError('Fixture validation canceled'));},{once:true});});
+    if(scenario==='headline-reportable'||scenario==='headline-not-applicable')return {disposition:scenario==='headline-reportable'?'reportable':'not_applicable',report:scenario==='headline-reportable'?'## 静态发现评估：用户输入直接拼接进 SQL 语句（CWE-89）':'## Static Finding Assessment — 用户输入直接拼接进 SQL 语句 (CWE-89)',threadId:'fixture-validation-thread',outputDir:options.outputDir};
     if(scenario==='validation-failure')throw new AuthenticationRequiredError('Fixture account not available; Bearer fixture-private-operation-token');
-    return {disposition:['reportable','suppressed','not_applicable','deferred'].includes(scenario)?scenario:'reportable',report:scenario==='validation-large'?'合成原始报告'.repeat(1600000):'Fixtures / Mock：独立复核 '+scenario+'\n<script>window.operationInjected=true</script>',threadId:'fixture-validation-thread',outputDir:options.outputDir};
+    return {disposition:['reportable','suppressed','not_applicable','deferred'].includes(scenario)?scenario:'reportable',report:scenario==='validation-large'?'合成原始报告'.repeat(1600000):'Fixtures / Mock：独立复核 '+scenario+(options.finding?.inputSha256?' `src/query.ts:2-4`'+(scenario==='reportable-bad-source'?' and `src/db.ts:5-8`':''):'')+'\n<script>window.operationInjected=true</script>',threadId:'fixture-validation-thread',outputDir:options.outputDir};
   }
   async captureOperation(kind,source,options){
     const file=process.env.AXIOM_INPUT_TEST_CAPTURE;if(!file)throw new Error('Operation fixture requires capture path');
@@ -54,7 +55,8 @@ export class CodexSecurity {
     const file=process.env.AXIOM_INPUT_TEST_CAPTURE;
     if(!file)throw new Error('Input SDK fixture requires a capture path');
     const provider=this.config.codexOverrides?.model_provider;
-    const envName=this.config.codexOverrides?.model_providers?.[provider]?.env_key??'OPENAI_API_KEY';
+    const providerConfig=this.config.codexOverrides?.model_providers?.[provider];
+    const envName=providerConfig?.auth?.args?.[1]??providerConfig?.env_key??'OPENAI_API_KEY';
     await mkdir(path.dirname(file),{recursive:true});
     await appendFile(file+'.calls',`${process.pid}\n`);
     await writeFile(file,JSON.stringify({fixtureOnly:true,source,config:this.config,options,
@@ -64,6 +66,15 @@ export class CodexSecurity {
     for(let i=0;i<73;i++)options.onSessionEvent?.({threadId:'fixture-native-thread',parentThreadId:null,worker:0,event:{type:i%2?'response_item':'future_session_type',payload:{sequence:i,authorization:'Bearer fixture-private-session-token',text:'Fixtures / Mock: full callback event'}}});
     options.onProgress?.({phase:'discovery',filesTotal:2,filesCompleted:2});
     const scenario=process.env.AXIOM_RESULT_TEST_SCENARIO??'rich';
+    if(scenario==='interim-failure'||scenario==='interim-timeout'){
+      const directory=path.join(options.outputDir,'artifacts/checkpoints');await mkdir(directory,{recursive:true});
+      const count=process.env.AXIOM_INTERIM_REVIEW_SOURCE==='1'?3:scenario==='interim-failure'?25:2;
+      await writeFile(path.join(directory,'fixture-worker.json'),JSON.stringify({checkpoint:'Fixtures / Mock intermediate evidence',candidates:Array.from({length:count},(_,i)=>({id:'C'+(process.env.AXIOM_INTERIM_REVIEW_SOURCE==='1'&&i===1?0:i),title:(scenario==='interim-timeout'?'Timeout':'Failed')+' fixture candidate '+String(process.env.AXIOM_INTERIM_REVIEW_SOURCE==='1'&&i===1?1:i+1).padStart(2,'0'),severity:'high',status:'verified',summary:'Fixtures / Mock inference <script>window.interimInjected=true</script>',evidence:['src/query.ts:2-4'],api_key:'fixture-interim-credential-DO-NOT-SHOW'}))}));
+      options.onSessionEvent?.({threadId:'fixture-interim-worker',parentThreadId:'fixture-main',worker:1,event:{type:'event_msg',payload:{type:'task_complete',last_agent_message:'Fixtures / Mock worker conclusion; not a final result.'}}});
+      options.onProgress?.({phase:'discovery',filesTotal:2,filesCompleted:1});
+      for(let i=0;i<600&&!(await readFile(file+'.release').then(()=>true,()=>false));i++)await new Promise(r=>setTimeout(r,100));
+      throw new Error(scenario==='interim-timeout'?'wall-clock timeout':'Fixtures / Mock interrupted before final SDK report');
+    }
     if(scenario==='large-stdout'){
       await new Promise((resolve,reject)=>process.stdout.write('x'.repeat(9*1024*1024)+'\n',error=>error?reject(error):resolve()));
     }

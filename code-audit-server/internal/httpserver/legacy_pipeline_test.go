@@ -15,7 +15,7 @@ import (
 func runLegacyInputAcceptance(t *testing.T, s *store.Store, agent, root, url, agentToken, scratch string, snapshotID int64, source, encrypted, key string) {
 	t.Helper()
 	t.Run("legacy-provider-connection", func(t *testing.T) {
-		model, err := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Legacy fixture", Provider: "deepseek", Model: "fixture-legacy-model", BaseURL: "https://legacy-fixture.invalid/v1", WireAPI: "chat", ApiKeyEncrypted: encrypted})
+		model, err := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Legacy fixture", Provider: "deepseek", Model: "fixture-legacy-model", BaseURL: "https://legacy-fixture.invalid/v1", WireAPI: "responses", ApiKeyEncrypted: encrypted})
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -17,6 +17,7 @@ onMounted(async()=>{await load();if(route.hash){await nextTick();document.getEle
 <template>
  <section class="advanced-diagnostics" aria-labelledby="advanced-diagnostics-title">
   <header><div><h2 id="advanced-diagnostics-title">高级诊断</h2><p>排查执行位置、组件兼容性与授权绑定。此页不会启动扫描或登录。</p></div><Button variant="outline" size="sm" :loading="loading" @click="load">刷新运行诊断</Button></header>
+  <section class="diagnostic-section" aria-labelledby="structured-diagnostic-title"><h3 id="structured-diagnostic-title">结构化输出对照</h3><p class="muted">固定小样例与三种格式的请求预览、离线回放和脱敏记录。不会调用模型或启动审计。</p><RouterLink to="/settings/structured-output">打开结构化输出对照诊断</RouterLink></section>
   <section class="diagnostic-section" aria-labelledby="node-diagnostics-title">
    <div class="section-heading"><h3 id="node-diagnostics-title">执行节点与组件兼容性</h3><span v-if="overview" class="snapshot-time">Server 快照 · {{absoluteTime(overview.serverTime)}}</span></div>
    <p v-if="nodeError" role="alert">{{nodeError}}</p><p v-if="nodeError&&overview" role="status">以下保留上次成功的节点快照，请重新获取后确认当前状态。</p><p v-if="loading&&!overview" role="status">正在读取执行节点…</p>

@@ -360,6 +360,11 @@ func (s *Store) AttemptResult(ctx context.Context, id int64, attempt int) (Attem
 				v.Findings = append(v.Findings, projectFinding(id, f))
 			}
 		}
+		platform, e := s.interimArchivedFindings(ctx, id, attempt)
+		if e != nil {
+			return v, e
+		}
+		v.Findings = append(v.Findings, platform...)
 		return v, nil
 	}
 	var c Completion

@@ -17,7 +17,7 @@ const operation=computed(()=>sdkOperationView(props.result.extensions?.sdkOperat
     <p>预检已解析本地配置。认证尚未验证（verified: false），不能据此确认模型可访问或账户可用。</p>
     <dl><dt>目标 / 模式</dt><dd>{{JSON.stringify(operation.preflight.target)}} / {{operation.preflight.mode}}</dd><dt>模型 / 供应商</dt><dd>{{operation.preflight.model}} / {{operation.preflight.modelProvider??'SDK 默认'}}</dd><dt>认证来源</dt><dd>{{JSON.stringify(operation.preflight.authentication)}}</dd><dt>输出计划</dt><dd>{{operation.preflight.outputDir??'SDK 自动分配'}}</dd><dt>知识文档</dt><dd>{{JSON.stringify(operation.preflight.knowledgeBasePaths??[])}}</dd></dl>
    </template>
-   <template v-if="operation.validation"><dl><dt>SDK 原生结论</dt><dd>{{dispositionLabels[operation.validation.disposition]}} · {{operation.validation.disposition}}</dd><dt>原生 Thread ID</dt><dd>{{operation.validation.threadId??'未提供'}}</dd></dl><p>这是 SDK 复核结论，人工漏洞处理状态保持独立。复核边界是冻结的完整源码快照。</p><pre aria-label="SDK 复核报告原文">{{operation.validation.report}}</pre></template>
+   <template v-if="operation.validation"><dl><dt>SDK 原生结论</dt><dd>{{dispositionLabels[operation.validation.disposition]}} · {{operation.validation.disposition}}</dd><dt>原生 Thread ID</dt><dd>{{operation.validation.threadId??'未提供'}}</dd></dl><p>{{operation.error?'本次复核未成功；原始响应和 SDK 标签保留供诊断，不能作为有效复核结论。':'这是 SDK 原生复核结论，人工漏洞处理状态保持独立。'}} 复核边界是冻结的完整源码快照。</p><pre aria-label="SDK 复核报告原文">{{operation.validation.report}}</pre></template>
    <details><summary>查看原始操作结果</summary><pre>{{JSON.stringify(operation,null,2)}}</pre></details>
   </template>
  </section>

@@ -10,7 +10,7 @@ import {ContractProgressSink} from '../runtime/contract-progress.js';
 import {componentCoverage,frozenTreeHash} from '../runtime/component-plan.js';
 import {sanitizeSDKData} from '../runtime/sdk-session-journal.js';
 import {buildCodexOverrides,nativeOpenAI} from '../provider/model-provider.js';
-import {ensureModelCatalog,maybeStartChatShim} from './codex-security-engine.js';
+import {ensureModelCatalog,startResponsesTransport} from './codex-security-engine.js';
 import {withIsolatedScanEnvironment} from '../runtime/scan-environment.js';
 import {contractError,publishResult} from '../artifact/result-publisher.js';
 
@@ -23,7 +23,7 @@ export async function runComponentPlanning(task:ScanTask,signal:AbortSignal):Pro
  const result:ScanResult={taskId:task.taskId,status:'completed',startedAt,finishedAt:startedAt,engine:{name:'codex-security',version:VERSION},model:{provider:task.provider,model:task.model},findings:[],rawArtifactDir:'raw/codex-security',normalizedResultPath:'normalized/result.json'};
  const outcome:ComponentPlanningResult={schemaVersion:1,execution,operation:op,sdkVersion:ACTIVE_SDK_VERSION,document:null,coverage:null,cost:op.kind==='normalize'?{state:'known',estimatedUsd:0}:{state:'unknown',estimatedUsd:null},native:null,error:null};
  if(op.kind==='normalize')result.cost={estimatedUsd:0,inputTokens:0,outputTokens:0};
- let shim:Awaited<ReturnType<typeof maybeStartChatShim>>=null;
+ let shim:Awaited<ReturnType<typeof startResponsesTransport>>=null;
  const roots:Record<string,string>={[task.sourcePath]:'$SOURCE',[task.outputPath]:'$OUTPUT'};
  try{
   roots[await realpath(task.sourcePath)]='$SOURCE';roots[await realpath(task.outputPath)]='$OUTPUT';
@@ -35,7 +35,7 @@ export async function runComponentPlanning(task:ScanTask,signal:AbortSignal):Pro
   if(op.kind==='suggest'){
    if(task.mock)throw new Error('模拟模式不执行自动组件规划，请手工编辑计划；没有调用模型。');
    const overrides=buildCodexOverrides(task);if(overrides){const catalog=await ensureModelCatalog(task);if(catalog)overrides.model_catalog_json=catalog.replaceAll('\\','/');}
-   shim=await maybeStartChatShim(task,overrides,()=>undefined);
+   shim=await startResponsesTransport(task,overrides,()=>undefined);
    proposed=await withIsolatedScanEnvironment(task,()=>planComponents(task.sourcePath,{...(overrides?{config:{codexOverrides:overrides}}:{}),environment:process.env,signal}));
   }
   const native=sanitizeSDKData(proposed,roots);await writeFile(path.join(raw,'component-plan-native.json'),JSON.stringify(native)+'\n',{mode:0o600});

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "17",
+    "attempt": 2
+  },
+  "sourceContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "sdkVersion": "0.5.0",
+  "revision": 2,
+  "observedAt": "2026-10-21T08:00:00Z",
+  "state": "observed",
+  "documentCount": 1,
+  "candidateRecords": -1
+}

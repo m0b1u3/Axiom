@@ -24,3 +24,13 @@ export type {ComponentScanRequest,ComponentScanReceipt,ComponentScanMatching,Com
 export type {SDKIdentityRef,SDKIdentitySnapshot,SDKIdentityOperation,SDKTaskIdentity} from '../../contracts/ts/src/types.gen';
 
 export type {ReasoningEffort,SDKScanParameters,SDKParametersAssignment,ComponentSDKInput} from "../../contracts/ts/src/types.gen";
+
+export type {DeepResumeSnapshot,DeepResumeAction,DeepResumeInspection,DeepResumeAssignment} from '../../contracts/ts/src/types.gen';
+
+export type {InterimCandidate,InterimDocument,InterimDocumentRef,InterimObservation,InterimSnapshot,InterimPage} from '../../contracts/ts/src/types.gen';
+
+export type {InterimReviewInput,InterimReviewEnvelope,InterimReviewRequest,InterimReviewOutcome,InterimReviewArchive,InterimReviewMember} from '../../contracts/ts/src/types.gen';
+
+export type { InterimReviewSourceCheck } from "../../contracts/ts/src/types.gen";
+
+export type {StructuredDiagnosticCatalog,StructuredDiagnosticRequest,StructuredDiagnosticRecord,StructuredDiagnosticPage,StructuredDiagnosticCheck,StructuredDiagnosticProfile,StructuredDiagnosticProtocol,StructuredDiagnosticScenario} from '../../contracts/ts/src/types.gen';

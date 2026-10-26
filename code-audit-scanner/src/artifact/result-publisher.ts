@@ -31,6 +31,7 @@ export function contractResult(task:ScanTask,legacy:LegacyResult,artifacts:Artif
   if(legacy.error)result.error=contractError(legacy.error.code,legacy.error.message);
   else if(['failed','canceled','timeout'].includes(result.status))result.error=contractError(result.status==='failed'?'unknown':result.status,'SDK returned '+result.status);
   // Enrichment is optional even before the first core-contract validation.
+  if(task.deepResume)result.extensions={...result.extensions,deepResume:jsonObject(task.deepResume)};
   if(task.sdkIdentity)result.extensions={...result.extensions,sdkIdentity:jsonObject(task.sdkIdentity)};
  const git=gitEvidenceBinding(task);if(git){if(!task.sdkOperation&&(["completed","partial"].includes(result.status)||result.findings.length>0))assertGitSDKResult(task,legacy.sdkRaw);result.extensions={...result.extensions,gitDiff:jsonObject(git)};}
   if(Buffer.byteLength(JSON.stringify(result))>COMPATIBILITY.limits.documentBytes-65536){for(const f of result.findings){if(f.extensions?.axiomEvidence){delete f.extensions.axiomEvidence;f.extensions.axiomEvidenceUnavailable='图谱投影超过结果容量；完整原始证据仍可读取。';}}}
@@ -68,6 +69,7 @@ function contractFinding(f:LegacyFinding,task:ScanTask):Finding {
 export async function publishResult(task:ScanTask,legacy:LegacyResult):Promise<ScanResult> {
   const result=contractResult(task,legacy,await artifactReferences(task.outputPath,legacy.rawArtifactDir),await installedPatchRevision());
   if(legacy.sdkSession){const summary={...legacy.sdkSession,journal:result.artifacts.find(a=>a.relativePath==='logs/sdk-session-events.jsonl')??null};if(summary.persistedCount&&!summary.journal){summary.state='incomplete';summary.reason='已记录的会话日志未随本次结果归档，完整性无法确认。';}validate('SDKSessionSummary',summary,result.execution);result.extensions={...result.extensions,sdkSession:jsonObject(summary)};}
+  if(legacy.interimReviewOutcome){validate('InterimReviewOutcome',legacy.interimReviewOutcome,result.execution);result.extensions={...result.extensions,interimReviewOutcome:legacy.interimReviewOutcome};}
   if(legacy.sdkOperation){validate('SDKOperationResult',legacy.sdkOperation,result.execution);result.extensions={...result.extensions,sdkOperation:jsonObject(legacy.sdkOperation)};}
   if(legacy.componentScan){validate('ComponentScanResult',legacy.componentScan,result.execution);result.extensions={...result.extensions,componentScan:jsonObject(legacy.componentScan)};}
   if(legacy.componentPlanning){validate('ComponentPlanningResult',legacy.componentPlanning,result.execution);result.extensions={...result.extensions,componentPlanning:jsonObject(legacy.componentPlanning)};}

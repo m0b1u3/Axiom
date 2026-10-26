@@ -18,6 +18,11 @@ try {
  await page.getByRole('button',{name:'登录控制台',exact:true}).click();
  await page.waitForURL(url=>!url.pathname.endsWith('/login'));
  await page.goto(base+'/scans/new');
+ await page.getByRole('heading',{name:'扫描配置',exact:true}).waitFor();
+ assert.equal(await page.locator('.knowledge-options[open]').count(),0,'optional knowledge must start collapsed');
+ assert.equal(await page.locator('.advanced-scan[open]').count(),0,'advanced SDK parameters must start collapsed');
+ const primary=await page.locator('.scan-grid > .scan-section').evaluateAll(elements=>elements.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,width:r.width}}));
+ assert.equal(primary.length,2);assert.ok(Math.abs(primary[0].y-primary[1].y)<1,'desktop source and execution sections must share a row');assert.ok(primary[1].x>=primary[0].right,'desktop sections must not overlap');
  await page.locator('input[type=file]:not(#git-archive)').setInputFiles(process.env.AXIOM_TEST_WEB_ARCHIVE);
  await page.getByText(/快照已生成/).waitFor();
  await page.getByLabel('扫描范围（可选）',{exact:true}).fill('src/a,b.ts\n源码/测试.ts');
@@ -33,11 +38,15 @@ try {
  await budget.fill('4.25');
  const screenshots=process.env.AXIOM_TEST_SCREENSHOT_DIR;
  if(screenshots){
+   await page.getByText('费用预算须为正数；不设置预算时请留空。',{exact:true}).first().waitFor({state:'hidden'});
    await mkdir(screenshots,{recursive:true});
    await page.evaluate(()=>{document.activeElement?.blur();window.scrollTo(0,0);});
    await page.screenshot({path:path.join(screenshots,'input-desktop.png'),fullPage:true,animations:'disabled'});
    await page.setViewportSize({width:390,height:844});
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'mobile form overflows');
+   const stacked=await page.locator('.scan-grid > .scan-section').evaluateAll(elements=>elements.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,bottom:r.bottom}}));
+   assert.ok(stacked[1].y>=stacked[0].bottom,'mobile execution must follow the source section');
+   assert.ok(Math.abs(stacked[0].x-stacked[1].x)<1,'mobile sections must align');
    await page.screenshot({path:path.join(screenshots,'input-mobile.png'),fullPage:true,animations:'disabled'});
    await page.setViewportSize({width:1440,height:1000});
  }

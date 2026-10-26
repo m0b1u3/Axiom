@@ -13,7 +13,7 @@ export function graphSource(source:unknown,pointer:string):{found:boolean;value?
 /** Fail closed for this optional view; historical report readers stay separate. */
 export function evidenceGraphView(value:unknown,taskId:number,attempt:number,fingerprint:string,sourceHash?:string):EvidenceGraph|null{
  if(!object(value)||value.schemaVersion!==1||value.projectorVersion!==1||!object(value.execution)||value.execution.taskId!==String(taskId)||value.execution.attempt!==attempt||!Number.isSafeInteger(attempt)||attempt<1||value.findingFingerprint!==fingerprint)return null;
- if(!['native_evidence','legacy_projection'].includes(String(value.origin))||!['complete','partial','empty'].includes(String(value.completeness))||(value.sourceContentHash!==null&&!digest(value.sourceContentHash))||(sourceHash&&value.sourceContentHash!==sourceHash)||(value.archiveSha256!==null&&!digest(value.archiveSha256))||!object(value.sourceFinding)||value.sourceFinding.fingerprint!==fingerprint)return null;
+ if(!['native_evidence','legacy_projection','review_archive'].includes(String(value.origin))||!['complete','partial','empty'].includes(String(value.completeness))||(value.sourceContentHash!==null&&!digest(value.sourceContentHash))||(sourceHash&&value.sourceContentHash!==sourceHash)||(value.archiveSha256!==null&&!digest(value.archiveSha256))||!object(value.sourceFinding)||value.sourceFinding.fingerprint!==fingerprint)return null;
  if(!Array.isArray(value.nodes)||value.nodes.length>256||!Array.isArray(value.edges)||value.edges.length>1024||!Array.isArray(value.diagnostics)||value.diagnostics.length>256)return null;
  const ids=new Set<string>(),edges=new Set<string>();
  for(const n of value.nodes){

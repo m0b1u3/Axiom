@@ -14,7 +14,7 @@ import (
 
 func validObservationAgent(v control.ObservationClaimRequest) bool {
 	raw, e := contracts.EncodeJSON(v.ObservationCapabilities)
-	return (v.SDKConcurrencyVersion == 0 || v.SDKConcurrencyVersion == 1) && (v.SDKParametersVersion == 0 || v.SDKParametersVersion == 1) && e == nil && contracts.ValidateJSON(contracts.KindObservationCapabilities, raw, nil) == nil && validInputAgent(v.AgentID, v.InputCapabilities) && validResultCapabilities(v.ResultCapabilities)
+	return (v.SDKDeepResumeVersion == 0 || v.SDKDeepResumeVersion == 1) && (v.SDKConcurrencyVersion == 0 || v.SDKConcurrencyVersion == 1) && (v.SDKParametersVersion == 0 || v.SDKParametersVersion == 1) && e == nil && contracts.ValidateJSON(contracts.KindObservationCapabilities, raw, nil) == nil && validInputAgent(v.AgentID, v.InputCapabilities) && validResultCapabilities(v.ResultCapabilities)
 }
 func (s *Server) reportObservationAgent(w http.ResponseWriter, r *http.Request) {
 	var v control.ObservationPresence
@@ -41,6 +41,7 @@ func (s *Server) claimObservationExecution(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	limits := s.storageClaimLimits(r.Context())
+	limits.SDKDeepResumeCapable = v.SDKDeepResumeVersion == 1
 	limits.SDKIdentityCapable = v.SDKIdentityVersion == 1
 	limits.SDKParametersCapable = v.SDKParametersVersion == 1
 	limits.SDKConcurrencyCapable = v.SDKConcurrencyVersion == 1
@@ -76,6 +77,10 @@ func (s *Server) claimObservationExecution(w http.ResponseWriter, r *http.Reques
 	if t.SDKParameters != nil {
 		out.SDKParametersVersion = 1
 		out.SDKParameters = &contracts.SDKParametersAssignment{SchemaVersion: 1, Execution: lease.Assignment.Execution, Parameters: *t.SDKParameters}
+	}
+	out.DeepResume = t.DeepResume
+	if v.SDKDeepResumeVersion == 1 && t.ScanMode == "deep" && t.DeepResume == nil {
+		out.DeepResumeContext = &contracts.DeepResumeContext{SchemaVersion: 1, Execution: lease.Assignment.Execution, AgentID: v.AgentID, ConfigurationHash: store.DeepConfigurationHash(t)}
 	}
 	out.ComponentScan = t.ComponentScan
 	out.ComponentPlanning = t.ComponentPlanning

@@ -1,0 +1,505 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/interim-definitions.schema.json",
+  "$defs": {
+    "InterimCandidate": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "artifact": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "pointer": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 8192
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "claimId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reportedStatus": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reportedSeverity": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 512
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "maxItems": 64
+        },
+        "omittedEvidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "assessment": {
+          "const": "unverified",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "artifact",
+        "pointer",
+        "title",
+        "summary",
+        "claimId",
+        "reportedStatus",
+        "reportedSeverity",
+        "evidence",
+        "omittedEvidence",
+        "truncated",
+        "assessment"
+      ],
+      "additionalProperties": false
+    },
+    "InterimDocumentRef": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ArtifactRef"
+        },
+        "sourcePath": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/RelativePath"
+        },
+        "sourceSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "observedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "sourceModifiedAt": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "enum": [
+            "checkpoint",
+            "sdk_draft",
+            "worker_message"
+          ],
+          "type": "string"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "threadId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "candidateCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "artifact",
+        "sourcePath",
+        "sourceSha256",
+        "observedAt",
+        "sourceModifiedAt",
+        "kind",
+        "label",
+        "threadId",
+        "truncated",
+        "candidateCount"
+      ],
+      "additionalProperties": false
+    },
+    "InterimDocument": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sourceContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "sdkVersion": {
+          "const": "0.5.0",
+          "type": "string"
+        },
+        "sourcePath": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/RelativePath"
+        },
+        "sourceSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "observedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "sourceModifiedAt": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "kind": {
+          "enum": [
+            "checkpoint",
+            "sdk_draft",
+            "worker_message"
+          ],
+          "type": "string"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "threadId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 3145728
+        },
+        "redacted": {
+          "const": true,
+          "type": "boolean"
+        },
+        "assessment": {
+          "const": "unverified",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sourceContentHash",
+        "sdkVersion",
+        "sourcePath",
+        "sourceSha256",
+        "observedAt",
+        "sourceModifiedAt",
+        "kind",
+        "label",
+        "threadId",
+        "truncated",
+        "content",
+        "redacted",
+        "assessment"
+      ],
+      "additionalProperties": false
+    },
+    "InterimSnapshot": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sourceContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "sdkVersion": {
+          "const": "0.5.0",
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "observedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "state": {
+          "enum": [
+            "observed",
+            "incomplete"
+          ],
+          "type": "string"
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/interim-definitions.schema.json#/$defs/InterimDocumentRef"
+          },
+          "maxItems": 2048
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/interim-definitions.schema.json#/$defs/InterimCandidate"
+          },
+          "maxItems": 10000
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sourceContentHash",
+        "sdkVersion",
+        "revision",
+        "observedAt",
+        "state",
+        "documents",
+        "candidates",
+        "issues"
+      ],
+      "additionalProperties": false
+    },
+    "InterimObservation": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sourceContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "sdkVersion": {
+          "const": "0.5.0",
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "observedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "state": {
+          "enum": [
+            "observed",
+            "incomplete"
+          ],
+          "type": "string"
+        },
+        "documentCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "candidateRecords": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sourceContentHash",
+        "sdkVersion",
+        "revision",
+        "observedAt",
+        "state",
+        "documentCount",
+        "candidateRecords"
+      ],
+      "additionalProperties": false
+    },
+    "InterimPage": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sourceContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "sdkVersion": {
+          "const": "0.5.0",
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "observedAt": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "state": {
+          "enum": [
+            "unavailable",
+            "observed",
+            "incomplete"
+          ],
+          "type": "string"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/interim-definitions.schema.json#/$defs/InterimCandidate"
+          },
+          "maxItems": 100
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/interim-definitions.schema.json#/$defs/InterimDocumentRef"
+          },
+          "maxItems": 50
+        },
+        "documentTotal": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "documentPage": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "issues": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "maxItems": 64
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sourceContentHash",
+        "sdkVersion",
+        "revision",
+        "observedAt",
+        "state",
+        "reason",
+        "items",
+        "total",
+        "page",
+        "pageSize",
+        "documents",
+        "documentTotal",
+        "documentPage",
+        "issues"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

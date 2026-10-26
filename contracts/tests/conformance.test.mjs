@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {decode, validate, normalizeLegacyErrorCode, exitCode, COMPATIBILITY, SCHEMA_HASH, CONTRACT_KINDS, EXECUTION_MATRIX, EXECUTION_MATRIX_HASH} from '../ts/dist/index.js';
+import {decode, validate, normalizeLegacyErrorCode, exitCode, COMPATIBILITY, SCHEMA_HASH, CONTRACT_KINDS, EXECUTION_MATRIX, EXECUTION_MATRIX_HASH, structuredDiagnosticCatalog,runStructuredDiagnostic,STRUCTURED_DIAGNOSTIC_CATALOG_HASH} from '../ts/dist/index.js';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const fixtureRoot=path.join(root,'fixtures/v1');
@@ -82,7 +82,7 @@ test('aliases, limits, enum kinds and source hashes are stable',()=>{
   assert.deepEqual(normalizeLegacyErrorCode('HTTP 401 in arbitrary text'),{code:'unknown',recognized:false});
   assert.equal(exitCode('partial'),2);
   assert.match(SCHEMA_HASH,/^[a-f0-9]{64}$/);
-  assert.equal(CONTRACT_KINDS.length,85);
+  assert.equal(CONTRACT_KINDS.length,112);
   assert.ok(CONTRACT_KINDS.includes('AgentRuntime'));
   assert.throws(()=>decode('ProgressSnapshot',' '.repeat(COMPATIBILITY.limits.progressBytes+1)),e=>e.code==='payload_too_large');
   assert.throws(()=>decode('ExecutionRef',new Uint8Array([255])),e=>e.code==='invalid_json');
@@ -97,7 +97,7 @@ test('scanner describe advertises current input, result and observation contract
   let stdout='',stderr='';p.stdout.on('data',d=>stdout+=d);p.stderr.on('data',d=>stderr+=d);
   const code=await new Promise((resolve,reject)=>{p.on('error',reject);p.on('close',resolve)});
   assert.equal(code,0,stderr);
-  const value=decode('ScannerDescriptionV13',stdout);
+  const value=decode('ScannerDescriptionV14',stdout);
   assert.equal(value.runtime.input,'scanner_job');
   assert.deepEqual(value.runtime.versions.job,[1,2,3,4,5,6,7,8]);
   assert.equal(value.capabilities.jobFile,true);
@@ -125,6 +125,15 @@ test('TS matrix and digest match the same canonical data used by Go',async()=>{
  const raw=await readFile(path.join(root,'data/execution-compatibility.json'),'utf8');
  assert.deepEqual(EXECUTION_MATRIX,JSON.parse(raw));
  assert.equal(EXECUTION_MATRIX_HASH,createHash('sha256').update(raw).digest('hex'));
+});
+test('Go and TS evaluate every fixed protocol/scenario identically without credentials, provider calls or retries',async()=>{
+ const catalog=structuredDiagnosticCatalog();assert.equal(STRUCTURED_DIAGNOSTIC_CATALOG_HASH,createHash('sha256').update(await readFile(path.join(root,'data/structured-output-catalog.json'),'utf8')).digest('hex'));
+ for(const protocol of ['responses'])for(const scenario of catalog.scenarios){
+  const request={schemaVersion:1,mode:'offline',catalogSha256:STRUCTURED_DIAGNOSTIC_CATALOG_HASH,protocol,scenario:scenario.id};
+  const ts=runStructuredDiagnostic(request,'1'.repeat(32),'2026-10-22T08:00:00.000Z');
+  const fromGo=await go('StructuredDiagnosticOfflineTest',JSON.stringify(request));assert.equal(fromGo.valid,true,fromGo.code);assert.deepEqual(fromGo.document,ts);
+  assert.equal(ts.providerCompatibility,'not_tested');assert.equal(ts.credentialLoaded,false);assert.equal(ts.upstreamContacted,false);assert.equal(ts.estimatedUsd,0);
+ }
 });
 test.after(async()=>{
   processGo.stdin.end();

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/deep-resume-snapshot.schema.json",
+  "title": "DeepResumeSnapshot",
+  "$ref": "https://axiom.invalid/contracts/v1/deep-resume-definitions.schema.json#/$defs/DeepResumeSnapshot"
+}

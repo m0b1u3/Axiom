@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "sourceContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "reportSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "state": "checked",
+  "references": [
+    {
+      "path": "src/query.ts",
+      "startLine": 2,
+      "endLine": 4,
+      "state": "verified",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "reason": "Fixtures / Mock: exact frozen file and valid line interval, not runtime reproduction."
+    }
+  ],
+  "reason": "Fixtures / Mock: references exist; semantic claims remain model inferences."
+}

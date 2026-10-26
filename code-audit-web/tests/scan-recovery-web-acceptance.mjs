@@ -25,7 +25,7 @@ async function open(id){
  await page.goto(base+'/scans/'+id);
  const region=page.getByRole('region',{name:'扫描中断与恢复',exact:true});await region.waitFor();
  const toggle=region.getByRole('button',{name:/^扫描中断与恢复/});if(await toggle.getAttribute('aria-expanded')==='false')await toggle.click();
- await region.getByText('SDK 0.5.0 · 此入口不支持断点续扫',{exact:true}).waitFor();return region;
+ await region.getByText(/SDK (0\.1\.25|0\.5\.0) · Standard 不支持断点续扫/).waitFor();return region;
 }
 async function snapshot(id){const r=await page.request.get(base+`/api/v1/scans/${id}/recovery`,{headers:{Authorization:'Bearer '+await page.evaluate(()=>localStorage.getItem('axiom_token'))}});assert.equal(r.status(),200);return (await r.json()).data;}
 async function shot(name){

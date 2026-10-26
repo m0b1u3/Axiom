@@ -42,6 +42,9 @@ export function mapEngineError(error: unknown): MappedEngineError {
 
 function classifyMessage(message: string): MappedEngineError {
   const lower = message.toLowerCase();
+  if (/namespace_tool_incompatible|tools\[\d+\]\.type:type is illegal/.test(lower)) {
+    return {status:'failed',code:'provider_error',message:'模型接口的工具格式不兼容；本次未形成有效复核结论。原始错误：'+message};
+  }
   // Codex /models schema mismatch is not an auth failure. DeepSeek returns
   // `{object,data}` while the runtime expects a `models` field.
   if (lower.includes("missing field `models`") || lower.includes("missing field \"models\"")) {

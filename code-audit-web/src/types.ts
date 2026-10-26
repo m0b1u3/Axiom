@@ -45,6 +45,7 @@ export interface ScanAttempt {
 }
 
 export interface ScanTask {
+  interimReviewGroupId?:number;
  sdkParameters?:import("./contracts").SDKScanParameters;
  sdkIdentity?:import("./contracts").SDKIdentityRef;
   componentScan?:import("./contracts").ComponentScanRequest;

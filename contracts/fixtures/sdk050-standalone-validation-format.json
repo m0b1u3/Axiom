@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "sdkVersion": "0.5.0",
+  "codexVersion": "0.163.0",
+  "format": {
+    "type": "json_schema",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "disposition": {
+          "type": "string",
+          "enum": [
+            "reportable",
+            "suppressed",
+            "not_applicable",
+            "deferred"
+          ]
+        },
+        "report": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "disposition",
+        "report"
+      ],
+      "additionalProperties": false
+    },
+    "name": "codex_output_schema"
+  },
+  "formatSha256": "146d5f8d876052c923acf7d97fdcfeb2cc5aee884e23736a42310a4ebe1b5d23",
+  "meaning": "Fixtures / Mock: SDK-generated protocol schema. The format hash matches retained review 11; it does not certify provider enforcement or report truth."
+}

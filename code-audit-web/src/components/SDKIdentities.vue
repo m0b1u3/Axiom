@@ -6,6 +6,7 @@ import {checkedIdentities,checkedIdentityOperations,identityState,identityOperat
 import {useAuth} from '../composables/auth';import {absoluteTime} from '../utils/time';
 import type {AgentPresence} from '../types';
 import Button from './ui/Button.vue';import Input from './ui/Input.vue';import Select from './ui/Select.vue';import {confirm} from './ui/confirm';
+import '../styles/security.css';
 const props=defineProps<{identityId?:string;agentId?:string}>();const route=useRoute(),router=useRouter();
 const identityAction:Record<SDKIdentityOperation['action'],string>={login_api_key:'API Key 登录',login_device_code:'ChatGPT 设备码登录',account:'查询账户',logout:'退出授权账户'};
 const operationState=(status:SDKIdentityOperation['status'])=>status==='queued'?'等待执行位置':identityOperationState[status];
@@ -41,7 +42,7 @@ async function tick(){await load();if(!disposed)timer=setTimeout(tick,2500)}onMo
   <p v-if="canAdmin" class="security-note">找不到执行位置？<RouterLink to="/settings?section=diagnostics&binding=manual">在高级诊断中检查或手动指定</RouterLink>。</p>
   <p v-if="loading&&!items.length" role="status">正在读取授权账户…</p>
   <div class="identity-workspace">
-   <div class="security-table-wrap"><table class="security-table"><caption class="sr-only">授权账户及登录状态</caption><thead><tr><th>账户</th><th>状态</th><th>诊断</th></tr></thead><tbody>
+   <div class="security-table-wrap" role="region" aria-label="授权账户数据表，可横向滚动" tabindex="0"><table class="security-table"><caption class="sr-only">授权账户及登录状态</caption><thead><tr><th>账户</th><th>状态</th><th>诊断</th></tr></thead><tbody>
     <tr v-for="(item,index) in items" :key="item.identity.id" :aria-selected="selected===item.identity.id"><td><button type="button" class="identity-name" :aria-pressed="selected===item.identity.id" @click="select(item.identity.id)" @keydown="move($event,index)">{{item.identity.name}}</button><small>{{item.identity.kind==='chatgpt'?'ChatGPT':'API Key'}}</small></td><td>{{identityState[item.state]}}<small v-if="item.cleanupPending">等待退出清理</small></td><td><RouterLink :to="{path:'/settings',query:{section:'diagnostics',identity:item.identity.id}}">查看绑定与版本</RouterLink></td></tr>
     <tr v-if="!items.length&&!loading"><td colspan="3">尚无授权账户。使用模型配置中 API Key 的现有扫描方式继续保留。</td></tr>
    </tbody></table></div>

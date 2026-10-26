@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "17",
+    "attempt": 2
+  },
+  "sourceContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "sdkVersion": "0.5.0",
+  "sourcePath": "raw/codex-security/artifacts/checkpoints/worker.json",
+  "sourceSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "observedAt": "2026-10-21T08:00:00Z",
+  "sourceModifiedAt": null,
+  "kind": "checkpoint",
+  "label": "Fixtures / Mock Worker",
+  "threadId": null,
+  "truncated": false,
+  "content": "{\"candidates\":[{\"title\":\"Fixtures / Mock candidate\"}]}",
+  "redacted": true,
+  "assessment": "unverified"
+}

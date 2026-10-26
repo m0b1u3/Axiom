@@ -27,27 +27,30 @@ type Store struct {
 }
 
 type Task struct {
-	SDKParameters       *contracts.SDKScanParameters          `json:"sdkParameters,omitempty"`
-	SDKIdentity         *contracts.SDKIdentityRef             `json:"sdkIdentity,omitempty"`
-	ComponentScan       *contracts.ComponentScanRequest       `json:"componentScan,omitempty"`
-	ComponentPlanning   *contracts.ComponentPlanningOperation `json:"componentPlanning,omitempty"`
-	GitTarget           *contracts.GitDiffTarget              `json:"gitTarget,omitempty"`
-	SDKOperationKind    string                                `json:"sdkOperationKind,omitempty"`
-	SDKOperation        *contracts.SDKOperation               `json:"sdkOperation,omitempty"`
-	SDKOperationOrigin  int64                                 `json:"-"`
-	ParentExecution     *contracts.ExecutionRef               `json:"parentExecution,omitempty"`
-	ParentState         *contracts.SDKParentState             `json:"-"`
-	ScanInput           *contracts.ScanInput                  `json:"scanInput,omitempty"`
-	BudgetAccounting    bool                                  `json:"-"`
-	MaxTotalCostUSD     *float64                              `json:"-"`
-	ExecutionMaxCostUSD *float64                              `json:"-"`
-	ID                  int64                                 `json:"id"`
-	ScanNo              string                                `json:"scanNo"`
-	SourcePath          string                                `json:"sourcePath"`
-	Provider            string                                `json:"provider"`
-	Model               string                                `json:"model"`
-	BaseURL             string                                `json:"baseUrl"`
-	ScanMode            string                                `json:"scanMode"`
+	InterimReviewStart   *InterimReviewStart                   `json:"-"`
+	InterimReviewGroupID int64                                 `json:"interimReviewGroupId,omitempty"`
+	DeepResume           *contracts.DeepResumeAssignment       `json:"deepResume,omitempty"`
+	SDKParameters        *contracts.SDKScanParameters          `json:"sdkParameters,omitempty"`
+	SDKIdentity          *contracts.SDKIdentityRef             `json:"sdkIdentity,omitempty"`
+	ComponentScan        *contracts.ComponentScanRequest       `json:"componentScan,omitempty"`
+	ComponentPlanning    *contracts.ComponentPlanningOperation `json:"componentPlanning,omitempty"`
+	GitTarget            *contracts.GitDiffTarget              `json:"gitTarget,omitempty"`
+	SDKOperationKind     string                                `json:"sdkOperationKind,omitempty"`
+	SDKOperation         *contracts.SDKOperation               `json:"sdkOperation,omitempty"`
+	SDKOperationOrigin   int64                                 `json:"-"`
+	ParentExecution      *contracts.ExecutionRef               `json:"parentExecution,omitempty"`
+	ParentState          *contracts.SDKParentState             `json:"-"`
+	ScanInput            *contracts.ScanInput                  `json:"scanInput,omitempty"`
+	BudgetAccounting     bool                                  `json:"-"`
+	MaxTotalCostUSD      *float64                              `json:"-"`
+	ExecutionMaxCostUSD  *float64                              `json:"-"`
+	ID                   int64                                 `json:"id"`
+	ScanNo               string                                `json:"scanNo"`
+	SourcePath           string                                `json:"sourcePath"`
+	Provider             string                                `json:"provider"`
+	Model                string                                `json:"model"`
+	BaseURL              string                                `json:"baseUrl"`
+	ScanMode             string                                `json:"scanMode"`
 	// 路径子集扫描白名单（JSON 数组字符串，空串 = 全量）。
 	IncludePaths                string                        `json:"includePaths"`
 	ScanFocus                   string                        `json:"scanFocus"`
@@ -259,7 +262,7 @@ func (s *Store) DeleteModelConfig(ctx context.Context, id int64) error {
 	return err
 }
 
-// SetModelConfigCompatibility 回写兼容性验证结果（测试连通性后由 server 调用）。
+// SetModelConfigCompatibility 回写显式能力验证结果；连通性测试不得调用。
 func (s *Store) SetModelConfigCompatibility(ctx context.Context, id int64, compat string) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE model_configs SET compatibility_status = ?, updated_at = ? WHERE id = ?`,
 		compat, time.Now().UTC().Format(time.RFC3339), id)
@@ -340,6 +343,10 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	if _, err := db.Exec(nativeResultSQL); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(deepResumeSQL); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -447,6 +454,10 @@ func Open(path string) (*Store, error) {
 			return nil, err
 		}
 	}
+	if err := migrateModelCompatibilitySQLite(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	return &Store{db: &database{DB: db}}, nil
 }
 
@@ -510,6 +521,15 @@ func (s *Store) InsertPending(ctx context.Context, t Task) (int64, error) {
 		return 0, err
 	}
 	defer tx.Rollback()
+	if t.InterimReviewStart != nil {
+		existing, err := s.prepareInterimReview(ctx, tx, &t)
+		if err != nil {
+			return 0, err
+		}
+		if existing > 0 {
+			return existing, tx.Commit()
+		}
+	}
 	if t.SDKIdentity != nil {
 		if !s.IsPostgres() {
 			return 0, ErrSDKIdentity
@@ -532,12 +552,24 @@ func (s *Store) InsertPending(ctx context.Context, t Task) (int64, error) {
 			return 0, errors.New("SDK 操作必须使用来源冻结的源码与模型")
 		}
 		if t.SDKOperation.Kind == contracts.SDKOperationKindValidate {
+			if t.InterimReviewStart != nil {
+				if t.SDKOperation.Origin == nil {
+					return 0, errors.New("候选复核缺少原执行")
+				}
+				if e := tx.QueryRowContext(ctx, `SELECT status FROM scan_attempts WHERE task_id=? AND attempt=?`, t.SDKOperationOrigin, t.SDKOperation.Origin.Attempt).Scan(&status); e != nil {
+					return 0, e
+				}
+				attempt = t.SDKOperation.Origin.Attempt
+			}
 			if t.SDKOperation.Origin == nil || t.SDKOperation.Origin.TaskID != contracts.TaskID(fmt.Sprint(t.SDKOperationOrigin)) || t.SDKOperation.Origin.Attempt != attempt || !IsTerminalStatus(status) {
 				return 0, errors.New("来源执行已变化，请刷新后重新选择漏洞")
 			}
 			var n int
-			if e := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM findings WHERE id=? AND scan_id=?`, *t.SDKOperation.FindingID, t.SDKOperationOrigin).Scan(&n); e != nil || n != 1 {
-				return 0, errors.New("来源漏洞已变化")
+			if t.InterimReviewStart == nil {
+				n = 0
+				if e := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM findings WHERE id=? AND scan_id=?`, *t.SDKOperation.FindingID, t.SDKOperationOrigin).Scan(&n); e != nil || n != 1 {
+					return 0, errors.New("来源漏洞已变化")
+				}
 			}
 		} else if t.ScanInput != nil {
 			var original string
@@ -627,6 +659,9 @@ INSERT INTO scan_tasks (
 		if _, e = tx.ExecContext(ctx, `INSERT INTO sdk_operations(task_id,origin_task_id,kind,document_json) VALUES(?,?,?,?)`, id, nullIfEmptyZero(t.SDKOperationOrigin), operation.Kind, string(raw)); e != nil {
 			return 0, e
 		}
+	}
+	if err := s.saveInterimReview(ctx, tx, t, id); err != nil {
+		return 0, err
 	}
 	return id, tx.Commit()
 }
@@ -781,6 +816,9 @@ WHERE id = ? AND status IN ('pending','claimed','scanning')`, now, id)
 		return false, err
 	}
 	n, err := res.RowsAffected()
+	if err == nil && n > 0 {
+		_, err = s.db.ExecContext(ctx, `UPDATE deep_resume_runs SET status='canceled' WHERE task_id=? AND status='pending'`, id)
+	}
 	return n > 0, err
 }
 
@@ -881,6 +919,12 @@ func (s *Store) retryComponentExecution(ctx context.Context, id int64, expected 
 			return false, err
 		}
 	}
+	if _, err = tx.ExecContext(ctx, `UPDATE deep_resume_runs SET status='canceled' WHERE task_id=? AND status='pending'`, id); err != nil {
+		return false, err
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE deep_resume_checks SET state='expired' WHERE task_id=? AND state IN ('queued','checking','ready')`, id); err != nil {
+		return false, err
+	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM findings WHERE scan_id = ?`, id); err != nil {
 		return false, err
 	}
@@ -973,6 +1017,9 @@ WHERE t.id = ?`, id)
 		return nil, e
 	}
 	t.ScanInput = input
+	if e := s.loadDeepResume(ctx, &t); e != nil {
+		return nil, e
+	}
 	if e := s.loadSDKParameters(ctx, &t); e != nil {
 		return nil, e
 	}
@@ -991,6 +1038,14 @@ WHERE t.id = ?`, id)
 	}
 	if e := s.loadSDKOperation(ctx, &t); e != nil {
 		return nil, e
+	}
+	if s.IsPostgres() && t.SDKOperation != nil {
+		var group int64
+		err := s.db.QueryRowContext(ctx, `SELECT group_id FROM interim_reviews WHERE task_id=?`, t.ID).Scan(&group)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		t.InterimReviewGroupID = group
 	}
 	var parentID string
 	var parentAttempt int64

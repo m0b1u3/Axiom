@@ -19,7 +19,7 @@ async function loadOperations(){const id=selected.value?.identity.id,n=++generat
 watch(()=>selected.value?.identity.id,()=>{operations.value=[];void loadOperations()});onUnmounted(()=>generation++);
 async function load(){if(loading.value)return;loading.value=true;error.value='';try{items.value=checkedIdentities(await api.sdkIdentities())}catch(e){error.value='授权诊断读取失败：'+(e as Error).message}finally{loading.value=false}}
 function select(value:string){void router.replace({query:{...route.query,identity:value}})}
-function bind(){if(!/^[A-Za-z0-9_-]{1,128}$/.test(agent.value))return;void router.push({path:'/settings',query:{section:'models',tab:'accounts',agent:agent.value}})}
+function bind(){if(!/^[A-Za-z0-9_-]{1,128}$/.test(agent.value))return;void router.push({path:'/models',query:{tab:'accounts',agent:agent.value}})}
 onMounted(load);
 </script>
 
@@ -31,7 +31,7 @@ onMounted(load);
   <template v-if="selected">
    <label for="diagnostic-identity">授权账户</label><Select id="diagnostic-identity" aria-label="查看授权诊断" :model-value="selected.identity.id" :options="options" @update:model-value="select"/>
    <dl><dt>身份标识</dt><dd>{{selected.identity.id}}</dd><dt>Agent ID</dt><dd>{{selected.identity.agentId}}</dd><dt>凭据版本</dt><dd>{{selected.identity.generation}}</dd><dt>记录状态</dt><dd>{{identityState[selected.state]}}</dd><dt>SDK 最近检查</dt><dd>{{selected.checkedAt?absoluteTime(selected.checkedAt):'尚未检查'}}</dd><dt>凭据清理</dt><dd>{{selected.cleanupPending?'等待绑定节点确认；已禁止新任务使用':'无待完成清理'}}</dd></dl>
-   <RouterLink :to="{path:'/settings',query:{section:'models',tab:'accounts',identity:selected.identity.id}}">返回此授权账户</RouterLink>
+   <RouterLink :to="{path:'/models',query:{tab:'accounts',identity:selected.identity.id}}">返回此授权账户</RouterLink>
    <DiagnosticSnapshot title="授权原始快照" :value="selected" filename="authorization-snapshot.json"/>
    <details v-if="canAdmin"><summary>授权操作与凭据版本</summary><p v-if="operationError" role="alert">{{operationError}}<Button variant="ghost" size="sm" @click="loadOperations">重读授权操作</Button></p><div class="operation-table"><table aria-label="授权操作版本记录"><thead><tr><th>操作</th><th>凭据版本</th><th>结果</th><th>时间</th></tr></thead><tbody><tr v-for="op in operations" :key="op.id"><td>{{identityAction[op.action]}}<small v-if="op.error">{{op.error}}</small></td><td>{{op.identity.generation}}</td><td>{{identityOperationState[op.status]}}</td><td>{{absoluteTime(op.createdAt)}}</td></tr><tr v-if="!operations.length&&!operationError"><td colspan="4">尚无授权操作。</td></tr></tbody></table></div></details>
   </template>

@@ -18,7 +18,7 @@ type Preset struct {
 	Label         string   `json:"label"`         // 展示名
 	BaseURL       string   `json:"baseUrl"`       // 表单预填建议（用户可改）；空 = SDK 默认（openai）或必填（custom）
 	CredentialEnv string   `json:"credentialEnv"` // API Key 注入子进程用的环境变量名
-	WireAPI       string   `json:"wireApi"`       // Codex wire_api：responses | chat
+	WireAPI       string   `json:"wireApi"`       // Codex wire_api：responses only
 	Icon          string   `json:"icon"`          // 品牌图标名（cc-switch 同款；空 = 前端用通用图标）
 	IconColor     string   `json:"iconColor"`     // 品牌色（currentColor 图标需要）
 	Website       string   `json:"website"`       // 官网链接（表单预填）
@@ -76,7 +76,7 @@ func Keys() []string {
 	return keys
 }
 
-// WireAPI 该 provider 的默认上游协议（responses | chat）。
+// WireAPI 该 provider 的默认上游协议（responses only）。
 func WireAPI(key string) string {
 	if p, ok := Lookup(key); ok && p.WireAPI != "" {
 		return p.WireAPI

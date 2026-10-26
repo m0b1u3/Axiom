@@ -61,6 +61,7 @@ onUnmounted(()=>{disposed=true;generation++;});
     <p class="chain-note">任务 {{graph.execution.taskId}} · 第 {{graph.execution.attempt}} 次执行 · {{graph.origin==='legacy_projection'?'历史字段投影':'SDK 证据引用'}} · {{graph.completeness==='complete'?'已有字段映射完整':graph.completeness==='empty'?'证据不足':'部分图谱'}}。推断关系使用虚线；代码存在不等于漏洞已验证。</p>
     <p v-if="gitBinding" class="chain-note">Git 提交差异 · Base {{gitBinding.target.baseCommit}} → HEAD {{gitBinding.target.headCommit}}。本图的代码观察只对照冻结 HEAD；base 的删除内容不视为 HEAD 中已观察的代码。</p>
     <p v-else-if="gitTarget" class="chain-error" role="alert">Git 证据版本绑定缺失或不匹配；请查看原始归档，不将片段视为选定提交的证据。</p>
+    <p v-if="graph.origin==='review_archive'" class="chain-note">此图来自平台独立复核归档：SDK 源码复核可报告，未运行 PoC 或复现；原扫描与 SDK 原始结果保持不变。</p>
     <details class="chain-origin"><summary>执行来源与完整性</summary><dl><dt>源码快照 SHA-256</dt><dd>{{graph.sourceContentHash??'历史记录未知'}}</dd><dt>归档 SHA-256</dt><dd>{{graph.archiveSha256??'历史记录未知'}}</dd><dt>图谱投影版本</dt><dd>{{graph.projectorVersion}}</dd></dl></details>
     <div class="chain-toolbar" role="group" aria-label="证据链视图">
      <Button size="sm" :variant="view==='relations'?'secondary':'ghost'" :aria-pressed="view==='relations'" @click="view='relations'">证据关系</Button>

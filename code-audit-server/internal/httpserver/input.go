@@ -171,6 +171,9 @@ func resolveModel(v createScanRequest, cfg *store.ModelConfigRow) (contracts.Res
 	if wire == "" {
 		wire = preset.WireAPI
 	}
+	if wire != "responses" {
+		return contracts.ResolvedModel{}, errors.New("Chat 协议适配已移除；请更新为支持 Responses 的模型配置，并创建新任务")
+	}
 	if baseURL == "" && provider != "openai" {
 		baseURL = preset.BaseURL
 	}

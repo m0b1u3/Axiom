@@ -83,6 +83,14 @@ func (s *Server) findingEvidenceGraph(w http.ResponseWriter, r *http.Request, _ 
 		httputil.Error(w, 409, 40900, "证据合同、执行身份或原始引用不匹配；完整历史报告仍可读取")
 		return
 	}
+	if raw, ok := finding.Extensions.Value["axiomInterimReviewArchive"]; ok {
+		provenance, err := contracts.DecodeInterimReviewArchive(raw, &ref)
+		if err != nil || string(provenance.SourceContentHash) != task.SourceContentHash {
+			httputil.Error(w, 409, 40900, "独立复核归档的执行或源码绑定不匹配")
+			return
+		}
+		graph.Origin = "review_archive"
+	}
 	if task.GitTarget != nil {
 		for i := range graph.Nodes {
 			n := &graph.Nodes[i]

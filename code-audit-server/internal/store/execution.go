@@ -20,6 +20,7 @@ var ErrCompletionConflict = errors.New("completion content conflicts with the ar
 var ErrInvalidResult = errors.New("invalid execution result")
 
 type ClaimLimits struct {
+	SDKDeepResumeCapable  bool
 	SDKConcurrencyCapable bool
 	SDKParametersCapable  bool
 	SDKIdentityCapable    bool
@@ -133,10 +134,10 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 		return nil, err
 	}
 	// Exhausted lease recovery is terminal rather than an unbounded model-cost loop.
-	if _, err = tx.ExecContext(ctx, `UPDATE scan_attempts a SET status='failed',finished_at=?,error_code='lease_expired',error_message='automatic recovery limit reached' FROM scan_tasks t WHERE a.task_id=t.id AND a.attempt=t.attempt AND t.status IN ('claimed','scanning') AND (t.lease_expires_at IS NULL OR t.lease_expires_at < ?) AND t.automatic_retries >= ?`, stamp, stamp, limits.MaxRecoveries); err != nil {
+	if _, err = tx.ExecContext(ctx, `UPDATE scan_attempts a SET status='failed',finished_at=?,error_code='lease_expired',error_message='automatic recovery limit reached' FROM scan_tasks t WHERE a.task_id=t.id AND a.attempt=t.attempt AND t.status IN ('claimed','scanning') AND (t.lease_expires_at IS NULL OR t.lease_expires_at < ?) AND (t.automatic_retries >= ? OR EXISTS(SELECT 1 FROM deep_resume_runs d WHERE d.task_id=t.id AND d.attempt=t.attempt))`, stamp, stamp, limits.MaxRecoveries); err != nil {
 		return nil, err
 	}
-	if _, err = tx.ExecContext(ctx, `UPDATE scan_tasks SET status='failed',finished_at=?,error_code='lease_expired',error_message='automatic recovery limit reached',lease_expires_at=NULL WHERE status IN ('claimed','scanning') AND (lease_expires_at IS NULL OR lease_expires_at < ?) AND automatic_retries >= ?`, stamp, stamp, limits.MaxRecoveries); err != nil {
+	if _, err = tx.ExecContext(ctx, `UPDATE scan_tasks SET status='failed',finished_at=?,error_code='lease_expired',error_message='automatic recovery limit reached',lease_expires_at=NULL WHERE status IN ('claimed','scanning') AND (lease_expires_at IS NULL OR lease_expires_at < ?) AND (automatic_retries >= ? OR EXISTS(SELECT 1 FROM deep_resume_runs d WHERE d.task_id=scan_tasks.id AND d.attempt=scan_tasks.attempt))`, stamp, stamp, limits.MaxRecoveries); err != nil {
 		return nil, err
 	}
 	if _, err = tx.ExecContext(ctx, `UPDATE task_cost_attempts c SET state='unknown',reason='execution_interrupted',updated_at=? FROM scan_attempts a WHERE a.task_id=c.task_id AND a.attempt=c.attempt AND c.state='active' AND (a.status NOT IN ('claimed','scanning') OR a.lease_expires_at<?)`, securityTime(now), stamp); err != nil {
@@ -168,9 +169,11 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 		runtimeAPI = int(runtime.ControlAPI)
 		limits.SDKConcurrencyCapable = limits.SDKConcurrencyCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKConcurrency(*runtime.ScannerDescriptionVersion)
 		limits.SDKParametersCapable = limits.SDKParametersCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKParameters(*runtime.ScannerDescriptionVersion)
+		limits.SDKDeepResumeCapable = limits.SDKDeepResumeCapable && runtime.ScannerDescriptionVersion != nil && *runtime.ScannerDescriptionVersion == 14
 		limits.SDKIdentityCapable = limits.SDKIdentityCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKIdentity(*runtime.ScannerDescriptionVersion)
 	}
 	if runtimeSeen == nil || now.Sub(*runtimeSeen) >= 30*time.Second {
+		limits.SDKDeepResumeCapable = false
 		limits.SDKIdentityCapable = false
 		limits.SDKParametersCapable = false
 		limits.SDKConcurrencyCapable = false
@@ -190,12 +193,13 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
  AND (`+strings.Join(filters, " OR ")+`)
  AND (NOT EXISTS(SELECT 1 FROM task_sdk_identities b WHERE b.task_id=t.id) OR (? AND EXISTS(SELECT 1 FROM task_sdk_identities b JOIN sdk_identities i ON i.id=b.identity_id WHERE b.task_id=t.id AND i.agent_id=? AND i.state='authenticated' AND i.authenticated=TRUE AND i.cleanup_pending=FALSE AND i.generation=(b.reference_json::jsonb->>'generation')::bigint AND (`+fmt.Sprint(limits.SDKConcurrencyCapable)+` OR NOT EXISTS(SELECT 1 FROM task_sdk_identities active_binding JOIN scan_tasks active_task ON active_task.id=active_binding.task_id WHERE active_binding.identity_id=i.id AND active_task.id<>t.id AND active_task.status IN ('claimed','scanning','cancel_requested') AND active_task.lease_expires_at>=?)) AND NOT EXISTS(SELECT 1 FROM sdk_identity_operations o WHERE o.identity_id=i.id AND o.status IN ('queued','running','waiting')))))
  AND (NOT EXISTS(SELECT 1 FROM sdk_operations op WHERE op.task_id=t.id) OR `+fmt.Sprint(containsOperationJob(observations))+`)
+ AND (NOT EXISTS(SELECT 1 FROM deep_resume_runs d WHERE d.task_id=t.id AND d.attempt=t.attempt+1 AND d.status='pending') OR (`+fmt.Sprint(limits.SDKDeepResumeCapable)+` AND EXISTS(SELECT 1 FROM deep_resume_runs d WHERE d.task_id=t.id AND d.attempt=t.attempt+1 AND d.status='pending' AND d.agent_id=?)))
  AND (COALESCE(t.sdk_parameters_json,'')='' OR `+fmt.Sprint(limits.SDKParametersCapable)+`)
  AND (`+fmt.Sprint(limits.SDKConcurrencyCapable)+` OR NOT `+s.needsSDKConcurrencySQL("t")+`)
  AND (NOT EXISTS(SELECT 1 FROM task_scan_inputs si WHERE si.task_id=t.id) OR ?)
  AND ((t.max_cost_usd IS NULL AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL)) OR (t.input_contract_version IN (1,2,3,4,5,6) AND ?))
  AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL AND (EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=t.id AND c.state='unknown') OR COALESCE((SELECT SUM(c.booked_micros) FROM task_cost_attempts c WHERE c.task_id=t.id),0)>=b.total_micros))
- ORDER BY t.queued_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, stamp, limits.SDKIdentityCapable, agent, stamp, containsJob4(observations), capabilities.MaxCostUSD).Scan(&id, &attempt, &previous)
+ ORDER BY t.queued_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, stamp, limits.SDKIdentityCapable, agent, stamp, agent, containsJob4(observations), capabilities.MaxCostUSD).Scan(&id, &attempt, &previous)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, tx.Commit()
 	}
@@ -225,6 +229,9 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 		return nil, err
 	}
 	if err = s.reserveComponentScan(ctx, tx, id, attempt, grant); err != nil {
+		return nil, err
+	}
+	if _, err = tx.ExecContext(ctx, `UPDATE deep_resume_runs SET status='claimed' WHERE task_id=? AND attempt=? AND status='pending'`, id, attempt); err != nil {
 		return nil, err
 	}
 	if err = s.reserveAttemptBudget(ctx, tx, id, attempt, grant); err != nil {

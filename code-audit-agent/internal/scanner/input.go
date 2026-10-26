@@ -38,6 +38,7 @@ func entryArguments(directory string) []string {
 
 // Probe does not supply scan credentials and must not load or start the SDK.
 type Capabilities struct {
+	DeepResumeVersion  int
 	ConcurrencyVersion int
 	ParametersVersion  int
 	IdentityVersion    int
@@ -73,6 +74,12 @@ func parseDescription(raw []byte) (Capabilities, error) {
 	}
 	var value any
 	switch h.SchemaVersion {
+	case 14:
+		v, e := contracts.DecodeScannerDescriptionV14(raw, nil)
+		if e != nil {
+			return Capabilities{}, e
+		}
+		value = v
 	case 13:
 		v, e := contracts.DecodeScannerDescriptionV13(raw, nil)
 		if e != nil {
@@ -163,6 +170,7 @@ func parseDescription(raw []byte) (Capabilities, error) {
 		ParametersVersion  int    `json:"sdkParametersVersion"`
 		IdentityVersion    int    `json:"sdkIdentityVersion"`
 		Version            string `json:"version"`
+		DeepResumeVersion  int    `json:"sdkDeepResumeVersion"`
 		Runtime            struct {
 			Versions struct{ Assignment, Job, Progress, Event, Result, Completion []int64 } `json:"versions"`
 		} `json:"runtime"`
@@ -177,7 +185,7 @@ func parseDescription(raw []byte) (Capabilities, error) {
 	if e = json.Unmarshal(canonical, &d); e != nil {
 		return Capabilities{}, e
 	}
-	c := Capabilities{ConcurrencyVersion: d.ConcurrencyVersion, ParametersVersion: d.ParametersVersion, IdentityVersion: d.IdentityVersion, DescriptionVersion: h.SchemaVersion, Build: d.Version, Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}, MaxCostUSD: d.Capabilities.MaxCostUSD}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
+	c := Capabilities{DeepResumeVersion: d.DeepResumeVersion, ConcurrencyVersion: d.ConcurrencyVersion, ParametersVersion: d.ParametersVersion, IdentityVersion: d.IdentityVersion, DescriptionVersion: h.SchemaVersion, Build: d.Version, Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}, MaxCostUSD: d.Capabilities.MaxCostUSD}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
 	if h.SchemaVersion >= 2 && d.Capabilities.JobFile {
 		for _, v := range d.Runtime.Versions.Assignment {
 			if v == 1 {
@@ -308,6 +316,27 @@ func prepareJob(ctx context.Context, req Request) (string, error) {
 		}
 	}
 	if req.SDKOperation != nil {
+		if req.SDKOperation.Finding != nil {
+			if raw, ok := (*req.SDKOperation.Finding)["axiomInterimReview"]; ok {
+				envelope, e := contracts.DecodeInterimReviewEnvelope(raw, nil)
+				if e != nil {
+					return "", e
+				}
+				input, e := contracts.ReadInterimReview(envelope, string(job.Source.ContentHash))
+				if e != nil {
+					return "", e
+				}
+				linked := false
+				for _, m := range input.Members {
+					if req.SDKOperation.Origin != nil && m.Execution == *req.SDKOperation.Origin {
+						linked = true
+					}
+				}
+				if !linked {
+					return "", errors.New("candidate review belongs to another origin execution")
+				}
+			}
+		}
 		if !containsOperationJob(caps) || req.ScanInput == nil || req.ResultContractVersion != 1 || req.ObservationContractVersion != 1 {
 			return "", errors.New("SDK operation contracts unsupported")
 		}

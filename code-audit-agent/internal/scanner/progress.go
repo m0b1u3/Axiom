@@ -29,5 +29,10 @@ func ReadContractProgress(output string, execution contracts.ExecutionRef) (*con
 	if e != nil {
 		return nil, e
 	}
+	if raw, ok := v.Extensions.Value["standardInterim"]; ok {
+		if _, err := contracts.DecodeInterimObservation(raw, &execution); err != nil {
+			return nil, fmt.Errorf("invalid interim observation contract")
+		}
+	}
 	return &v, nil
 }

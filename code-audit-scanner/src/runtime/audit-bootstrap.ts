@@ -9,7 +9,12 @@ const exec=promisify(execFile);
 export async function prepareAuditWorkspace(task:ScanTask):Promise<{prompt:string;restore:()=>void;ensureTemp:()=>void}>{
  const root=path.join(task.outputPath,'runtime/preflight');const temp=path.join(task.outputPath,'raw/codex-security/artifacts/tmp');
  await mkdir(root,{recursive:true,mode:0o700});await mkdir(temp,{recursive:true,mode:0o700});
- const keys=['TMPDIR','TMP','TEMP'];const previous=keys.map(k=>process.env[k]);for(const k of keys)process.env[k]=temp;
+ // SDK archiveExisting can rename the entire raw output before the first
+ // SessionEvent. Codex's synthetic mount registry needs a stable temp root
+ // even during that bootstrap window; evidence scratch remains in artifacts.
+ const bootstrapTemp=path.join(task.outputPath,'runtime','sdk-tmp');
+ await mkdir(bootstrapTemp,{recursive:true,mode:0o700});
+ const keys=['TMPDIR','TMP','TEMP'];const previous=keys.map(k=>process.env[k]);for(const k of keys)process.env[k]=bootstrapTemp;
  const ensureTemp=()=>mkdirSync(temp,{recursive:true,mode:0o700});
  const restore=()=>keys.forEach((k,i)=>{if(previous[i]===undefined)delete process.env[k];else process.env[k]=previous[i]});
  const scope=task.includePaths?.length===1?path.join(task.sourcePath,task.includePaths[0]!):task.sourcePath;

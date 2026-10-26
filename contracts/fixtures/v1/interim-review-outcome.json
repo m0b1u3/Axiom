@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "19",
+    "attempt": 1
+  },
+  "sdkVersion": "0.5.0",
+  "sourceContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "inputSha256": "f2ee71725d3bd2d780f76659795fefaae0fa3d971f973d1ea562e823e61d3806",
+  "reportSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "disposition": "reportable",
+  "assessment": "source_review",
+  "reproduced": false
+}

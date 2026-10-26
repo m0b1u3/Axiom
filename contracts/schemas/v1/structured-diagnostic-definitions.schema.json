@@ -1,0 +1,555 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json",
+  "$defs": {
+    "StructuredDiagnosticProtocol": {
+      "type": "string",
+      "enum": [
+        "responses",
+        "chat"
+      ]
+    },
+    "StructuredDiagnosticProfile": {
+      "type": "string",
+      "enum": [
+        "native_schema",
+        "described_schema",
+        "json_object"
+      ]
+    },
+    "StructuredDiagnosticScenario": {
+      "type": "string",
+      "enum": [
+        "title_only",
+        "complete",
+        "invalid_json",
+        "wrong_disposition",
+        "missing_report",
+        "interrupted",
+        "upstream_error"
+      ]
+    },
+    "StructuredDiagnosticRequestPreview": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticProfile"
+        },
+        "protocol": {
+          "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticProtocol"
+        },
+        "path": {
+          "type": "string",
+          "enum": [
+            "/responses",
+            "/chat/completions"
+          ]
+        },
+        "bodyJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 65536
+        },
+        "bodySha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "formatSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "promptSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "profile",
+        "protocol",
+        "path",
+        "bodyJson",
+        "bodySha256",
+        "formatSha256",
+        "promptSha256"
+      ],
+      "additionalProperties": false
+    },
+    "StructuredDiagnosticReplay": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticScenario"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "transport": {
+          "type": "string",
+          "enum": [
+            "completed",
+            "interrupted",
+            "http_error"
+          ]
+        },
+        "httpStatus": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "responseJson": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "responseSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "transport",
+        "httpStatus",
+        "responseJson",
+        "responseSha256"
+      ],
+      "additionalProperties": false
+    },
+    "StructuredDiagnosticCatalog": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.5.0"
+        },
+        "catalogId": {
+          "type": "string",
+          "const": "fixed-validation-v1"
+        },
+        "fixture": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "sourceSha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "fileCount": {
+              "type": "integer",
+              "const": 3
+            },
+            "totalBytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 4096
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "path",
+                  "content",
+                  "sha256"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": [
+            "label",
+            "sourceSha256",
+            "fileCount",
+            "totalBytes",
+            "files"
+          ],
+          "additionalProperties": false
+        },
+        "sdkPromptSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "nativeFormatSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "requests": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticRequestPreview"
+          },
+          "minItems": 3,
+          "maxItems": 6,
+          "anyOf": [
+            {
+              "minItems": 3,
+              "maxItems": 3
+            },
+            {
+              "minItems": 6,
+              "maxItems": 6
+            }
+          ]
+        },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticReplay"
+          },
+          "minItems": 7,
+          "maxItems": 7
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "maxLength": 256
+              },
+              "protocols": {
+                "type": "array",
+                "items": {
+                  "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticProtocol"
+                },
+                "minItems": 1,
+                "maxItems": 2
+              }
+            },
+            "required": [
+              "label",
+              "url",
+              "protocols"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "sdkVersion",
+        "catalogId",
+        "fixture",
+        "sdkPromptSha256",
+        "nativeFormatSha256",
+        "requests",
+        "scenarios",
+        "references"
+      ],
+      "additionalProperties": false
+    },
+    "StructuredDiagnosticRequest": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "mode": {
+          "type": "string",
+          "const": "offline"
+        },
+        "catalogSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "protocol": {
+          "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticProtocol"
+        },
+        "scenario": {
+          "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticScenario"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "mode",
+        "catalogSha256",
+        "protocol",
+        "scenario"
+      ],
+      "additionalProperties": false
+    },
+    "StructuredDiagnosticCheck": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticProfile"
+        },
+        "requestSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "formatSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "responseSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "transport": {
+          "type": "string",
+          "enum": [
+            "completed",
+            "interrupted",
+            "http_error"
+          ]
+        },
+        "httpStatus": {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        "jsonValid": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "schemaValid": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bodyState": {
+          "type": "string",
+          "enum": [
+            "body_present",
+            "title_only",
+            "empty",
+            "not_evaluated"
+          ]
+        },
+        "disposition": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "reportable",
+                "suppressed",
+                "not_applicable",
+                "deferred"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "errorCode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "response_json_invalid",
+                "response_schema_invalid",
+                "report_body_incomplete",
+                "transport_incomplete",
+                "upstream_http_error"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "profile",
+        "requestSha256",
+        "formatSha256",
+        "responseSha256",
+        "transport",
+        "httpStatus",
+        "jsonValid",
+        "schemaValid",
+        "bodyState",
+        "disposition",
+        "errorCode"
+      ],
+      "additionalProperties": false
+    },
+    "StructuredDiagnosticRecord": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{32}$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.5.0"
+        },
+        "mode": {
+          "type": "string",
+          "const": "offline"
+        },
+        "catalogSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "sourceSha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "protocol": {
+          "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticProtocol"
+        },
+        "scenario": {
+          "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticScenario"
+        },
+        "upstreamContacted": {
+          "type": "boolean",
+          "const": false
+        },
+        "providerCompatibility": {
+          "type": "string",
+          "const": "not_tested"
+        },
+        "model": {
+          "type": "string",
+          "const": "not_loaded"
+        },
+        "inputTokens": {
+          "type": "integer",
+          "const": 0
+        },
+        "outputTokens": {
+          "type": "integer",
+          "const": 0
+        },
+        "estimatedUsd": {
+          "type": "number",
+          "const": 0
+        },
+        "credentialLoaded": {
+          "type": "boolean",
+          "const": false
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticCheck"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "id",
+        "createdAt",
+        "sdkVersion",
+        "mode",
+        "catalogSha256",
+        "sourceSha256",
+        "protocol",
+        "scenario",
+        "upstreamContacted",
+        "providerCompatibility",
+        "model",
+        "inputTokens",
+        "outputTokens",
+        "estimatedUsd",
+        "credentialLoaded",
+        "results"
+      ],
+      "additionalProperties": false
+    },
+    "StructuredDiagnosticPage": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticRecord"
+          },
+          "minItems": 0,
+          "maxItems": 50
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "pageSize": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "items",
+        "total",
+        "page",
+        "pageSize"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

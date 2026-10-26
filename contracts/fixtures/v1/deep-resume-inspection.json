@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "sdkVersion": "0.5.0",
+  "execution": {
+    "taskId": "17",
+    "attempt": 1
+  },
+  "origin": {
+    "taskId": "17",
+    "attempt": 1
+  },
+  "agentId": "fixture-agent",
+  "checkedAt": "2026-10-21T08:00:00Z",
+  "eligible": true,
+  "reason": "Fixtures / Mock: original Deep state certified",
+  "sourceHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "configurationHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "scanId": "fixture-scan",
+  "threadId": "fixture-thread",
+  "proofHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "baseline": {
+    "estimatedUsd": 1.25,
+    "usage": {
+      "inputTokens": 1000,
+      "cachedInputTokens": 500,
+      "cacheWriteInputTokens": null,
+      "outputTokens": 50,
+      "reasoningOutputTokens": null,
+      "totalTokens": 1050
+    }
+  }
+}

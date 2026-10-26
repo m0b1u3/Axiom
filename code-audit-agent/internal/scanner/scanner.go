@@ -23,6 +23,8 @@ const (
 )
 
 type Request struct {
+	DeepResumeContext          *contracts.DeepResumeContext
+	DeepResume                 *contracts.DeepResumeAssignment
 	SDKParameters              *contracts.SDKParametersAssignment
 	SDKIdentity                *contracts.SDKTaskIdentity
 	DataDir, AgentID           string
@@ -119,6 +121,20 @@ func Run(ctx context.Context, req Request) (*Result, error) {
 			return nil, err
 		}
 		args = append(entryArguments(req.ScannerDir), "--job", jobPath)
+		for _, sidecar := range []struct {
+			value      any
+			kind       contracts.Kind
+			name, flag string
+		}{{req.DeepResumeContext, contracts.KindDeepResumeContext, "deep-resume-context", "--deep-resume-context"}, {req.DeepResume, contracts.KindDeepResumeAssignment, "deep-resume", "--deep-resume"}} {
+			if (sidecar.name == "deep-resume-context" && req.DeepResumeContext == nil) || (sidecar.name == "deep-resume" && req.DeepResume == nil) {
+				continue
+			}
+			file, e := prepareDeepSidecar(req, sidecar.value, sidecar.kind, sidecar.name)
+			if e != nil {
+				return nil, e
+			}
+			args = append(args, sidecar.flag, file)
+		}
 		if req.SDKParameters != nil {
 			file, e := prepareSDKParameters(ctx, req)
 			if e != nil {
@@ -207,17 +223,31 @@ func Run(ctx context.Context, req Request) (*Result, error) {
 			isolated = append(isolated, kv)
 		}
 	}
-	cmd.Env = append(isolated, "CODEX_SECURITY_STATE_DIR="+filepath.Join(req.OutputPath, "runtime", "sdk"))
+	state := filepath.Join(req.OutputPath, "runtime", "sdk")
+	if req.DeepResume != nil {
+		var e error
+		state, e = deepState(req.DataDir, req.OutputPath, req.DeepResume.Inspection.Origin, nil)
+		if e != nil {
+			return nil, e
+		}
+	}
+	cmd.Env = append(isolated, "CODEX_SECURITY_STATE_DIR="+state)
 	if req.SDKIdentity != nil {
 		_, home, e := prepareTaskIdentity(req)
 		if e != nil {
 			return nil, e
 		}
-		root := filepath.Join(home, "executions", fmt.Sprint(req.TaskID)+"-"+fmt.Sprint(req.Attempt))
+		originAttempt := req.Attempt
+		if req.DeepResume != nil {
+			originAttempt = int(req.DeepResume.Inspection.Origin.Attempt)
+		}
+		root := filepath.Join(home, "executions", fmt.Sprint(req.TaskID)+"-"+fmt.Sprint(originAttempt))
 		if e = os.MkdirAll(root, 0700); e != nil {
 			return nil, e
 		}
-		defer os.RemoveAll(root)
+		if req.DeepResumeContext == nil && req.DeepResume == nil {
+			defer os.RemoveAll(root)
+		}
 		next := jobEnvironment(cmd.Env, "")
 		clean := next[:0]
 		for _, kv := range next {
@@ -328,7 +358,7 @@ func childEnvForCredential(provider, credential string, mock bool, overrides map
 	for _, kv := range os.Environ() {
 		key, _, _ := strings.Cut(kv, "=")
 		switch key {
-		case "AXIOM_DATABASE_URL", "AXIOM_AGENT_TOKEN", "AXIOM_MASTER_KEY", "AXIOM_JWT_SECRET", "AXIOM_ADMIN_PASSWORD":
+		case "AXIOM_DATABASE_URL", "AXIOM_TEST_DATABASE_URL", "AXIOM_AGENT_TOKEN", "AXIOM_MASTER_KEY", "AXIOM_JWT_SECRET", "AXIOM_ADMIN_PASSWORD":
 			continue
 		}
 		env = append(env, kv)

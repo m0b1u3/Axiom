@@ -1,3 +1,5 @@
+import {InterimFindings} from '../runtime/interim-findings.js';
+import {prepareDeepResume,saveDeepManifest,acquireDeepGuard,runPinnedDeep,deltaUsage,originOutput} from '../runtime/deep-resume.js';
 import {selectedSDKAuth} from "../runtime/sdk-identity.js";
 import {sdkScanTarget} from '../runtime/git-target.js';
 import {restoreSdkParentState,exportSdkParentState} from '../runtime/sdk-parent-state.js';
@@ -36,7 +38,7 @@ import {
   nativeOpenAI,
   AXIOM_CATALOG_FILE,
 } from "../provider/model-provider.js";
-import { startChatShim, type ChatShim } from "../proxy/chat-shim.js";
+import type {UpstreamProxy} from "../proxy/upstream-http.js";
 import { withIsolatedScanEnvironment } from "../runtime/scan-environment.js";
 import {
   finishPhaseFromStatus,
@@ -59,6 +61,11 @@ export class CodexSecurityEngine implements AuditEngine {
   readonly name = "codex-security";
 
   async scan(task: ScanTask, signal?: AbortSignal): Promise<ScanResult> {
+    const continuation=await prepareDeepResume(task);
+    const release=continuation?.unlock??(task.deepResumeContext&&task.scanMode==='deep'?await acquireDeepGuard(task.outputPath):()=>{});
+    try{await saveDeepManifest(task);return await this.performScan(task,signal,continuation)}finally{release()}
+  }
+  private async performScan(task:ScanTask,signal:AbortSignal|undefined,continuation:Awaited<ReturnType<typeof prepareDeepResume>>):Promise<ScanResult>{
     validateScanTask(task);
     await restoreSdkParentState(task);
     const advancedOptions = await sdkScanInputOptions(task);
@@ -95,11 +102,8 @@ export class CodexSecurityEngine implements AuditEngine {
         (overrides as Record<string, unknown>)["model_catalog_json"] = catalogPath.replaceAll("\\", "/");
       }
     }
-    // Chat 上游（如 Kimi/GLM paas）：codex 0.149 只讲 Responses（二进制实证
-    // 0 处 chat/completions），起环回代理做转换（cc-switch 路由接管同构）。
-    // 必须先于 new CodexSecurity：插件构造函数 structuredClone(config)，
-    // 之后对 overrides 的任何改写都不会进入 config.toml（scan 17/18 的教训）。
-    const shim = await maybeStartChatShim(task, overrides, (message) => { observe(sink.warning(message)); });
+    // Route compatible providers through the Responses transport guard.
+    const shim = await startResponsesTransport(task, overrides, (message) => { observe(sink.warning(message)); });
     const security = new CodexSecurity(
       overrides !== undefined ? { codexOverrides: overrides } : {},
     );
@@ -110,17 +114,19 @@ export class CodexSecurityEngine implements AuditEngine {
     const sessions=task.resultSchemaVersion&&task.executionAttempt?new SDKSessionJournal({taskId:String(task.taskId),attempt:task.executionAttempt},task.outputPath):null;
     try {
       return await withIsolatedScanEnvironment(task, async () => {
-        const stopProgressObserver = observeSdkProgress(task.outputPath,p=>sink instanceof ContractProgressSink?sink.observation(p):sink.progress({phase:p.phase,...(p.filesTotal!==null?{filesTotal:p.filesTotal}:{})}),message=>observe(sink.warning(message)));
+        const stopProgressObserver = observeSdkProgress(task.deepResume?originOutput(task.outputPath,task.deepResume.inspection.origin.attempt):task.outputPath,p=>sink instanceof ContractProgressSink?sink.observation(p):sink.progress({phase:p.phase,...(p.filesTotal!==null?{filesTotal:p.filesTotal}:{})}),message=>observe(sink.warning(message)),process.env.CODEX_SECURITY_STATE_DIR);
+        let interim:InterimFindings|null=null;
+        if(task.scanMode==='standard'&&task.sourceContentHash&&task.executionAttempt)try{interim=new InterimFindings(task.outputPath,{taskId:String(task.taskId),attempt:task.executionAttempt},task.sourceContentHash,value=>{if(sink instanceof ContractProgressSink)observe(sink.interim(value));},message=>observe(sink.warning(message))).start();}catch{observe(sink.warning('中间证据目录不可写或身份不匹配；正式扫描继续，原始产物保留。'));}
         const checkpoints = new AuditCheckpoints(task.outputPath, message => { observe(sink.warning(message)); });
-        const workspace = await prepareAuditWorkspace(task);
+        const workspace = await prepareAuditWorkspace(task.deepResume?{...task,outputPath:originOutput(task.outputPath,task.deepResume.inspection.origin.attempt)}:task);
         try {
           // 取消是杀进程，workbench 来不及 fail-scan；同一 outputDir 重试会被
           // 「Cannot archive the output of a running scan」挡住。
-          const released = releaseStaleWorkbenchScan(rawDir);
+          const released = continuation?0:releaseStaleWorkbenchScan(rawDir);
           if (released > 0) {
             process.stderr.write(`scan-activity released ${released} stale workbench scan(s)\n`);
           }
-          const sdkResult = await security.run(task.sourcePath, {
+          const sdkResult = await runPinnedDeep(security,task.sourcePath, {
             ...advancedOptions,
             outputDir: rawDir,
             // 同一 taskId 重试时 raw/ 里还留着上次取消的产物；SDK 默认拒绝覆盖。
@@ -170,9 +176,11 @@ export class CodexSecurityEngine implements AuditEngine {
               else observe(sink.activity(`SDK 已记录 Worker ${event.worker}；运行状态尚未提供`));
             },
             onUsage: (usage) => {
-              if(sink instanceof ContractProgressSink)observe(sink.usage({...usage}));
+              if(sink instanceof ContractProgressSink)observe(sink.usage(task.deepResume?deltaUsage({...usage},task.deepResume.inspection.baseline):{...usage}));
             },
-            onCost: (cost) => {
+            onCost: (nativeCost) => {
+              const cost=task.deepResume?deltaUsage({...nativeCost},task.deepResume.inspection.baseline):nativeCost;
+              if(typeof cost.estimatedUsd!=="number")return;
               lastObservedCost={...cost,observedAt:new Date().toISOString(),source:"engine_callback"};
               observe(sink instanceof ContractProgressSink ? sink.cost({...cost}) : sink.cost(cost.estimatedUsd));
               process.stderr.write(
@@ -187,6 +195,7 @@ export class CodexSecurityEngine implements AuditEngine {
               sessions?.record(event);
               workspace.ensureTemp();
               checkpoints.session(event);
+              interim?.session(event);
               if(sink instanceof ContractProgressSink){observe(sink.session(event));return;}
               const detail = summarizeSessionEvent(event);
               if (detail === null || (!showReasoning() && !detail.startsWith("[error]"))) return;
@@ -198,7 +207,8 @@ export class CodexSecurityEngine implements AuditEngine {
               }
               observe(sink.session(event.threadId, event.worker, detail));
             },
-          });
+          },continuation?.options);
+          await continuation?.copyArtifacts();
 
           const sdkSnapshot=await saveRawArtifacts(rawDir, sdkResult);
           const converted = convertCodexResult(task, sdkResult, {
@@ -209,17 +219,20 @@ export class CodexSecurityEngine implements AuditEngine {
             ...(sdkSnapshot?{sdkSnapshot}:{}),
           });
           if(["completed","partial"].includes(converted.status))parentExportScanId=sdkResult.manifest.scan.id;
+          if(task.deepResume&&converted.cost){const delta=deltaUsage({...converted.cost},task.deepResume.inspection.baseline);if(typeof delta.estimatedUsd==="number")converted.cost=delta;else delete converted.cost;}
           if(lastObservedCost)converted.lastObservedCost=lastObservedCost;
           if(diagnostics)converted.sdkDiagnostics=diagnostics.snapshot();
           if(sessions)converted.sdkSession=sessions.close();
           await attachValidationReview(task,converted,rawDir);
           checkpoints.attach(converted);
+          interim?.scan();
           if(sink instanceof ContractProgressSink)await sink.drain();
           await diagnostics?.drain();
           await writeNormalized(task, converted);
           await finishProgress(converted);
           return converted;
         } catch (error) {
+          try{await continuation?.copyArtifacts()}catch{observe(sink.warning("续扫原生产物复制未完成，原目录和预执行备份仍保留"))}
           const result = await salvageOrFail(task, error, startedAt, rawDir);
           if(diagnostics)result.sdkDiagnostics=diagnostics.snapshot();
           if(sessions)result.sdkSession=sessions.close();
@@ -229,12 +242,14 @@ export class CodexSecurityEngine implements AuditEngine {
           // a final SDK-returned estimate. Keep the historical reader unchanged.
           if(task.resultSchemaVersion)delete result.cost;
           checkpoints.attach(result);
+          interim?.scan();
           if(sink instanceof ContractProgressSink)await sink.drain();
           await diagnostics?.drain();
           await writeNormalized(task, result);
           await finishProgress(result);
           return result;
         } finally {
+          interim?.close();
           stopProgressObserver();
           checkpoints.close();
           workspace.restore();
@@ -250,22 +265,20 @@ export class CodexSecurityEngine implements AuditEngine {
 }
 
 /**
- * 有效上游协议为 chat 时启动 Responses→Chat 环回代理，并把 Codex provider
- * 指到代理（wire_api 对 Codex 而言始终是 responses；真实协议只有代理知道）。
+ * Keep the SDK on Responses; this guard does not translate protocols.
  */
-async function maybeStartChatShim(task: ScanTask, overrides: JsonObject | undefined, notice: (message:string)=>void): Promise<ChatShim | null> {
+async function startResponsesTransport(task: ScanTask, overrides: JsonObject | undefined, notice: (message:string)=>void, observeTurn?:((value:import('../proxy/turn-diagnostic.js').TurnDiagnostic)=>void), outputMode:import('../proxy/validation-output-mode.js').ValidationOutputMode='native_schema'): Promise<UpstreamProxy | null> {
   if (overrides === undefined || overrides["model_providers"]===undefined) return null;
   const spec = resolveTaskProvider(task);
   const wire = task.wireApi ?? spec.wireApi;
+  if (wire !== "responses") throw new Error("Chat 协议适配已移除；请配置支持 Responses 的模型接口。");
 
   const upstream = task.baseUrl ?? spec.defaultBaseUrl;
   if (upstream === undefined || upstream === "") {
-    throw new Error(`chat-shim: ScanTask.baseUrl is required for provider ${task.provider}`);
+    throw new Error(`Responses transport: ScanTask.baseUrl is required for provider ${task.provider}`);
   }
-  const transport = await startReliableUpstream(upstream, path.resolve(task.outputPath, '../../model-request-gate.sqlite'), notice);
-  const converted = wire === "chat" ? await startChatShim(transport.baseUrl,task.sdkParameters?.parameters.reasoningEffort) : null;
-  const shim: ChatShim = {baseUrl:converted?.baseUrl??transport.baseUrl,upstreamBaseUrl:upstream,
-    close:async()=>{await converted?.close();await transport.close();}};
+  const transport = await startReliableUpstream(upstream, path.resolve(task.outputPath, '../../model-request-gate.sqlite'), notice,observeTurn,outputMode);
+  const shim: UpstreamProxy = transport;
   // codex(reqwest) 会吃 HTTPS_PROXY；环回地址必须进 NO_PROXY，否则代理把
   // 127.0.0.1 请求转发走，shim 永远收不到
   for (const key of ["NO_PROXY", "no_proxy"]) {
@@ -280,11 +293,11 @@ async function maybeStartChatShim(task: ScanTask, overrides: JsonObject | undefi
     await shim.close();
     return null; // 不会发生：buildCodexOverrides 已创建该 provider 条目
   }
-  target["request_max_retries"] = 0; // One retry owner: reliable-upstream.
-  target["stream_max_retries"] = 0; // Never replay a partly consumed turn automatically.
+  // Keep the pinned native SDK retry policy. The transport proxy coordinates
+  // provider cooldowns but never runs a second, multiplying retry loop.
   target["base_url"] = shim.baseUrl;
   target["wire_api"] = "responses";
-  process.stderr.write(`scan-activity chat-shim ${shim.baseUrl} -> ${shim.upstreamBaseUrl}\n`);
+  process.stderr.write(`scan-activity responses-transport ${shim.baseUrl} -> ${shim.upstreamBaseUrl}\n`);
   return shim;
 }
 
@@ -370,4 +383,4 @@ async function writeNormalized(task: ScanTask, result: ScanResult): Promise<void
 
 export { SCAN_EXIT_CODES };
 
-export {maybeStartChatShim,ensureModelCatalog};
+export {startResponsesTransport,ensureModelCatalog};

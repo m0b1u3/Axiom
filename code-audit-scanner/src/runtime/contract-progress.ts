@@ -116,6 +116,7 @@ export class ContractProgressSink {
   this.snapshot.extensions={...this.snapshot.extensions,componentScan:value};
   await this.emit('scan.activity',{kind:'message',status:'running',description:safe(message,512),...(index!==undefined?{id:`component-${index+1}`}:{})},'info',message);
  });}
+ interim(value:import('@axiom/contracts').InterimObservation){validate('InterimObservation',value,this.snapshot.execution);const v=structuredClone(value);return this.update(async()=>{this.snapshot.extensions={...this.snapshot.extensions,standardInterim:v};await this.emit('scan.activity',{kind:'message',status:'completed',description:`已保存 ${v.candidateRecords} 条候选记录与 ${v.documentCount} 份中间证据；未作为最终漏洞`},'info','中间发现快照已更新');});}
  async drain(){await this.writes;}
 }
 function reasoningText(event:Record<string,unknown>):string|null{const p=record(event.payload);if(!((event.type==='response_item'&&p.type==='reasoning')||(event.type==='event_msg'&&typeof p.type==='string'&&p.type.includes('reason'))))return null;const value=p.text??p.delta??p.summary??p.content;if(typeof value==='string')return value;if(Array.isArray(value))return value.map(v=>record(v).text).filter(v=>typeof v==='string').join('\n')||null;return null;}

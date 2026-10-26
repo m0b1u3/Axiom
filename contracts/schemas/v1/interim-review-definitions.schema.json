@@ -1,0 +1,413 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/interim-review-definitions.schema.json",
+  "$defs": {
+    "InterimReviewMember": {
+      "type": "object",
+      "properties": {
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "candidate": {
+          "$ref": "https://axiom.invalid/contracts/v1/interim-definitions.schema.json#/$defs/InterimCandidate"
+        }
+      },
+      "required": [
+        "execution",
+        "candidate"
+      ],
+      "additionalProperties": false
+    },
+    "InterimReviewEvidence": {
+      "type": "object",
+      "properties": {
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "artifact": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ArtifactRef"
+        },
+        "documentJson": {
+          "type": "string",
+          "maxLength": 4194304
+        }
+      },
+      "required": [
+        "execution",
+        "artifact",
+        "documentJson"
+      ],
+      "additionalProperties": false
+    },
+    "InterimReviewInput": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "sourceContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "groupKey": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "grouping": {
+          "type": "string",
+          "enum": [
+            "exact",
+            "manual"
+          ]
+        },
+        "groupingReason": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/interim-review-definitions.schema.json#/$defs/InterimReviewMember"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "documents": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/interim-review-definitions.schema.json#/$defs/InterimReviewEvidence"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "reproduced": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "sourceContentHash",
+        "groupKey",
+        "grouping",
+        "groupingReason",
+        "members",
+        "documents",
+        "reproduced"
+      ],
+      "additionalProperties": false
+    },
+    "InterimReviewEnvelope": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "inputJson": {
+          "type": "string",
+          "maxLength": 8388608
+        },
+        "inputSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "inputJson",
+        "inputSha256"
+      ],
+      "additionalProperties": false
+    },
+    "InterimReviewSelection": {
+      "type": "object",
+      "properties": {
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "candidateId": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "artifactSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        }
+      },
+      "required": [
+        "execution",
+        "candidateId",
+        "artifactSha256"
+      ],
+      "additionalProperties": false
+    },
+    "InterimReviewRequest": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "requestId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/interim-review-definitions.schema.json#/$defs/InterimReviewSelection"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "grouping": {
+          "type": "string",
+          "enum": [
+            "exact",
+            "manual"
+          ]
+        },
+        "groupingReason": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "acknowledgeUnknownCost": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "requestId",
+        "members",
+        "grouping",
+        "groupingReason",
+        "acknowledgeUnknownCost"
+      ],
+      "additionalProperties": false
+    },
+    "InterimReviewOutcome": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "sdkVersion": {
+          "type": "string",
+          "const": "0.5.0"
+        },
+        "sourceContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "inputSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "reportSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "disposition": {
+          "type": "string",
+          "enum": [
+            "reportable",
+            "suppressed",
+            "not_applicable",
+            "deferred"
+          ]
+        },
+        "assessment": {
+          "type": "string",
+          "const": "source_review"
+        },
+        "reproduced": {
+          "type": "boolean",
+          "const": false
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "sdkVersion",
+        "sourceContentHash",
+        "inputSha256",
+        "reportSha256",
+        "disposition",
+        "assessment",
+        "reproduced"
+      ],
+      "additionalProperties": false
+    },
+    "InterimReviewArchive": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "groupId": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "sourceContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "inputSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "reportSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "findingFingerprint": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/interim-review-definitions.schema.json#/$defs/InterimReviewMember"
+          },
+          "minItems": 1,
+          "maxItems": 100
+        },
+        "disposition": {
+          "type": "string",
+          "const": "reportable"
+        },
+        "assessment": {
+          "type": "string",
+          "const": "sdk_reportable"
+        },
+        "reproduced": {
+          "type": "boolean",
+          "const": false
+        },
+        "archivedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "archivedBy": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "groupId",
+        "sourceContentHash",
+        "inputSha256",
+        "reportSha256",
+        "findingFingerprint",
+        "members",
+        "disposition",
+        "assessment",
+        "reproduced",
+        "archivedAt",
+        "archivedBy"
+      ],
+      "additionalProperties": false
+    },
+    "InterimReviewSourceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "startLine",
+        "endLine",
+        "state",
+        "sha256",
+        "reason"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "startLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "endLine": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "observed",
+            "missing",
+            "out_of_range",
+            "unavailable"
+          ]
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      }
+    },
+    "InterimReviewSourceCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "sourceContentHash",
+        "reportSha256",
+        "state",
+        "references",
+        "reason"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1,
+          "type": "integer"
+        },
+        "sourceContentHash": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "reportSha256": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Digest"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "checked",
+            "blocked",
+            "unavailable",
+            "no_references"
+          ]
+        },
+        "references": {
+          "type": "array",
+          "maxItems": 256,
+          "items": {
+            "$ref": "https://axiom.invalid/contracts/v1/interim-review-definitions.schema.json#/$defs/InterimReviewSourceReference"
+          }
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      }
+    }
+  }
+}

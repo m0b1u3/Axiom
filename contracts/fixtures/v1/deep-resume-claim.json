@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-probe",
+  "leaseToken": "fixture-lease",
+  "execution": {
+    "taskId": "17",
+    "attempt": 1
+  },
+  "origin": {
+    "taskId": "17",
+    "attempt": 1
+  },
+  "agentId": "fixture-agent",
+  "sourcePath": "/fixture/source",
+  "outputPath": "/fixture/scans/17/attempt-1",
+  "sourceHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "configurationHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "model": "fixture-model",
+  "identity": null
+}

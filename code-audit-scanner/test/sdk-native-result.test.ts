@@ -56,3 +56,11 @@ test('large optional history projection never discards a valid full native JSON 
  assert.equal(native.repositoryHistory.state,'invalid');assert.match(native.repositoryHistory.reason!,/完整原生历史/);
  assert.equal((result.extensions!.sdk as any).repositoryFindings.length,100);assert.equal((result.extensions!.sdk as any).repositoryFindings[99].summary.length,180000);
 });
+
+test('Deep continuation exports use only certified original raw paths and retain the raw SDK JSON',async t=>{
+ const f=await nativeFixture(t);const root=f.task.outputPath;f.task.outputPath=path.join(root,'scans/42/attempt-2');await mkdir(f.task.outputPath,{recursive:true});
+ const assignment=JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/deep-resume-assignment.json',import.meta.url),'utf8'));assignment.execution={taskId:String(f.task.taskId),attempt:2};assignment.inspection.origin={taskId:String(f.task.taskId),attempt:1};f.task.deepResume=assignment;
+ const old=path.join(root,'scans/42/attempt-1/raw/codex-security/report.md'),relative='raw/codex-security/report.md',bytes='# Fixtures / Mock original continuation report';await mkdir(path.dirname(old),{recursive:true});await writeFile(old,bytes);await mkdir(path.join(f.task.outputPath,'raw/codex-security'),{recursive:true});await writeFile(path.join(f.task.outputPath,relative),bytes);f.result.sdkRaw!.reportPath=old;const before=JSON.stringify(f.result.sdkRaw);const refs=[{kind:'report' as const,relativePath:relative,sizeBytes:Buffer.byteLength(bytes),sha256:createHash('sha256').update(bytes).digest('hex')}];
+ const native=await buildSDKNativeResult(f.task,f.result,refs);assert.equal(native.reports.markdown.status,'available');assert.equal(native.reports.markdown.artifact?.relativePath,relative);assert.equal(JSON.stringify(f.result.sdkRaw),before);
+ f.result.sdkRaw!.reportPath=path.join(root,'scans/41/attempt-1/raw/codex-security/report.md');assert.equal((await buildSDKNativeResult(f.task,f.result,refs)).reports.markdown.status,'invalid');
+});

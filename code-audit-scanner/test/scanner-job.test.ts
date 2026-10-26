@@ -22,9 +22,17 @@ test("job input uses explicit deadlines and preserves SDK worker defaults",async
 });
 test("resolved providers are supported by connection metadata without a brand preset",async()=>{
  const value=JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/job-windows.json',import.meta.url),'utf8'));
- value.model.providerId='fixture-new-provider';value.model.connectionType='openai_compatible';value.model.baseUrl='https://fixture.invalid/v1';value.model.wireApi='chat';value.model.credentialEnv='FIXTURE_MODEL_KEY';
+ value.model.providerId='fixture-new-provider';value.model.connectionType='openai_compatible';value.model.baseUrl='https://fixture.invalid/v1';value.model.wireApi='responses';value.model.credentialEnv='FIXTURE_MODEL_KEY';
  const task=scanTaskFromJob(decode('ScannerJob',JSON.stringify(value)));
  const config=buildCodexOverrides(task)!;
  assert.equal(task.sourcePath,value.source.path);assert.equal(task.outputPath,value.output.path);
- assert.equal((config['model_providers'] as Record<string,Record<string,unknown>>)['fixture-new-provider']?.['env_key'],'FIXTURE_MODEL_KEY');
+ const provider=(config['model_providers'] as Record<string,Record<string,any>>)['fixture-new-provider']!;
+ assert.equal(provider.env_key,undefined);assert.equal(provider.auth.args[1],'FIXTURE_MODEL_KEY');assert.equal(provider.requires_openai_auth,false);
+});
+
+test('historical Chat contracts remain decodable but cannot become executable tasks',async()=>{
+ const value=JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/job-windows.json',import.meta.url),'utf8'));
+ value.model.wireApi='chat';value.model.connectionType='openai_compatible';value.model.baseUrl='https://fixture.invalid/v1';
+ const job=decode('ScannerJob',JSON.stringify(value));assert.equal(job.model.wireApi,'chat');
+ assert.throws(()=>scanTaskFromJob(job),/Chat 协议适配已移除/);
 });

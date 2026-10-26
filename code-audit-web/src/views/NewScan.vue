@@ -257,19 +257,20 @@ onMounted(() => void loadOptions());
     <div v-else class="form-wrap">
       <p v-if="lookupsLoading" role="status">正在读取项目、代码快照与模型配置…</p>
       <div v-if="lookupErrors.length" class="request-error" role="alert"><div><p v-for="error in lookupErrors" :key="error">{{error}}</p><p>已填写的内容会保留，请重新读取后创建扫描。</p></div><Button variant="outline" size="sm" :loading="lookupsLoading" @click="loadOptions">重新读取配置</Button></div>
+<div class="scan-grid">
 <section class="scan-section"><header><h2>代码来源</h2><p>选择本次审计的源码。</p></header><div class="section-body">      <div class="source-field">
       <div class="field-label">归属项目（可选）</div>
       <Select aria-label="归属项目"
         :model-value="selectedProjectId === null ? '' : String(selectedProjectId)"
         :options="projectOptions"
         clearable
-        placeholder="默认跟随资产归属，可指定本次扫描的项目"
+        placeholder="默认跟随源码快照的项目"
         @change="onProjectChange"
       />
       </div>
       <div class="source-field snapshot-field">
       <div class="field-label">代码快照<span v-if="selectedSnapshotId" class="source-selected"> · 已选定源码</span></div>
-      <Input v-model="snapshotSearch" aria-label="搜索已有代码快照" maxlength="256" placeholder="搜索全部快照：文件名 / 项目 / 哈希 / 路径" />
+      <Input v-if="snapshotOptions.length || snapshotSearch || snapshotError" v-model="snapshotSearch" class="snapshot-search" aria-label="搜索已有代码快照" maxlength="256" placeholder="搜索文件名 / 项目 / 哈希 / 路径" />
       <div v-if="snapshotError && !lookupErrors.length" class="request-error" role="alert">代码快照读取失败：{{snapshotError}}<Button variant="outline" size="sm" @click="loadSnapshots()">重读代码快照</Button></div>
       <Button v-if="snapshotError.includes('已不存在')" variant="outline" size="sm" @click="discardMissingSnapshot">清除失效源码并重新选择</Button>
       <Select aria-label="代码快照"
@@ -282,7 +283,7 @@ onMounted(() => void loadOptions());
       />
       </div>
 
-      <CatalogPagination label="可选快照分页" :page="snapshotTotal === undefined ? undefined : snapshotPage" :page-size="50" :total="snapshotTotal" :loading="snapshotLoading" :unavailable="!!snapshotError" @change="loadSnapshots" />
+      <CatalogPagination v-if="snapshotTotal !== 0 || snapshotError" label="可选快照分页" :page="snapshotTotal === undefined ? undefined : snapshotPage" :page-size="50" :total="snapshotTotal" :loading="snapshotLoading" :unavailable="!!snapshotError" @change="loadSnapshots" />
       <p v-if="selectedSnapshotId" class="upload-hint">翻页和搜索会保留已选定源码。修改归属项目会保留当前源码，仅改变本次扫描归属，不移动原资产。</p>
       <div class="upload-row">
         <div>
@@ -321,7 +322,7 @@ onMounted(() => void loadOptions());
       />
       <div v-else-if="!lookupsLoading && !lookupErrors.length" class="config-hint">
         还没有模型配置，
-        <router-link to="/settings?section=models" class="tlink">到「模型与授权」添加模型</router-link>
+        <router-link to="/models" class="tlink">到「模型与授权」添加模型</router-link>
 
       </div>
       <div v-if="selConfig" class="config-info mono">
@@ -329,7 +330,7 @@ onMounted(() => void loadOptions());
         <span class="muted">{{ selConfig.baseUrl || "（OpenAI 官方）" }}</span>
       </div>
 
-      <SDKIdentityPicker v-model="sdkIdentityId" :native="!!selConfig&&selConfig.provider==='openai'&&(!selConfig.baseUrl||selConfig.baseUrl==='https://api.openai.com/v1')&&selConfig.wireApi!=='chat'" :disabled="submitting"/>
+      <SDKIdentityPicker v-show="!!selConfig" v-model="sdkIdentityId" :native="!!selConfig&&selConfig.provider==='openai'&&(!selConfig.baseUrl||selConfig.baseUrl==='https://api.openai.com/v1')&&selConfig.wireApi!=='chat'" :disabled="submitting"/>
       <div class="params">
         <div>
           <div class="field-label">扫描模式</div>
@@ -349,17 +350,20 @@ onMounted(() => void loadOptions());
             min="1" max="600" step="1"
             :model-value="String(form.timeoutMinutes)"
             type="number"
-            style="width: 140px"
             @update:model-value="form.timeoutMinutes = Math.min(600, Math.max(1, Number($event) || 60))"
           />
         </div>
       </div>
 
-      <div class="budget-field">
+      <div class="budget-fields">
+       <div class="budget-field">
         <label class="field-label" for="scan-budget">单次估算上限（USD，可选）</label>
         <Input id="scan-budget" v-model="form.maxCostUsd" type="number" min="0" step="any" inputmode="decimal" placeholder="留空不设置费用预算" :aria-invalid="budgetError ? true : undefined" aria-describedby="budget-help budget-error" />
         <p id="budget-help" class="upload-hint">依据引擎估算费用控制扫描；不是供应商账单的硬上限。第三方模型可能没有可用的费用估算。</p>
+       </div>
+       <div class="budget-field">
         <label class="field-label" for="scan-total-budget">任务总预算（USD，可选）</label><Input id="scan-total-budget" v-model="form.maxTotalCostUsd" type="number" min="0" step="0.000001" inputmode="decimal" placeholder="覆盖本任务的全部重试" aria-describedby="total-budget-help" /><p id="total-budget-help" class="upload-hint">每次执行按剩余额度下发，最多六位小数；费用未知时阻止累计预算重试。留空保留单次上限语义。</p>
+       </div>
         <p v-if="budgetError" id="budget-error" class="field-error" role="alert">{{budgetError}}</p>
       </div>
 
@@ -373,8 +377,8 @@ onMounted(() => void loadOptions());
         <p>Worker 数和发现次数按 SDK 原生规则填写正安全整数，留空沿用 SDK 默认；平台不再设置数量上限。每次表示一次独立审查，不是文件数量。满足任一停止条件即可进入收尾；限时结束不代表完整覆盖。</p>
       </details>
 </div></section>
-<section class="scan-section"><header><h2>知识文档</h2><p>固定本次审计的参考资料。</p></header><div class="section-body"><KnowledgePicker v-model="knowledgeIds"/></div></section>
-<section class="scan-section"><header><h2>审计要求</h2><p>限定范围，明确审计重点。</p></header><div class="section-body"><label class="field-label" for="scan-include">扫描范围（可选）</label>      <textarea
+</div>
+<section class="scan-section"><header><h2>审计要求</h2><p>限定范围，明确审计重点。</p></header><div class="section-body requirements-grid"><div><label class="field-label" for="scan-include">扫描范围（可选）</label>      <textarea
         id="scan-include" v-model="includeText" :disabled="gitSnapshot"
         rows="3" class="scope-input" aria-describedby="scope-help"
         placeholder="每行一个相对路径，留空扫描全部"
@@ -384,7 +388,6 @@ onMounted(() => void loadOptions());
       </div>
       <p id="scope-help" class="upload-hint">每行一个目录或文件；文件名中的逗号会原样保留。</p>
 
-<AdvancedScanConfiguration v-model="advanced" :mode="form.scanMode" :validation="validationMode" :source-snapshot-id="Number(selectedSnapshotId)"/>
 <div class="field-label focus-label">发现重点（可选）</div>      <div class="focus-row">
         <Button
           v-for="opt in FOCUS_OPTIONS"
@@ -397,10 +400,10 @@ onMounted(() => void loadOptions());
           {{ opt.label }}
         </Button>
       </div>
-      <div class="upload-hint" style="margin-top: 4px;">
+      <div class="upload-hint">
         可多选；不选则进行通用审计。
       </div>
-
+      </div>
       <fieldset class="validation-options">
         <legend>可利用性验证</legend>
         <label><input v-model="validationMode" type="radio" value="default" name="validation-mode" />默认审计<span>沿用 SDK 自带验证流程。</span></label>
@@ -413,6 +416,11 @@ onMounted(() => void loadOptions());
         </div>
       </fieldset>
 </div></section>
+      <details class="knowledge-options">
+        <summary><span>知识文档（可选）</span><span class="option-state">{{knowledgeIds.length ? '已选 '+knowledgeIds.length+' 份固定版本' : '未选择'}}</span></summary>
+        <div class="knowledge-body"><KnowledgePicker v-model="knowledgeIds"/></div>
+      </details>
+      <AdvancedScanConfiguration v-model="advanced" :mode="form.scanMode" :validation="validationMode" :source-snapshot-id="Number(selectedSnapshotId)"/>
       <div class="submit-row">
         <Button :loading="submitting" :disabled="gitBusy || gitPreviewBusy || !!gitError || uploading || lookupsLoading || !!lookupErrors.length || snapshotLoading || !!snapshotError" @click="submit()">创建扫描</Button>
         <Button variant="outline" :disabled="gitBusy || gitPreviewBusy || !!gitError || submitting || uploading || lookupsLoading || !!lookupErrors.length || snapshotLoading || !!snapshotError" @click="submit('preflight')">仅执行 SDK 预检</Button>
@@ -424,27 +432,32 @@ onMounted(() => void loadOptions());
 </template>
 
 <style scoped>
-.newscan-col{max-width:1040px}
-.scan-section{display:grid;grid-template-columns:160px minmax(0,1fr);gap:var(--space-6);padding:var(--space-6) 0;border-top:1px solid var(--border-default)}
-.scan-section header h2{font-size:var(--font-size-md);font-weight:600;margin:0 0 var(--space-2)}
+.newscan-col{max-width:var(--content-max-width);min-width:0;container:scan-create / inline-size}
+.scan-grid,.requirements-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-6)}
+.scan-grid{column-gap:var(--space-8);row-gap:0}
+.scan-section{display:flex;flex-direction:column;gap:var(--space-4);padding:var(--space-5) 0;border-top:1px solid var(--border-default);min-width:0}
+.scan-section header{display:flex;align-items:baseline;gap:var(--space-2) var(--space-3);flex-wrap:wrap}
+.scan-section header h2{font-size:var(--font-size-base);font-weight:var(--font-weight-semibold);margin:0}
 .scan-section header p,.upload-hint,.config-info,.snap-info,.include-hint,.submit-note{font-size:var(--font-size-xs);color:var(--text-secondary);line-height:var(--line-height-body)}
-.scan-section header p{margin:0}.section-body{min-width:0}.field-label{display:block;font-size:var(--font-size-sm);font-weight:500;margin-bottom:var(--space-2)}
+.scan-section header p{margin:0}.section-body,.requirements-grid>div{min-width:0}.field-label{display:block;font-size:var(--font-size-sm);font-weight:var(--font-weight-medium);margin-bottom:var(--space-2)}
 .source-selected{font-size:var(--font-size-xs);font-weight:400;color:var(--text-secondary)}
 .source-field+.source-field{margin-top:var(--space-4)}
-.budget-field{margin-top:var(--space-4)}
-.field-error{font-size:var(--font-size-sm);color:var(--state-danger);margin:var(--space-2) 0 0;line-height:var(--line-height-body)}
+.snapshot-search{margin-bottom:var(--space-2)}
+.budget-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4);margin-top:var(--space-4)}
+.budget-field{min-width:0}
+.field-error{grid-column:1/-1;font-size:var(--font-size-sm);color:var(--state-danger);margin:var(--space-2) 0 0;line-height:var(--line-height-body)}
 .scope-input{width:100%;box-sizing:border-box;padding:var(--space-3);border:1px solid var(--border-control);border-radius:var(--radius-md);background:var(--surface-primary);color:var(--text-primary);font:var(--font-size-md)/var(--line-height-body) var(--font-mono);resize:vertical}
 .upload-row{display:flex;justify-content:space-between;align-items:center;gap:var(--space-3);margin-top:var(--space-3)}
-.upload-title{font-size:var(--font-size-xs);font-weight:500;margin-bottom:var(--space-1)}
+.upload-title{font-size:var(--font-size-sm);font-weight:var(--font-weight-medium);margin-bottom:var(--space-1)}
 .upload-hint{margin:var(--space-2) 0 0}.upload-row .upload-hint{margin:0}.upload-row>div{min-width:0}.upload-row>button{flex-shrink:0}
 .snap-info{margin-top:var(--space-3)}.snap-line{display:flex;gap:var(--space-3);flex-wrap:wrap}.snap-path{display:none}
 .params{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--space-4);margin-top:var(--space-4)}
-.config-info{margin-top:var(--space-2);display:flex;gap:var(--space-2);flex-wrap:wrap;overflow-wrap:anywhere}.config-info>span+span{display:none}
+.config-info{margin-top:var(--space-2);display:flex;gap:var(--space-2);flex-wrap:wrap;overflow-wrap:anywhere}.config-info>.muted{display:none}
 .config-hint{font-size:var(--font-size-sm);color:var(--text-secondary)}.tlink{color:var(--accent-primary)}
-.focus-label{margin-top:var(--space-5)}.focus-row{display:flex;gap:var(--space-2);flex-wrap:wrap}
+.focus-label{margin-top:var(--space-4)}.focus-row{display:flex;gap:var(--space-2);flex-wrap:wrap}
 .focus-row :deep(button){border:1px solid var(--border-default)}.focus-row :deep(button[aria-pressed="true"]){border-color:var(--accent-primary);color:var(--accent-primary)}
-.validation-options{border:0;padding:0;margin:var(--space-5) 0 0;min-width:0}
-.validation-options legend{font-size:var(--font-size-sm);font-weight:500;padding:0;margin-bottom:var(--space-2)}
+.validation-options{border:0;padding:0;margin:0;min-width:0}
+.validation-options legend{font-size:var(--font-size-sm);font-weight:var(--font-weight-medium);padding:0;margin-bottom:var(--space-2)}
 .validation-options>label{display:grid;grid-template-columns:16px minmax(0,1fr);column-gap:var(--space-2);align-items:center;font-size:var(--font-size-sm);margin:var(--space-3) 0;cursor:pointer}
 .validation-options>label span{grid-column:2;color:var(--text-secondary);font-size:var(--font-size-xs);margin-top:var(--space-1)}
 .validation-options input{margin:0;accent-color:var(--accent-primary)}.unavailable{opacity:.6}
@@ -452,8 +465,10 @@ onMounted(() => void loadOptions());
 .business-context textarea{width:100%;box-sizing:border-box;padding:var(--space-3);border:1px solid var(--border-default);border-radius:var(--radius-md);background:var(--surface-primary);color:var(--text-primary);font:inherit;resize:vertical}
 .business-context textarea:focus-visible{outline:2px solid var(--accent-primary);outline-offset:2px}
 .deep-options{margin-top:var(--space-4);font-size:var(--font-size-xs);color:var(--text-secondary)}summary{cursor:pointer}.deep-options p{line-height:var(--line-height-body)}
-.submit-row{border-top:1px solid var(--border-default);padding:var(--space-5) 0;display:flex;gap:var(--space-3);align-items:center}.submit-note{max-width:60ch}
+.knowledge-options{border-top:1px solid var(--border-subtle);padding:var(--space-4) 0 0;font-size:var(--font-size-sm)}
+.knowledge-options summary{display:list-item;font-weight:var(--font-weight-medium)}.option-state{margin-left:var(--space-3);font-size:var(--font-size-xs);font-weight:var(--font-weight-normal);color:var(--text-secondary)}.knowledge-body{padding-top:var(--space-3)}
+.submit-row{border-top:1px solid var(--border-default);margin-top:var(--space-5);padding:var(--space-4) 0;display:flex;gap:var(--space-3);align-items:center;flex-wrap:wrap}.submit-note{max-width:75ch}
 .section-body :deep(input[type="number"]){appearance:textfield;-moz-appearance:textfield}.section-body :deep(input::-webkit-inner-spin-button),.section-body :deep(input::-webkit-outer-spin-button){-webkit-appearance:none;margin:0}
-@media(max-width:800px){.scan-section{grid-template-columns:1fr;gap:var(--space-4)}.scan-section header p{display:none}}
-@media(max-width:480px){.params{grid-template-columns:1fr}.upload-row{align-items:flex-start;flex-direction:column}.submit-row{align-items:flex-start;flex-direction:column}}
+@container scan-create (min-width:56rem){.scan-grid,.requirements-grid{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--space-8)}}
+@media(max-width:480px){.params,.budget-fields{grid-template-columns:1fr}.upload-row{align-items:flex-start;flex-direction:column}.submit-row{align-items:flex-start;flex-direction:column}}
 </style>

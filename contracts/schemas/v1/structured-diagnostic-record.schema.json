@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/structured-diagnostic-record.schema.json",
+  "title": "StructuredDiagnosticRecord",
+  "$ref": "https://axiom.invalid/contracts/v1/structured-diagnostic-definitions.schema.json#/$defs/StructuredDiagnosticRecord"
+}

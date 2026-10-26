@@ -23,7 +23,7 @@ func (c *Client) HeartbeatContract(ctx context.Context, h contracts.ExecutionHea
 }
 func (c *Client) claimObservations(ctx context.Context, id string) (*Lease, error) {
 	var v control.ObservationLease
-	e := c.callAt(ctx, "/api/internal/v4/executions/", "claim", control.ObservationClaimRequest{SDKConcurrencyVersion: c.SDKConcurrencyVersion, SDKParametersVersion: c.SDKParametersVersion, SDKIdentityVersion: c.SDKIdentityVersion, ContractClaimRequest: control.ContractClaimRequest{AgentID: id, InputCapabilities: c.capabilities().Input, ResultCapabilities: c.capabilities().Result}, ObservationCapabilities: c.capabilities().Observation}, &v)
+	e := c.callAt(ctx, "/api/internal/v4/executions/", "claim", control.ObservationClaimRequest{SDKDeepResumeVersion: c.SDKDeepResumeVersion, SDKConcurrencyVersion: c.SDKConcurrencyVersion, SDKParametersVersion: c.SDKParametersVersion, SDKIdentityVersion: c.SDKIdentityVersion, ContractClaimRequest: control.ContractClaimRequest{AgentID: id, InputCapabilities: c.capabilities().Input, ResultCapabilities: c.capabilities().Result}, ObservationCapabilities: c.capabilities().Observation}, &v)
 	if e != nil {
 		return nil, e
 	}
@@ -33,6 +33,27 @@ func (c *Client) claimObservations(ctx context.Context, id string) (*Lease, erro
 	}
 	if (v.SDKParametersVersion == 1) != (v.SDKParameters != nil) || (v.SDKParametersVersion != 0 && v.SDKParametersVersion != 1) {
 		return nil, errors.New("missing or unsupported SDK parameters sidecar")
+	}
+	if v.DeepResumeContext != nil || v.DeepResume != nil {
+		if c.SDKDeepResumeVersion != 1 {
+			return nil, ErrLeaseLost
+		}
+		if v.DeepResumeContext != nil {
+			raw, _ := contracts.EncodeJSON(v.DeepResumeContext)
+			checked, e := contracts.DecodeDeepResumeContext(raw, &lease.Execution)
+			if e != nil || checked.AgentID != id {
+				return nil, ErrLeaseLost
+			}
+			lease.DeepResumeContext = &checked
+		}
+		if v.DeepResume != nil {
+			raw, _ := contracts.EncodeJSON(v.DeepResume)
+			checked, e := contracts.DecodeDeepResumeAssignment(raw, &lease.Execution)
+			if e != nil || checked.Inspection.AgentID != id || checked.Previous.TaskID != lease.Execution.TaskID || checked.Previous.Attempt+1 != lease.Execution.Attempt || checked.Inspection.Execution != checked.Previous || checked.Inspection.Origin.TaskID != lease.Execution.TaskID || checked.Inspection.Origin.Attempt > checked.Previous.Attempt || !checked.Inspection.Eligible {
+				return nil, ErrLeaseLost
+			}
+			lease.DeepResume = &checked
+		}
 	}
 	if v.SDKParameters != nil {
 		raw, _ := contracts.EncodeJSON(v.SDKParameters)

@@ -33,6 +33,9 @@ const emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value:
 
 /* Reka SelectItem 不允许空字符串 value（空串 = 清除选择）——防御性过滤 */
 const safeOptions = computed(() => props.options.filter((o) => o.value !== ""));
+// Option labels can change while the selected value remains stable (for
+// example, queued -> running). Render from props rather than a portal cache.
+const selectedLabel = computed(() => safeOptions.value.find(option => option.value === model.value)?.label ?? props.placeholder);
 
 function onUpdate(v: string): void {
   emit("update:modelValue", v);
@@ -58,7 +61,7 @@ function clear(e: Event): void {
         )
       "
     >
-      <SelectValue :placeholder="props.placeholder" class="truncate" />
+      <SelectValue :placeholder="props.placeholder" class="truncate">{{ selectedLabel }}</SelectValue>
       <span class="flex items-center gap-1">
         <SelectIcon><ChevronDown :size="14" class="text-muted-foreground" /></SelectIcon>
       </span>

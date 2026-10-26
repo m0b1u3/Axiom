@@ -67,3 +67,9 @@ test("parseArgs treats bare flags as true", () => {
   assert.equal(args.timeout, "5");
   assert.equal(flagEnabled(args.mock), true);
 });
+
+test('retired Chat tasks are rejected before SDK execution, including frozen model metadata',()=>{
+ assert.throws(()=>validateScanTask(baseTask({wireApi:'chat'} as unknown as Partial<ScanTask>)),/Chat 协议适配已移除/);
+ assert.throws(()=>validateScanTask(baseTask({wireApi:'responses',resolvedModel:{wireApi:'chat'}} as unknown as Partial<ScanTask>)),/Chat 协议适配已移除/);
+ assert.doesNotThrow(()=>validateScanTask(baseTask({wireApi:'responses'})));
+});

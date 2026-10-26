@@ -1,22 +1,23 @@
 /**
  * Provider 适配层。
  *
- * 官方 @openai/codex-security@0.1.25 原生认证源只有：
+ * 预设 provider 的环境凭据名包括：
  *   OPENAI_API_KEY | CODEX_API_KEY | OPENROUTER_API_KEY | FIREWORKS_API_KEY | AWS_*
  *
- * Qwen / DeepSeek 不在 `--provider` 列表里。接法是 Codex
+ * SDK 0.5.0 的自定义兼容连接使用 provider-scoped auth command。接法是 Codex
  * `codexOverrides.model_providers.<id>`（OpenAI-compatible / Responses）。
  * 未通过 M0 不得把 readiness 改成 supported。
  */
 
 import type { JsonObject } from "@openai/codex-security";
+import {fileURLToPath} from "node:url";
 import type { ScanProvider, ScanTask } from "../contract/scan-task.js";
 
 export type ProviderId = ScanProvider;
 
 export type ProviderReadiness = "m0-pending" | "supported" | "degraded" | "unsupported";
 
-export type WireApi = "responses" | "chat";
+export type WireApi = "responses";
 
 export interface ModelProvider {
   readonly id: ProviderId;
@@ -66,7 +67,7 @@ export const KimiProvider: ModelProvider = {
   credentialEnv: "MOONSHOT_API_KEY",
   defaultModel: "kimi-k2.7-code",
   defaultBaseUrl: "https://api.moonshot.cn/v1",
-  wireApi: "chat",
+  wireApi: "responses",
 };
 
 export const ZhipuProvider: ModelProvider = {
@@ -106,6 +107,7 @@ export function resolveProvider(id: ProviderId): ModelProvider {
 
 export function resolveTaskProvider(task: ScanTask): ModelProvider {
   if(task.credentialEnv!==undefined&&task.wireApi!==undefined) {
+    if(task.wireApi!=="responses")throw new Error("Chat 协议适配已移除；请配置支持 Responses 的模型接口。");
     const baseUrl=task.baseUrl ?? (task.connectionType===undefined?PROVIDERS[task.provider]?.defaultBaseUrl:undefined);
     return {id:task.provider,displayName:task.displayName??task.provider,readiness:"m0-pending",credentialEnv:task.credentialEnv,
       defaultModel:task.model,wireApi:task.wireApi,...(baseUrl!==undefined?{defaultBaseUrl:baseUrl}:{})};
@@ -114,7 +116,7 @@ export function resolveTaskProvider(task: ScanTask): ModelProvider {
 }
 
 export function nativeOpenAI(task: ScanTask): boolean {
-  return task.connectionType==="openai" || (task.connectionType===undefined&&task.provider==="openai"&&task.baseUrl===undefined&&task.wireApi!=="chat");
+  return task.connectionType==="openai" || (task.connectionType===undefined&&task.provider==="openai"&&task.baseUrl===undefined&&(task.wireApi===undefined||task.wireApi==="responses"));
 }
 
 /**
@@ -125,6 +127,8 @@ export function buildCodexOverrides(task: ScanTask): JsonObject | undefined {
   if (task.mock) {
     return undefined;
   }
+  if (task.wireApi !== undefined && task.wireApi !== "responses") throw new Error("Chat 协议适配已移除；请配置支持 Responses 的模型接口。");
+  if (resolveTaskProvider(task).wireApi !== "responses") throw new Error("Only Responses model connections are supported");
   // The selected model must reach Codex even on its native OpenAI connection.
   const effort=task.sdkParameters?.parameters.reasoningEffort;
  if(nativeOpenAI(task))return {model:task.model,...(effort?{model_reasoning_effort:effort}:{})};
@@ -143,7 +147,15 @@ export function buildCodexOverrides(task: ScanTask): JsonObject | undefined {
       [task.provider]: {
         name: task.displayName ?? spec.displayName,
         base_url: baseUrl,
-        env_key: task.credentialEnv ?? spec.credentialEnv,
+        // SDK 0.5.0 only recognizes its preset env_key providers during scan
+        // authentication. Use its native provider-scoped command interface for
+        // every compatible gateway; no OpenAI login or ambient key is selected.
+        auth: {
+          command: process.execPath,
+          cwd: fileURLToPath(new URL('../../',import.meta.url)),
+          args: [fileURLToPath(new URL('../../runtime/provider-auth.mjs',import.meta.url)), task.credentialEnv ?? spec.credentialEnv],
+        },
+        requires_openai_auth: false,
         wire_api: task.wireApi ?? spec.wireApi,
       },
     },

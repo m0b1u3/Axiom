@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "19",
+    "attempt": 1
+  },
+  "groupId": 1,
+  "sourceContentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "inputSha256": "f2ee71725d3bd2d780f76659795fefaae0fa3d971f973d1ea562e823e61d3806",
+  "reportSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "findingFingerprint": "interim-review-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "members": [
+    {
+      "execution": {
+        "taskId": "17",
+        "attempt": 2
+      },
+      "candidate": {
+        "id": "7530191b41aa68818ed011905a80942acfbf45ad8e2981a63ae48a0fa02f1460",
+        "artifact": "f850865e4ff60e7930937b2a7ae614141492b6071dd28f0a870fde1c276fdafd",
+        "pointer": "/candidates/0",
+        "title": "Fixtures / Mock candidate",
+        "summary": null,
+        "claimId": "C1",
+        "reportedStatus": "verified",
+        "reportedSeverity": "high",
+        "evidence": [
+          "src/query.ts:2-4"
+        ],
+        "omittedEvidence": 0,
+        "truncated": false,
+        "assessment": "unverified"
+      }
+    }
+  ],
+  "disposition": "reportable",
+  "assessment": "sdk_reportable",
+  "reproduced": false,
+  "archivedAt": "2026-10-22T00:00:00Z",
+  "archivedBy": 1
+}
