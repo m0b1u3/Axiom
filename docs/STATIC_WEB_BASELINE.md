@@ -1,6 +1,6 @@
 # 静态 Web 运行基线
 
-`deploy/docker/docker-compose.yml` 与 `compose.production.yml` 均使用 `Dockerfile.web.production` 构建 Nginx 静态 Web。迁移配置保留宿主机端口 5173、现有数据库、共享产物卷和后端服务定义；它仍不等同于完整生产配置。Go Server、Go Agent、Node Scanner、SDK 0.1.25 及 HTTP / 共享产物 / JSONL 传输保持不变。
+`deploy/docker/docker-compose.yml` 与 `compose.production.yml` 均使用 `Dockerfile.web.production` 构建 Nginx 静态 Web。迁移配置保留宿主机端口 5173、现有数据库、共享产物卷和后端服务定义；它仍不等同于完整生产配置。Go Server、Go Agent、Node Scanner、SDK 0.5.0 及 HTTP / 共享产物 / JSONL 传输保持不变。
 
 ## Web 运行方式
 
@@ -12,6 +12,26 @@ Web 在构建时编译 Vue，运行时使用非 root Nginx，容器内端口 808
 - `/healthz` 只检查 Web 存活，`/readyz` 检查 Server 及数据库就绪，后者用作容器健康检查。后端故障不会被表示为 Web 就绪。
 - 用户入口拒绝 `/api/internal/` 和 Vite 的源码、依赖及 HMR 路径；Agent 仍直接使用私有 Server 网络。
 - 缓存位置也包含 `nosniff` 与 `same-origin` Referrer-Policy 响应头。
+
+## 旧标签页与静态资源兼容
+
+部署后，已经打开的页面可能仍引用上一版带哈希的动态模块。入口 HTML 不缓存并不会更新已运行的脚本；若新镜像删除了旧资源，旧标签页打开新页面会得到 404 和动态导入错误。
+
+更新现有 Nginx Web 时，先构建唯一标签的原始候选，再使用当前运行的 Web 镜像补齐旧资源：
+
+```bash
+python3 deploy/ops/web_asset_compat.py \
+  --previous-image axiom/web:<current-release> \
+  --candidate-image axiom/web:<candidate-raw> \
+  --output-image axiom/web:<candidate-compatible> \
+  --work /absolute/private/path/web-asset-compat
+```
+
+所有镜像必须已在本机，输出标签和 work 目录必须为新值。工具在不启动应用、无网络、无业务卷的容器中导出公开 assets；相同文件名必须内容一致，否则在复制前拒绝。它只追加旧 assets，不替换候选 index.html 或业务配置，并核对运行权限与哈希。选择兼容输出镜像后再更新 Web；不要先部署原始候选。上一个兼容镜像内保留的更早资源会继续保留，不自动删除。
+
+页面仍发生资源加载失败时，在主要界面显示单条恢复提示。刷新只由用户明确点击，不自动重载页面、清空未提交内容或重放任务。正常 API 和模型错误继续按原方式处理。
+
+2026-10-27 已修复一次旧 NewScan 模块 404：补回 72 个上一版资源，原标签页恢复打开新建扫描。后续补强加入此工具、跨浏览器错误识别、手动恢复和未提交表单保留；修复不改变 DeepSeek + Responses + native_schema，也不执行模型请求。
 
 ## 开发与升级
 

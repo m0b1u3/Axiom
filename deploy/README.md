@@ -6,7 +6,7 @@
 
 当前 SDK 0.5.0、Scanner description 14、结果适配器 2，Server 迁移截至 028。[组件化审计执行](../docs/SDK_COMPONENT_SCANS.md) 和计价更新都需要配套 Server、Agent（包含 Node Scanner）和 Web；历史 input 6 / Job 8 等组合保持读取。开发和生产 Web Dockerfile 均安装合同包锁定的 AJV 运行时依赖。冻结组件计划后，用户在 Web 另行配置并启动组件审计；跨组件匹配费用未知，须明确确认，不能视为受扫描预算硬限制。升级前保留数据库、共享产物和旧镜像；创建新版计划或组件执行数据后，回退须使用独立恢复验证，不能只凭旧 Server 在空新增表上就绪就认定可写入兼容。
 
-只更新现有部署的 Web 时，在私有 `.env` 设置 `AXIOM_WEB_RELEASE` 为已验收的静态 Web 标签，再执行上述命令的 `web` 单服务版本：`docker compose --env-file deploy/docker/.env -p docker -f deploy/docker/docker-compose.yml up -d --no-build --no-deps web`。Server、Agent 和数据卷仍按原配置运行。该变量为空时跟随 `AXIOM_RELEASE`；后续整套升级时应清空它或明确选择配套 Web 版本。静态版本之间回滚可恢复旧 Web 标签；跨 Nginx/Vite 回滚须同时恢复对应 Compose 配置、启动命令与容器端口，见 [静态 Web 运行基线](../docs/STATIC_WEB_BASELINE.md)。涉及数据库或合同变更时仍按下文恢复流程处理。
+只更新现有部署的 Web 时，先按 [旧标签页兼容流程](../docs/STATIC_WEB_BASELINE.md#旧标签页与静态资源兼容) 将当前镜像的旧哈希资源保留到候选镜像，避免已打开页面出现动态模块 404；再在私有 `.env` 设置 `AXIOM_WEB_RELEASE` 为已验收的静态 Web 标签，再执行上述命令的 `web` 单服务版本：`docker compose --env-file deploy/docker/.env -p docker -f deploy/docker/docker-compose.yml up -d --no-build --no-deps web`。Server、Agent 和数据卷仍按原配置运行。该变量为空时跟随 `AXIOM_RELEASE`；后续整套升级时应清空它或明确选择配套 Web 版本。静态版本之间回滚可恢复旧 Web 标签；跨 Nginx/Vite 回滚须同时恢复对应 Compose 配置、启动命令与容器端口，见 [静态 Web 运行基线](../docs/STATIC_WEB_BASELINE.md)。涉及数据库或合同变更时仍按下文恢复流程处理。
 
 适用范围：可信用户、自托管，各服务共置于同一主机。当前 SDK 基线验证 Linux x64，正式配置固定 Server/Agent 为 `linux/amd64`；Apple Silicon Docker 使用模拟执行。DeepSeek 小项目已通过有限真实工作流验收，新计价实际费用与更多场景仍待验证；状态见 [当前状态](../docs/CURRENT_STATUS.md)。参考部署保持 DeepSeek + Responses + 原生 Schema，不自动切换格式或重试。
 

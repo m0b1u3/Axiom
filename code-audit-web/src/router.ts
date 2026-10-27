@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { getToken } from "./api";
+import { reportPageLoadError, clearPageLoadError } from './composables/page-load-recovery';
 
 export const router = createRouter({
   history: createWebHistory(),
@@ -105,3 +106,8 @@ router.beforeEach((to) => {
     return {path:'/models',query:{...query,tab:section==='sdk-identities'?'accounts':query.tab==='accounts'?'accounts':'models'},hash:to.hash};
   }
 });
+
+router.onError((error, to) => {
+  reportPageLoadError(error, to.fullPath, typeof to.meta.title === 'string' ? to.meta.title : undefined);
+});
+router.afterEach((_to, _from, failure) => { if (!failure) clearPageLoadError(); });
