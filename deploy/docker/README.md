@@ -1,5 +1,7 @@
 # Axiom Docker 迁移与开发
 
+当前源码候选为 0.1.0-beta.2。参考 VPS 已部署计价功能，保持 DeepSeek + Responses + native_schema；当前状态和范围见 [状态说明](../../docs/CURRENT_STATUS.md)。下文带日期的本地迁移记录保留当时版本。
+
 此配置保留迁移环境的端口和数据卷，Web 默认运行 Nginx 静态构建，宿主机端口仍为 5173。完整的自托管隔离与备份工具见 [部署指南](../README.md) 和 `compose.production.yml`；切换 Web 不等于已迁移整套生产配置。
 
 本目录提供从 VPS 迁移到本地 Docker 的最小运行栈：
@@ -80,7 +82,7 @@ AXIOM_WEB_RELEASE=web-development docker compose --env-file deploy/docker/.env -
 
 已有部署只更新 Web 时，先备份私有 `.env`、旧 Compose 配置和旧镜像，设置 `AXIOM_WEB_RELEASE` 为新的静态镜像标签，再用基础配置执行 `up -d --no-build --no-deps web`。宿主机端口由 `AXIOM_WEB_PORT` 控制，默认为 5173；容器内端口为 8080。回退到旧 Vite 版本必须同时恢复旧配置和旧镜像，详见 [静态 Web 运行基线](../../docs/STATIC_WEB_BASELINE.md)。
 
-合同更新后，Server、Agent/Scanner 和 Web 应同步重建。Dockerfile 自动构建 contracts TS 包与 Scanner，Agent 优先启动编译后的 Scanner，SDK 固定为 0.1.25。Server 自动应用截至 `021_sdk_identities.sql` 的增量迁移，旧迁移及历史任务语义保持不变。组件审计任务仍使用 input v6 / job v8；当前 ScannerDescription v10 追加 SDK 身份版本 1，并保留历史描述与 Job 读取；网页会显示不兼容时的等待原因。用户在 Web 管理并冻结组件计划，再配置预算与并发、确认未知匹配费用后启动审计；失败组件重试、费用核对、历史证据与报告查看也在 Web 完成。Server 和 Agent 镜像仍安装 Git，原 base/head 差异流程继续保留。
+合同更新后，Server、Agent/Scanner 和 Web 应同步重建。Dockerfile 自动构建 contracts TS 包与 Scanner，Agent 优先启动编译后的 Scanner，SDK 固定为 0.5.0。Server 自动应用截至 `028_model_token_pricing.sql` 的增量迁移，旧迁移及历史任务语义保持。组件审计任务仍使用 input v6 / job v8；当前 ScannerDescription v14、结果适配器 2，并保留历史描述与 Job 读取；网页会显示不兼容时的等待原因。用户在 Web 管理并冻结组件计划，再配置预算与并发、确认未知匹配费用后启动审计；失败组件重试、费用核对、历史证据与报告查看也在 Web 完成。Server 和 Agent 镜像仍安装 Git，原 base/head 差异流程继续保留。
 
 - Server/Agent/Web 代码更新后，建议执行 `docker compose build <service>` 再启动。
 - 如果你需要本地扫描执行但又不想消耗模型额度，保持 `AXIOM_SCAN_MOCK=1`。

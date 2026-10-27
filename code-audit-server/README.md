@@ -1,5 +1,7 @@
 # code-audit-server
 
+当前源码候选 0.1.0-beta.2：SDK 0.5.0、description 14、迁移 028，参考部署保持 DeepSeek + Responses + 原生 Schema。有限真实工作流、新计价隔离验收与部署范围见 [当前状态](../docs/CURRENT_STATUS.md)，计价配置见 [模型单价](../docs/MODEL_PRICING.md)。下文带日期的旧 SDK 条目按引入时版本保留。
+
 Go HTTP API、业务数据库、任务调度与结果索引。**创建扫描立刻返回 pending。** Server 独占业务 PostgreSQL 连接、迁移、Provider 预设和密钥解密；Agent 通过现有 HTTP 控制接口领取和上报。
 
 产品操作入口为 Web；下方命令和 curl 示例只用于开发、接口调试与管理员维护。正式部署见 [部署指南](../deploy/README.md)。

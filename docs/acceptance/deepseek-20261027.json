@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "kind": "scoped-real-model-acceptance",
+  "status": "passed_for_recorded_deployment",
+  "date": "2026-10-27",
+  "candidateRelationship": "historical_workflow_evidence",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "sdkVersion": "0.5.0",
+  "wireAPI": "responses",
+  "reviewOutputMode": "native_schema",
+  "reviewStrictSchema": true,
+  "scanOutputMode": "responses_tool_schemas",
+  "application": {
+    "kind": "synthetic_functional_acceptance_application",
+    "language": "Python",
+    "fileCount": 4,
+    "bytes": 6681,
+    "sourceContentHash": "649ca29fcaefafd755d7361e61b478e325fde82ec4fbde6b3fe3f06ade8d1270"
+  },
+  "workflow": {
+    "scan": "passed",
+    "reviewReport": "passed",
+    "sourceReferences": "passed",
+    "formalArchive": "passed",
+    "evidenceGraph": "passed"
+  },
+  "requests": {
+    "scan": 57,
+    "review": 2,
+    "total": 59,
+    "failed": 0,
+    "automaticRetries": 0
+  },
+  "evidence": {
+    "sourceReferenceCount": 18,
+    "reportSha256": "737a442716ad56fd7cd600af6f70a0388d78f075db79d33b183aa01dddcf1875",
+    "reviewInputSha256": "983c3104c3bcdce6e62fcb80c373f1c614ad3a1ba230fddf16abc3a580fbceaa",
+    "graphNodes": 3,
+    "graphEdges": 2,
+    "graphNodeStates": {
+      "inferred": 3
+    }
+  },
+  "recordedDeployment": {
+    "agentImage": "axiom-vps/agent:vps-source-citations-20261027-01",
+    "agentImageId": "sha256:e71cd4527a8bde63a5ac289306f3d437ceb1f96d0123b171c17bfcbfa36b0772"
+  },
+  "currentCandidateRealModelAcceptance": "not-run",
+  "configuredPricingRealAcceptance": "not-run",
+  "providerInvoiceReconciled": false,
+  "limitations": [
+    "One small runnable application; no certification of every project, language, model or SDK workflow.",
+    "The recorded native scan used Responses tools; standalone review used strict JSON Schema.",
+    "The model-pricing release was deployed later and has isolated acceptance only.",
+    "Graph nodes remain inferred; formal archival is not runtime exploit reproduction."
+  ],
+  "glm": {
+    "source": "user_reported_provider_confirmation",
+    "issue": "provider_responses_processing_defect",
+    "retestedAfterProviderFix": false
+  }
+}

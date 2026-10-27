@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "deployed-pricing-baseline",
+  "date": "2026-10-27",
+  "status": "deployed_and_verified",
+  "implementationRevision": "c654b6ff16db1ecf0a3a99e2da37181f76cc916b",
+  "deploymentRelease": "vps-model-pricing-20261027-01",
+  "sdkVersion": "0.5.0",
+  "scannerDescriptionVersion": 14,
+  "sdkResultAdapterVersion": 2,
+  "latestMigration": "028_model_token_pricing.sql",
+  "referenceModel": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "wireAPI": "responses",
+    "validationOutputMode": "native_schema"
+  },
+  "images": {
+    "server": {
+      "image": "axiom-vps/server:vps-model-pricing-20261027-01",
+      "imageId": "sha256:8e4b9f97814ed1f543e84c9555d8de75401a8acd0ba938936e2da254cc91ffde"
+    },
+    "agent": {
+      "image": "axiom-vps/agent:vps-model-pricing-20261027-01",
+      "imageId": "sha256:7f142cab67e2ee693498c2f8764796b365c71a2f121f899120d03a60b0cc4f01"
+    },
+    "web": {
+      "image": "axiom-vps/web:vps-model-pricing-20261027-01",
+      "imageId": "sha256:42bba807bc13becf8cf43be464482f059584d56ed501fbea83c42f5e50d55b7c"
+    }
+  },
+  "checks": {
+    "contractTests": 498,
+    "scannerTests": 290,
+    "webTests": 94,
+    "serverStore": "passed",
+    "serverHTTP": "passed",
+    "agent": "passed",
+    "offlinePipeline": "passed",
+    "browserDesktopAnd390px": "passed",
+    "backupRestoreAndMigrationTwice": "passed",
+    "protectedTablesUnchanged": 39,
+    "businessFilesUnchanged": 8008,
+    "historicalCostRecordsUnchanged": 21,
+    "staticAssetFilesMatched": 195
+  },
+  "pricing": {
+    "configured": false,
+    "historyRepriced": false,
+    "realAcceptance": "not-run",
+    "invoiceReconciled": false
+  },
+  "deploymentModelCalls": 0,
+  "sourceProvenance": {
+    "frozenSourceFileCount": 1439,
+    "manifestSha256": "124f7a94686ab3dbb241d4714ffd60f984e269c0deb5e5278399062af5bdd5c9"
+  },
+  "boundaries": [
+    "This is a redacted summary of the existing deployment, not a new deployment or a new model test.",
+    "The local source candidate has subsequent documentation and release-tool changes.",
+    "Runtime configuration, data, identities and historical fees were preserved.",
+    "Credentials, database dumps, raw logs and private backup paths are excluded."
+  ]
+}

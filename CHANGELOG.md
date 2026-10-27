@@ -2,13 +2,22 @@
 
 本文件记录可交付行为与兼容边界。版本遵循 SemVer；候选标识不表示已发布或已完成真实模型验收。执行兼容性仍由 [合同矩阵](contracts/COMPATIBILITY.md) 决定，不能只比较版本字符串。
 
-## 未发布 — SDK 0.5.0 隔离候选
+## 0.1.0-beta.2 — 2026-10-27，本地源码候选
+
+- 核心工作流已部署；DeepSeek 小项目真实完成扫描、strict Schema 独立复核、源码核验、正式归档和证据图谱。59 次历史请求中失败和自动重试均为 0，范围限定见 [脱敏证据](docs/acceptance/deepseek-20261027.json)。
+- Scanner description 14、深度续扫与中断候选链路、Responses 输入规范化、namespace 工具往返、严格正文及冻结源码引用保护；移除 Chat 适配，默认保持原生 Schema，不自动切换格式或重试。
+- 修复独立复核 / 组件计划显示不适用的扫描对比错误，区分 SDK 原始费用与平台价格估算。
+- 新增迁移 028、通用模型单价、缓存读写规则、实际累计 Token 计价及执行价格快照。缺价或用量保留未知，零值显式区分；USD 接入预算，其他币种独立展示，不自动换汇，不重算历史费用。
+- 计价功能隔离验收通过并部署至参考 VPS，39 张既有业务表、21 条历史费用及 8008 个文件内容保留；实际价格未配置，真实费用估算和账单核对尚未执行。
+- 更新当前状态、安装、SDK、预算和发布文档。release 元数据用 limited 及证据哈希表示有限历史验收；本候选整理不调用真实模型，不自动发布 GitHub Release 或重标现有镜像。
+
+以下 SDK 升级项在早期隔离及本地 Docker 阶段完成：
 
 - 精确锁定 SDK 0.5.0 / Codex 0.163.0，新增描述 v13 / 结果适配器 2、执行矩阵隔离及 0.1.25 历史读取；禁止自动迁移旧 SDK 私有父状态。
 - 适配无 `coverage.completeness` 的结果与完整覆盖记录、canonical dataflow/reachability/code evidence、Worker discovery/dispatch 和 Token 观察事件；组件 Worker/用量带所属组件。
 - 保留原生定价与费用范围，不将范围基准或未知费用结算为最终总额；继续 Web 对账、失败组件新执行及历史导出。
 - 七项补丁全部重新基于 0.5.0 发布文件制作，保留旧清单和漂移检查；指导文件解析改用新版 Node helper，候选 Agent 镜像增加 Python 运行时。
-- 隔离跨语言、故障、浏览器及 Linux 原生 SDK Mock 验收记录见 [兼容说明](docs/SDK_050_COMPATIBILITY.md)。隔离阶段未切换生产；随后本地 Docker 已部署通过验收的镜像，完成备份恢复核验和 13 项实际 Web 验收，数据库、报告与凭据保持原样，详见 [部署记录](docs/SDK_050_DEPLOYMENT.md)。未执行真实模型、真实 SDK 登录或外部发布。
+- 隔离跨语言、故障、浏览器及 Linux 原生 SDK Mock 验收记录见 [兼容说明](docs/SDK_050_COMPATIBILITY.md)。隔离阶段未切换生产；随后本地 Docker 已部署通过验收的镜像，完成备份恢复核验和 13 项实际 Web 验收，数据库、报告与凭据保持原样，详见 [部署记录](docs/SDK_050_DEPLOYMENT.md)。该阶段未执行真实模型、真实 SDK 登录或外部发布；后续真实小项目与 VPS 计价部署见上述条目和 [当前状态](docs/CURRENT_STATUS.md)。
 
 ## 0.1.0-beta.1 — 发布候选，尚未正式发布
 

@@ -1,10 +1,10 @@
 # Axiom — AI 源代码安全审计一体机
 
-本分支包含 **SDK 0.5.0 兼容适配**；本地 Docker 已使用通过隔离验收的镜像，备份、浏览器验收和回滚前提见 [部署记录](docs/SDK_050_DEPLOYMENT.md)。适配范围、历史读取、七项补丁及无模型验收见 [兼容记录](docs/SDK_050_COMPATIBILITY.md)。源码检查结果见仓库 [GitHub Actions](https://github.com/m0b1u3/Axiom/actions)。
+当前使用 **SDK 0.5.0 / Scanner description 14**。参考 VPS 已部署核心工作流和模型计价，保持 **DeepSeek + Responses + 原生 Schema**。当前功能、部署与验收范围统一见 [当前状态](docs/CURRENT_STATUS.md)；旧 SDK 和早期部署记录保留历史语义。
 
 自托管的 Web 源代码安全审计平台。用户在浏览器配置模型、上传源码、控制扫描和查看证据，后台使用 Go Server + Go Agent + Node Scanner / Codex Security SDK。
 
-当前版本：`0.1.0-beta.1` 发布候选。首版支持 **Linux amd64、可信用户、自托管**。本轮自动验收使用 SDK Fixture 及官方 Mock，真实审计、供应商费用及长期运行验收尚未完成；详见 [CHANGELOG](CHANGELOG.md)。
+源码候选版本：`0.1.0-beta.2`。支持 **Linux amd64、可信用户、自托管**。DeepSeek 小项目已真实跑通扫描、复核、归档和证据图谱；新计价完成隔离测试和部署，真实计费、更多项目和长期稳定性仍待验收。候选整理不调用模型、不代表已公开发布；详见 [候选说明](docs/releases/0.1.0-beta.2.md) 与 [CHANGELOG](CHANGELOG.md)。
 
 [安装、升级与回滚](docs/BETA_INSTALLATION.md) · [部署与备份](deploy/README.md) · [参与贡献](CONTRIBUTING.md) · [私密报告安全问题](SECURITY.md) · [发布流程](docs/RELEASE_PROCESS.md)
 
@@ -18,7 +18,7 @@
 
 已提交的 [Git base/head 差异审计](docs/SDK_GIT_DIFF.md) 已接入：Web 上传完整仓库归档，冻结提交并预览差异，使用 Standard 调用 SDK refs 目标，证据绑定 HEAD；未提交工作区差异仍待后续接入。
 
-[组件规划与计划管理](docs/SDK_COMPONENT_PLANS.md) 已接入：Web 编辑、SDK 自动建议、本地规范化与全量路径检查、人工确认冻结和历史版本下载。候选 SDK 0.5.0；计划确认不会启动组件扫描，真实规划模型仍未验收。
+[组件规划与计划管理](docs/SDK_COMPONENT_PLANS.md) 已接入：Web 编辑、SDK 自动建议、本地规范化与全量路径检查、人工确认冻结和历史版本下载。SDK 0.5.0；计划确认不会启动组件扫描，真实规划模型仍未验收。
 
 ## 仓库结构
 
@@ -68,6 +68,8 @@ cd code-audit-web && npm install && npm run dev      # 127.0.0.1:5173
 
 在执行详情「任务预算与费用」展开各次「按用量估算」，可查看单价快照、实际 Token、来源及完整性，并访问「原始费用快照」。USD 配置估算进入现有 USD 预算记账，其他币种独立展示且不自动换汇；SDK 原始费用另行标注并保留。所有金额均为估算，不代表供应商账单。
 
+填写步骤、公式、用量完整性、单价快照与回退限制见 [模型单价与 Token 费用](docs/MODEL_PRICING.md)。当前参考部署单价未填写，不会追溯重算已有费用。
+
 ## Go 模块边界检查
 
 ```bash
@@ -87,6 +89,10 @@ python3 -m unittest discover -s deploy -p 'check_go_boundaries_test.py' -v
 ## 开源许可
 
 Axiom 使用 [Apache-2.0](LICENSE)。第三方代码、SDK 补丁、字体与标识保留各自许可和声明，见 [NOTICE](NOTICE)。
+
+## 历史增量记录
+
+以下条目按当时版本保留；当前运行和验收状态见 [当前状态](docs/CURRENT_STATUS.md)。
 
 2026-10-16：SDK 原生预检、独立复核、完整会话事件及未知费用的 Web 接入见 [SDK 操作基线](docs/SDK_OPERATIONS.md)。保留 SDK 0.1.25、历史读取与原有传输；验收不执行真实模型、SDK 登录或外部发布。
 

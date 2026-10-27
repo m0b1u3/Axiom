@@ -1,6 +1,8 @@
 # Axiom 合同基线
 
-本模块定义 Server、Agent、Scanner 边界的数据，采用 JSON Schema Draft 2020-12 并生成 Go/TS 类型。基础 Assignment 和完整结果保持 v1；普通任务使用 Job v3，高级输入/知识文档任务使用 base Assignment v1 + ScanInputAssignment v2 并生成 Job v4。SDK 独立操作使用 input v3 + SDKOperation v1 并生成 Job v5；Git 提交差异使用 input v4 + GitDiffAssignment v1 并生成 Job v6；ScannerDescription 为 v7；ProgressSnapshot / ScanEvent 保持 v2，心跳为 ExecutionHeartbeat v1。现有 HTTP、共享文件与 JSONL 保留；老任务的 v1/v2 job、legacy 进度/事件、结果及描述入口仍可读取。
+当前费用增量定义 ModelPricing、ModelPricingSnapshot、ExecutionTokenUsage 和 TokenCostEstimate，AttemptCost 增加 configured_pricing 来源及可选快照。历史结果无新扩展时保持原读取；用法与字段边界见 [模型计价](../docs/MODEL_PRICING.md)。
+
+本模块定义 Server、Agent、Scanner 边界的数据，采用 JSON Schema Draft 2020-12 并生成 Go/TS 类型。基础 Assignment 和完整结果保持 v1；普通任务使用 Job v3，高级输入/知识文档任务使用 base Assignment v1 + ScanInputAssignment v2 并生成 Job v4。SDK 独立操作使用 input v3 + SDKOperation v1 并生成 Job v5；Git 提交差异使用 input v4 + GitDiffAssignment v1 并生成 Job v6；当前 ScannerDescription 为 v14（SDK 0.5.0、结果适配器 2），并保留此前 v1–v13 读取；ProgressSnapshot / ScanEvent 保持 v2，心跳为 ExecutionHeartbeat v1。现有 HTTP、共享文件与 JSONL 保留；老任务的 v1/v2 job、legacy 进度/事件、结果及描述入口仍可读取。
 
 Axiom 的用户入口为纯 Web。本文命令供开发与部署人员使用；Scanner 的进程接口由后台自动调用，使用者通过网页配置和管理扫描。审计能力由服务端 Scanner 调用 Codex Security SDK 提供。
 
@@ -20,7 +22,7 @@ cd ..
 npm test
 ~~~
 
-npm test 会检查生成文件、构建 TS、检查 TS 类型用法与 Scanner 描述入口、执行 Go 单元测试、构建测试 codec，再运行共同样本和双向序列化测试。当前包含 291 个共同样本（124 个有效、167 个无效）和 5 个回归测试；Go 另验证 1792 个任务/能力/预算组合及 Git 可选操作能力组合。仅使用合成合同样本和模拟引擎，不调用模型，也不需要数据库或 API Key。Go 缓存可通过 GOMODCACHE/GOCACHE 设置到本机可写目录。
+npm test 会检查生成文件、构建 TS、检查 TS 类型用法与 Scanner 描述入口、执行 Go 单元测试、构建测试 codec，再运行共同样本和双向序列化测试。共同样本以 `fixtures/v1/manifest.json` 为准，2026-10-27 的完整 conformance 运行通过 498 项；新增计价、用量、执行绑定和未知状态样本，Go 另验证任务 / 能力 / 预算等兼容组合。仅使用合成合同样本和模拟引擎，不调用模型，也不需要数据库或 API Key。Go 缓存可通过 GOMODCACHE/GOCACHE 设置到本机可写目录。
 
 ~~~sh
 npm run generate

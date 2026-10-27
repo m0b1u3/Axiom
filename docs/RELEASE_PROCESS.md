@@ -1,10 +1,10 @@
 # Beta 发布流程
 
-首个发布候选为 `0.1.0-beta.1`，唯一发布版本来源为根目录 `VERSION`；`deploy/release/release.json` 必须匹配。npm 私有包版本、Schema 版本及兼容矩阵分别管理，不能用发布版本替代合同协商。
+当前源码候选为 `0.1.0-beta.2`，唯一发布版本来源为根目录 `VERSION`；`deploy/release/release.json` 必须匹配。npm 私有包版本、Schema 版本及兼容矩阵分别管理，不能用发布版本替代合同协商。
 
 ## 支持边界
 
-Linux amd64、可信用户、自托管。Web 是用户操作入口；Go Server、Go Agent、Node Scanner / SDK 和现有传输方式保持。当前真实 SDK 验收为 `not-run`，CI 禁止使用真实模型凭据。候选不能宣称真实审计、供应商账单或长期稳定性已经通过。
+Linux amd64、可信用户、自托管。Web 是用户操作入口；Go Server、Go Agent、Node Scanner / SDK 和现有传输方式保持。真实 SDK 状态为 `limited`：已有 DeepSeek 小项目扫描、原生 strict Schema 复核、归档和证据图谱的历史证据。`release.json` 绑定脱敏摘要路径和 SHA-256；检查器拒绝缺失、篡改、范围不符或将历史结果当作新计价 / 当前候选真实验收。`currentCandidateRealModelAcceptance` 与 `configuredPricingRealAcceptance` 仍为 `not-run`。CI 禁止使用真实模型凭据；不宣称所有模型、供应商账单或长期稳定性已通过。见 [当前状态](CURRENT_STATUS.md)。
 
 ## 候选检查与源码交付
 
@@ -51,10 +51,10 @@ python3 deploy/ops/acceptance.py --env /absolute/private/baseline.env --candidat
 
 两份配置必须选择相同的全新 `axiom-accept-*` 项目。工具先验证未使用，再执行基线安装、费用与清理证据写入、升级前备份、按顺序切换候选镜像、新 Fixture 任务及原镜像恢复。回滚后验证历史数据保留、候选新增任务不在旧恢复点、旧会话撤销。测试 Agent 网络无外部出口，模型调用为 0。
 
-首版没有前一公开 Release。同版本替换、冻结 Schema 升级和内部镜像升级必须在报告中分别标识；后续版本应增加前一公开版本的实际镜像升级认证。
+发布元数据尚未记录前一公开 Release。同版本替换、冻结 Schema 升级和内部镜像升级必须在报告中分别标识；后续版本应增加前一公开版本的实际镜像升级认证。
 
 ## 发布决定
 
-开源入口、报告渠道、同一提交的五项远端 CI 和安装/恢复证据齐备后，维护者才能创建对应 `vVERSION` 标签与标记为 prerelease 的 GitHub Release。发布准备不自动创建标签、GitHub Release、容器仓库发布或升级业务环境。发布说明必须保留未执行真实 SDK 验收的限制。
+开源入口、报告渠道、同一提交的五项远端 CI 和安装/恢复证据齐备后，维护者才能创建对应 `vVERSION` 标签与标记为 prerelease 的 GitHub Release。发布准备不自动创建标签、GitHub Release、容器仓库发布或升级业务环境。发布说明必须保留有限历史真实验收、本候选及新计价尚未执行新的真实模型测试、供应商账单和长期稳定性未完成的范围。`not-run` 仍用于没有真实证据的旧候选；`limited` 必须带可校验的脱敏摘要，不等于全面通过。
 
 用户和管理员的安装步骤见 [Beta 安装指南](BETA_INSTALLATION.md)。发布后的合同或 SDK 变更继续遵循 [兼容矩阵](../contracts/COMPATIBILITY.md) 与 [SDK 重建基线](SDK_REPRODUCIBILITY.md)。

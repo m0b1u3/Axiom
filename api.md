@@ -1,5 +1,7 @@
 ## Codex Security SDK 是做什么的
 
+当前版本入口：[当前状态](docs/CURRENT_STATUS.md)。SDK 0.5.0 / Scanner description 14 / 迁移 028，参考部署保持 DeepSeek + Responses + 原生 Schema。文内带旧 SDK 版本的章节按引入时事实保留；当前模型计价增量见本文末尾及 [配置说明](docs/MODEL_PRICING.md)。
+
 它是一个 **TypeScript/Node.js SDK**，用于把 Codex Security 的代码安全扫描能力嵌入你自己的平台、CI/CD、代码审查机器人或安全运营系统。
 
 它和普通的 `@openai/codex-sdk` 不同：
@@ -1612,3 +1614,13 @@ Codex Security SDK 并不只是：
 `POST /api/v1/scans/{id}/recovery` 接收 `ScanRecoveryAction` v1：`schemaVersion:1`、`execution:{taskId:string,attempt:number}`、`expectedStatus`、`action`、`resultSha256` 和 `acknowledgeReexecution`。`restore_result` 要求当前提交结果 SHA-256 且确认字段为 false；`restart` 要求确认 true、哈希 null；`interrupt_expired` 两者分别为 null / false。动作绑定原执行及状态，冲突返回 409；不接受 resume 或文件路径。恢复结果不调用 SDK、不增加 attempt，取消/超时保持原状态；重新执行继续执行费用/预算准入。
 
 恢复记录通过快照及执行历史的 `resultRecovery` 读取，保留原错误、原完成信封、操作者、时间与提交哈希。权限、校验和测试边界见 [扫描中断恢复](docs/SCAN_RECOVERY.md)。旧 `/retry` 的兼容语义保留。
+
+## 2026-10-27：通用模型单价与执行费用快照
+
+模型配置 POST / PUT 的原有完整请求可增加 `pricing`。省略此字段时，同一模型 / 供应商 / 接口保留原价；改变绑定且未明确提供新价时清空价格。显式 `null` 关闭自动估算。GET 增加 `pricing` 与只读 `pricingRevision`；不返回解密后的密钥。
+
+`pricing` 严格使用 ModelPricing 合同：`schemaVersion:1`、三位大写 `currency`、`unit:per_million_tokens`、`cacheMode:input_only|cache_read|cache_read_write`，以及 `inputPerMillion`、`cacheReadPerMillion`、`cacheWritePerMillion`、`outputPerMillion` 和 `note`。价格为非负十进制字符串或 null，最多六位小数；字符串 0 表示免费，null 表示未知。省略 pricing 不代表将单价设为零。
+
+`GET /api/v1/scans/{id}/budget` 的每个 attempt 可包含 `tokenEstimate`：状态 estimated / partial / unknown、币种、整数 `amountMicros`、冻结价格及用量、执行身份和未知原因。缺价或所需用量时金额为 null；partial 仅为下界。USD 估算可进入现有预算账本并标记 `configured_pricing`，其他币种不自动换算。
+
+迁移不为旧执行回填价格或金额，不改写 SDK 原始费用；新价格在领取执行时冻结。单价不传入模型请求，协议仍为 Responses，独立复核仍使用原生 strict Schema。

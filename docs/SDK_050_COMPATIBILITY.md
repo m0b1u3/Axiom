@@ -1,5 +1,7 @@
 # SDK 0.5.0 隔离兼容候选
 
+历史记录：本页描述最初的 description 13 兼容候选。当前为 description 14，已有有限 DeepSeek 真实工作流及计价部署；见 [当前状态](CURRENT_STATUS.md)。
+
 本文件记录隔离验收阶段：当时生产基线为提交 `5e50ddc` 的 SDK 0.1.25，候选位于 `codex/sdk-050-compatibility`。该阶段只验收已有产品能力的版本适配，不部署、不调用真实模型、不登录真实 SDK 账户、不发布外部数据。随后用户授权的 Docker 更新已完成，见 [SDK 0.5.0 部署记录](SDK_050_DEPLOYMENT.md)。
 
 ## 版本与边界

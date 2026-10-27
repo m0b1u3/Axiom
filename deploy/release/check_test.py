@@ -1,11 +1,98 @@
 import copy
+import hashlib
 import json
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from check import WORKFLOWS, check_python_syntax, git_inventory, remote_check
+from check import WORKFLOWS, check_python_syntax, check_real_sdk_acceptance, git_inventory, remote_check
+
+
+class ScopedAcceptanceGuards(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.path = self.root/"docs/acceptance/deepseek-fixture.json"
+        self.path.parent.mkdir(parents=True)
+        self.evidence = {
+            "schemaVersion": 1, "kind": "scoped-real-model-acceptance",
+            "status": "passed_for_recorded_deployment", "candidateRelationship": "historical_workflow_evidence",
+            "provider": "deepseek", "sdkVersion": "0.5.0", "wireAPI": "responses",
+            "reviewOutputMode": "native_schema", "reviewStrictSchema": True,
+            "workflow": {k: "passed" for k in ("scan", "reviewReport", "sourceReferences", "formalArchive", "evidenceGraph")},
+            "requests": {"scan": 2, "review": 1, "total": 3, "failed": 0, "automaticRetries": 0},
+            "currentCandidateRealModelAcceptance": "not-run", "configuredPricingRealAcceptance": "not-run",
+            "providerInvoiceReconciled": False, "limitations": ["Fixtures / Mock evidence for release-check unit tests only"],
+        }
+        self.release = {"realSDKAcceptance": "limited", "currentCandidateRealModelAcceptance": "not-run",
+                        "configuredPricingRealAcceptance": "not-run"}
+        self.write_evidence()
+
+    def write_evidence(self):
+        self.path.write_text(json.dumps(self.evidence))
+        self.release["realSDKAcceptanceEvidence"] = {
+            "path": self.path.relative_to(self.root).as_posix(),
+            "sha256": hashlib.sha256(self.path.read_bytes()).hexdigest(),
+        }
+
+    def test_scoped_history_is_reported_as_limited_and_new_pricing_is_not_certified(self):
+        result = check_real_sdk_acceptance(self.root, self.release)
+        self.assertEqual(result["status"], "limited")
+        self.assertEqual(result["configuredPricingRealAcceptance"], "not-run")
+        self.assertEqual(check_real_sdk_acceptance(self.root, {"realSDKAcceptance": "not-run"}), {"status": "not-run"})
+
+    def test_missing_or_changed_evidence_cannot_supply_acceptance(self):
+        self.path.write_text("{}")
+        with self.assertRaisesRegex(ValueError, "SHA-256"):
+            check_real_sdk_acceptance(self.root, self.release)
+        self.path.unlink()
+        with self.assertRaisesRegex(ValueError, "missing"):
+            check_real_sdk_acceptance(self.root, self.release)
+
+    def test_unknown_global_pass_states_and_private_paths_are_rejected(self):
+        for status in ("passed", "complete", "unknown"):
+            with self.subTest(status=status), self.assertRaises(ValueError):
+                check_real_sdk_acceptance(self.root, dict(self.release, realSDKAcceptance=status))
+        self.release["realSDKAcceptanceEvidence"]["path"] = "../private/acceptance.json"
+        with self.assertRaisesRegex(ValueError, "source-controlled"):
+            check_real_sdk_acceptance(self.root, self.release)
+
+    def test_report_cannot_claim_chat_json_mode_or_unverified_workflow(self):
+        for key, value in (("wireAPI", "chat"), ("reviewOutputMode", "json_object"), ("reviewStrictSchema", False)):
+            before = copy.deepcopy(self.evidence)
+            self.evidence[key] = value
+            self.write_evidence()
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, "scope"):
+                check_real_sdk_acceptance(self.root, self.release)
+            self.evidence = before
+        self.evidence["workflow"]["formalArchive"] = "not-run"
+        self.write_evidence()
+        with self.assertRaisesRegex(ValueError, "incomplete workflow"):
+            check_real_sdk_acceptance(self.root, self.release)
+
+    def test_inconsistent_counts_or_retries_cannot_supply_this_evidence(self):
+        for key, value in (("total", 4), ("scan", True), ("failed", 1), ("automaticRetries", 1)):
+            before = copy.deepcopy(self.evidence)
+            self.evidence["requests"][key] = value
+            self.write_evidence()
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, "counts"):
+                check_real_sdk_acceptance(self.root, self.release)
+            self.evidence = before
+
+    def test_historical_evidence_cannot_certify_new_candidate_pricing_or_billing(self):
+        for document in (self.release, self.evidence):
+            for key in ("currentCandidateRealModelAcceptance", "configuredPricingRealAcceptance"):
+                document[key] = "passed"
+                self.write_evidence()
+                with self.subTest(key=key), self.assertRaisesRegex(ValueError, "cannot certify"):
+                    check_real_sdk_acceptance(self.root, self.release)
+                document[key] = "not-run"
+        self.evidence["providerInvoiceReconciled"] = True
+        self.write_evidence()
+        with self.assertRaisesRegex(ValueError, "limitations"):
+            check_real_sdk_acceptance(self.root, self.release)
 
 
 class RemoteEvidenceGuards(unittest.TestCase):

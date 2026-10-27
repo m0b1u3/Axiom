@@ -1,5 +1,7 @@
 # SDK 原生结果、导出与诊断基线
 
+当前 SDK 为 0.5.0，DeepSeek 小项目已有扫描、原生 Schema 独立复核、归档与图谱的有限真实证据，见 [当前状态](CURRENT_STATUS.md)。迁移 028 的平台单价估算与 SDK 原始费用分别保留，缺失仍未知，详见 [模型计价](MODEL_PRICING.md)。下文保留早期接入时的版本及验收记录。
+
 2026-10-15。固定 SDK 0.1.25 和既有受管理补丁；保留 Go Server + Go Agent + Node Scanner、HTTP、共享产物和 JSONL。所有业务入口在 Web，本批不执行真实审计、SDK 账户登录或外部发布。
 
 ## 已实现的 Web 行为

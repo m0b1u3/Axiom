@@ -1,12 +1,30 @@
 {
   "schemaVersion": 1,
-  "version": "0.1.0-beta.1",
+  "version": "0.1.0-beta.2",
   "channel": "beta",
   "license": "Apache-2.0",
   "repository": "https://github.com/m0b1u3/Axiom",
   "securityReportUrl": "https://github.com/m0b1u3/Axiom/security/advisories/new",
-  "platforms": ["linux/amd64"],
+  "platforms": [
+    "linux/amd64"
+  ],
   "deployment": "single-host-trusted-users",
-  "realSDKAcceptance": "not-run",
-  "previousPublicRelease": null
+  "realSDKAcceptance": "limited",
+  "previousPublicRelease": null,
+  "realSDKAcceptanceEvidence": {
+    "path": "docs/acceptance/deepseek-20261027.json",
+    "sha256": "29c29d83280a25cd96504f707a5f892a48875e00dfc1eec7a08a4af2dc746e01"
+  },
+  "referenceDeployment": {
+    "release": "vps-model-pricing-20261027-01",
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "wireAPI": "responses",
+    "validationOutputMode": "native_schema",
+    "sdkVersion": "0.5.0",
+    "scannerDescriptionVersion": 14,
+    "latestMigration": "028_model_token_pricing.sql"
+  },
+  "currentCandidateRealModelAcceptance": "not-run",
+  "configuredPricingRealAcceptance": "not-run"
 }

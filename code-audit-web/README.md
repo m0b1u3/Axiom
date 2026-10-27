@@ -1,5 +1,7 @@
 # Axiom Web
 
+当前源码候选 0.1.0-beta.2：SDK 0.5.0、description 14、迁移 028，参考部署保持 DeepSeek + Responses + 原生 Schema。有限真实工作流、新计价隔离验收与部署范围见 [当前状态](../docs/CURRENT_STATUS.md)，计价配置见 [模型单价](../docs/MODEL_PRICING.md)。下文带日期的旧 SDK 条目按引入时版本保留。
+
 Vue 3 + TypeScript + Vite，复用现有 Reka UI、TanStack Table 和 `design/` 设计规范。业务 API 保持同源 `/api/v1`；生产环境由静态 Web 服务提供页面并代理 API。
 
 登录、项目与源码快照、扫描配置与控制、进度与证据、报告、模型配置、账户、预算和存储操作均在 Web 完成。Server、Agent 与 Scanner 是后台组件，业务用户无需操作命令行。

@@ -1,5 +1,7 @@
 # SDK 0.5.0 Docker 部署记录
 
+历史记录：本页仅描述 2026-10-20 的本地 Docker 更新。后续 VPS、description 14、DeepSeek 真实小项目和模型计价状态见 [当前状态](CURRENT_STATUS.md)。
+
 2026-10-20（Asia/Shanghai），业务部署与历史演示已更新至本地镜像标签 `sdk050-candidate-20261020`。Server、Agent/Scanner 和 Web 直接使用通过隔离验收的镜像，未重新生成未经验证的构建。部署时源码位于 `codex/sdk-050-compatibility` 工作树；该适配与本记录随后一同纳入仓库，远端检查以对应提交的 GitHub Actions 结果为准。
 
 业务入口为 `http://127.0.0.1:5173`，历史演示为 `http://127.0.0.1:5174/scans/1`。产品仍使用 Go Server + Go Agent + Node Scanner，HTTP、共享产物和 JSONL 传输保持原样，扫描及身份操作仍在 Web 完成。

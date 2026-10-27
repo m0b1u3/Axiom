@@ -1,6 +1,8 @@
 # SDK 修改盘点与重建基线
 
-当前隔离候选已精确锁定 SDK 0.5.0 / Codex 0.163.0；七项补丁重新基于新版发布字节制作。候选 Linux 工具链为 Node 22.23.3 / npm 10.9.8，补齐 Python 运行依赖；详见 [0.5.0 兼容验收](SDK_050_COMPATIBILITY.md)。下文保留原 0.1.25 部署与历史验收记录，旧构建清单位于 `deploy/sdk/legacy/0.1.25/`。现有业务 Docker 本轮没有切换。
+当前精确锁定 SDK 0.5.0 / Codex 0.163.0、Scanner description 14；七项补丁基于 0.5.0 发布字节制作。重建与原始隔离验收见 [0.5.0 兼容验收](SDK_050_COMPATIBILITY.md)，后续 VPS、Responses + 原生 Schema 和有限真实验收见 [当前状态](CURRENT_STATUS.md)。源码候选为 0.1.0-beta.2，本次整理不重新部署或调用模型。
+
+下文是原 SDK 0.1.25 的修改盘点和分阶段历史记录，旧清单及补丁位于 `deploy/sdk/legacy/0.1.25/`；旧版 Chat 转换和当时的无真实模型结论不代表当前实现。当前已移除 Chat 协议适配，undici 用于 Responses 传输。
 
 本基线从原开发 VPS 的私有安装目录 的实际安装文件提取，逐文件对比同版本官方 npm 发布包，并校验发布包的 SHA-512 integrity。范围是 Linux x64 扫描运行环境；没有将未经验证的 Windows/macOS 行为标为已验收。
 
@@ -81,7 +83,7 @@ node deploy/sdk/rebuild.mjs --output /absolute/path/to/new-directory
 
 ## 公开能力接入基线（2026-10-16）
 
-当前完整集成范围固定到 `@openai/codex-security 0.1.25`。升级另做兼容验收。
+2026-10-16 引入能力清单时使用 `@openai/codex-security 0.1.25`；当前 0.5.0 适配与验收范围见页首入口，不能把本历史条目当作当前锁定版本。
 `deploy/sdk/integration.json` 按 25 个能力组记录公开 API、现有实现证据、缺口与实施顺序；这些组不是完成百分比。
 `integration-check.mjs` 只解析 16 份声明文件并核对哈希，不导入 SDK 运行时、不登录、不调用模型、不发布数据。
 检查已接入 `input-chain.yml`；本地使用 Scanner 的 `verify:sdk-integration` 和 `test:sdk-integration`。

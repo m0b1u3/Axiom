@@ -4,13 +4,13 @@
 
 迁移配置通过私有 `.env` 中的 `AXIOM_IMAGE_PREFIX` 和 `AXIOM_RELEASE` 选择版本镜像，默认前缀为 `axiom-local`。升级时使用唯一标签，保留旧镜像和原凭据；应用镜像固定 `linux/amd64`，与锁定的 SDK 运行基线一致。Web 宿主机端口仍为 5173（可用 `AXIOM_WEB_PORT` 调整），Nginx 容器内端口为 8080，PostgreSQL 与共享数据卷保持原配置。已部署版本可用 `docker compose --env-file deploy/docker/.env -p docker -f deploy/docker/docker-compose.yml up -d --no-build --no-deps server agent web` 重新应用；升级前仍须完成空队列一致性备份。旧 Vite 镜像需要先切换为配套静态镜像，不能直接套用新基础配置。
 
-[组件化审计执行](../docs/SDK_COMPONENT_SCANS.md) 需要同步更新 Server、Agent（包含 Node Scanner）和 Web：新增迁移 020，使用 input 6 / Job 8 / Scanner 描述 9，SDK 保持 0.1.25。开发和生产 Web Dockerfile 均安装合同包锁定的 AJV 运行时依赖。冻结组件计划后，用户在 Web 另行配置并启动组件审计；跨组件匹配费用未知，须明确确认，不能视为受扫描预算硬限制。升级前保留数据库、共享产物和旧镜像；创建新版计划或组件执行数据后，回退须使用独立恢复验证，不能只凭旧 Server 在空新增表上就绪就认定可写入兼容。
+当前 SDK 0.5.0、Scanner description 14、结果适配器 2，Server 迁移截至 028。[组件化审计执行](../docs/SDK_COMPONENT_SCANS.md) 和计价更新都需要配套 Server、Agent（包含 Node Scanner）和 Web；历史 input 6 / Job 8 等组合保持读取。开发和生产 Web Dockerfile 均安装合同包锁定的 AJV 运行时依赖。冻结组件计划后，用户在 Web 另行配置并启动组件审计；跨组件匹配费用未知，须明确确认，不能视为受扫描预算硬限制。升级前保留数据库、共享产物和旧镜像；创建新版计划或组件执行数据后，回退须使用独立恢复验证，不能只凭旧 Server 在空新增表上就绪就认定可写入兼容。
 
 只更新现有部署的 Web 时，在私有 `.env` 设置 `AXIOM_WEB_RELEASE` 为已验收的静态 Web 标签，再执行上述命令的 `web` 单服务版本：`docker compose --env-file deploy/docker/.env -p docker -f deploy/docker/docker-compose.yml up -d --no-build --no-deps web`。Server、Agent 和数据卷仍按原配置运行。该变量为空时跟随 `AXIOM_RELEASE`；后续整套升级时应清空它或明确选择配套 Web 版本。静态版本之间回滚可恢复旧 Web 标签；跨 Nginx/Vite 回滚须同时恢复对应 Compose 配置、启动命令与容器端口，见 [静态 Web 运行基线](../docs/STATIC_WEB_BASELINE.md)。涉及数据库或合同变更时仍按下文恢复流程处理。
 
-适用范围：可信用户、自托管，各服务共置于同一主机。当前 SDK 基线验证 Linux x64，正式配置固定 Server/Agent 为 `linux/amd64`；Apple Silicon Docker 使用模拟执行。真实模型任务仍待单独验收。
+适用范围：可信用户、自托管，各服务共置于同一主机。当前 SDK 基线验证 Linux x64，正式配置固定 Server/Agent 为 `linux/amd64`；Apple Silicon Docker 使用模拟执行。DeepSeek 小项目已通过有限真实工作流验收，新计价实际费用与更多场景仍待验证；状态见 [当前状态](../docs/CURRENT_STATUS.md)。参考部署保持 DeepSeek + Responses + 原生 Schema，不自动切换格式或重试。
 
-首个候选为 `0.1.0-beta.1`。完整的新安装、配置切换及回滚步骤见 [Beta 安装指南](../docs/BETA_INSTALLATION.md)，开源发布与 CI 门槛见 [发布流程](../docs/RELEASE_PROCESS.md)。
+当前源码候选为 `0.1.0-beta.2`。完整的新安装、配置切换及回滚步骤见 [Beta 安装指南](../docs/BETA_INSTALLATION.md)，开源发布与 CI 门槛见 [发布流程](../docs/RELEASE_PROCESS.md)。
 
 ## 安装
 

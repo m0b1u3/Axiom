@@ -17,6 +17,50 @@ REQUIRED = ["LICENSE", "NOTICE", "README.md", "CONTRIBUTING.md", "SECURITY.md", 
             ".github/ISSUE_TEMPLATE/config.yml"]
 
 
+def check_real_sdk_acceptance(root, release):
+    """Preserve scoped historical evidence without certifying this candidate."""
+    status = release.get("realSDKAcceptance")
+    reference = release.get("realSDKAcceptanceEvidence")
+    if status == "not-run" and reference is None:
+        return {"status": "not-run"}
+    if status != "limited" or not isinstance(reference, dict):
+        raise ValueError("Real SDK acceptance must be not-run or limited with reviewed evidence")
+    relative = reference.get("path", "")
+    if not re.fullmatch(r"docs/acceptance/[a-z0-9-]+\.json", relative):
+        raise ValueError("Acceptance evidence must be a source-controlled docs/acceptance JSON file")
+    path = Path(root)/relative
+    if not path.is_file() or path.is_symlink():
+        raise ValueError("Acceptance evidence is missing or not a regular source file")
+    expected = reference.get("sha256", "")
+    if not re.fullmatch(r"[a-f0-9]{64}", expected) or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+        raise ValueError("Acceptance evidence SHA-256 mismatch")
+    evidence = json.loads(path.read_text())
+    if (evidence.get("schemaVersion") != 1 or evidence.get("kind") != "scoped-real-model-acceptance"
+            or evidence.get("status") != "passed_for_recorded_deployment"
+            or evidence.get("candidateRelationship") != "historical_workflow_evidence"
+            or evidence.get("provider") != "deepseek" or evidence.get("sdkVersion") != "0.5.0"
+            or evidence.get("wireAPI") != "responses" or evidence.get("reviewOutputMode") != "native_schema"
+            or evidence.get("reviewStrictSchema") is not True):
+        raise ValueError("Acceptance evidence does not match the reviewed Responses / Schema scope")
+    workflow = evidence.get("workflow", {})
+    if any(workflow.get(k) != "passed" for k in ("scan", "reviewReport", "sourceReferences", "formalArchive", "evidenceGraph")):
+        raise ValueError("Acceptance evidence has an incomplete workflow")
+    requests = evidence.get("requests", {})
+    if (any(type(requests.get(k)) is not int or requests[k] < 0 for k in ("scan", "review", "total", "failed", "automaticRetries"))
+            or requests["scan"] == 0 or requests["review"] == 0
+            or requests["scan"]+requests["review"] != requests["total"]
+            or requests["failed"] != 0 or requests["automaticRetries"] != 0):
+        raise ValueError("Acceptance request counts are missing or inconsistent")
+    for value in (release, evidence):
+        if (value.get("currentCandidateRealModelAcceptance") != "not-run"
+                or value.get("configuredPricingRealAcceptance") != "not-run"):
+            raise ValueError("Historical workflow evidence cannot certify candidate pricing or a fresh model run")
+    if evidence.get("providerInvoiceReconciled") is not False or not evidence.get("limitations"):
+        raise ValueError("Limited acceptance must preserve billing and coverage limitations")
+    return {"status": "limited", "evidence": relative, "sha256": expected,
+            "currentCandidateRealModelAcceptance": "not-run", "configuredPricingRealAcceptance": "not-run"}
+
+
 def check(root=ROOT):
     root = Path(root).resolve()
     release = json.loads((root/"deploy/release/release.json").read_text())
@@ -30,8 +74,21 @@ def check(root=ROOT):
     if release.get("schemaVersion") != 1 or release.get("version") != version(root) or release.get("channel") != "beta":
         raise ValueError("Release metadata and VERSION disagree")
     if (release.get("platforms") != ["linux/amd64"] or release.get("deployment") != "single-host-trusted-users"
-            or release.get("license") != "Apache-2.0" or release.get("realSDKAcceptance") != "not-run"):
+            or release.get("license") != "Apache-2.0"):
         raise ValueError("Beta support or validation boundary changed; update the release policy deliberately")
+    acceptance = check_real_sdk_acceptance(root, release)
+    if acceptance["status"] == "limited":
+        reference = release.get("referenceDeployment", {})
+        sdk = json.loads((root/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"]
+        description = re.search(r"SCANNER_DESCRIPTION_VERSION = (\d+)",
+                                (root/"code-audit-scanner/src/runtime/contract-baseline.gen.ts").read_text())
+        latest = max(p.name for p in (root/"code-audit-server/internal/store/migrations").glob("*.sql"))
+        if (reference.get("provider") != "deepseek" or reference.get("wireAPI") != "responses"
+                or reference.get("validationOutputMode") != "native_schema"
+                or reference.get("sdkVersion") != sdk or description is None
+                or reference.get("scannerDescriptionVersion") != int(description[1])
+                or reference.get("latestMigration") != latest):
+            raise ValueError("Reference deployment metadata disagrees with the candidate SDK, protocol or migration")
     repo = release.get("repository", "")
     parsed = urlparse(repo)
     if parsed.scheme != "https" or parsed.netloc != "github.com" or not re.fullmatch(r"/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", parsed.path):
@@ -62,7 +119,8 @@ def check(root=ROOT):
     files = selected_files(root)
     check_python_syntax(root, files)
     return {"version": release["version"], "platforms": release["platforms"],
-            "localReleaseChecks": "passed", "sourceFiles": len(files), "realSDKAcceptance": "not-run",
+            "localReleaseChecks": "passed", "sourceFiles": len(files), "realSDKAcceptance": acceptance["status"],
+            "realSDKAcceptanceDetail": acceptance,
             "sourceTreeSha256": tree_hash([entry_for(path, root) for path in files]),
             "repository": repo, "securityReportUrl": release["securityReportUrl"]}
 
