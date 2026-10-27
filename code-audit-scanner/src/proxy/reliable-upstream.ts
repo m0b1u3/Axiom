@@ -9,13 +9,16 @@ import {UpstreamTurnDiagnostic,type TurnDiagnostic} from './turn-diagnostic.js';
 import {upstreamTransportDiagnostic,upstreamResponseDiagnostic} from './transport-diagnostic.js';
 import {NamespaceTools,NamespaceToolError} from './namespace-tools.js';
 import {prepareResponsesInput,ResponsesInputError} from './responses-input.js';
+import {validationSourceCitations} from './validation-source-citations.js';
+import {ResponseUsageReceipts} from '../runtime/execution-token-usage.js';
 
 /** Responses transport guard: preserve requests and require a completed answer. */
-export async function startReliableUpstream(upstream:string,gateFile:string,notice:(value:string)=>void=()=>{},observeTurn?:((value:TurnDiagnostic)=>void),outputMode:ValidationOutputMode='native_schema'):Promise<UpstreamProxy>{
+export async function startReliableUpstream(upstream:string,gateFile:string,notice:(value:string)=>void=()=>{},observeTurn?:((value:TurnDiagnostic)=>void),outputMode:ValidationOutputMode='native_schema',frozenReview=false):Promise<UpstreamProxy>{
  if(new URL(upstream).pathname.replace(/\/+$/,'').endsWith('/chat/completions'))throw new Error('Chat endpoints are no longer supported; configure a Responses base URL');
  const gate=new RequestGate(gateFile);
  const dispatcher=upstreamDispatcher(upstream);
  const namespaceTools=new NamespaceTools();
+ const usageReceipts=new ResponseUsageReceipts();
  const server=createServer((req,res)=>{void(async()=>{
   const controller=new AbortController();res.on('close',()=>controller.abort());
   const chunks:Buffer[]=[];let size=0;
@@ -27,7 +30,10 @@ export async function startReliableUpstream(upstream:string,gateFile:string,noti
   const endpoint=route!.endsWith('/responses/compact')?'/responses/compact':'/responses';
   const url=upstream.replace(/\/+$/,'').replace(/\/responses$/,'')+endpoint;
   let forwarded:Buffer, restore:(value:unknown)=>unknown;
-  try{const plan=namespaceTools.prepare(prepareResponsesInput(endpoint==='/responses/compact'?raw:validationJSONRequest(raw,outputMode)),endpoint==='/responses/compact');forwarded=plan.body;restore=plan.restore;}
+  try{
+   const normalized=prepareResponsesInput(endpoint==='/responses/compact'?raw:validationJSONRequest(raw,outputMode));
+   const plan=namespaceTools.prepare(endpoint==='/responses/compact'?normalized:validationSourceCitations(normalized,frozenReview),endpoint==='/responses/compact');forwarded=plan.body;restore=plan.restore;
+  }
   catch(e){res.writeHead(400,{'content-type':'application/json'});res.end(JSON.stringify({error:e instanceof ResponsesInputError?{code:e.code,param:e.path,message:e.message}:e instanceof NamespaceToolError?{code:'namespace_tool_incompatible',message:e.message}:{code:'validation_output_contract_unsupported',message:'JSON compatibility requires the recognized standalone validation contract.'}}));return;}
   const receipt=observeTurn?new UpstreamTurnDiagnostic(forwarded,'responses',observeTurn):null;
   const authorization=String(req.headers.authorization??'');
@@ -36,6 +42,7 @@ export async function startReliableUpstream(upstream:string,gateFile:string,noti
   const startedAt=Date.now();let phase:'headers'|'stream'='headers';
   try{
    release=await gate.acquire(key,controller.signal);
+   const usageReceipt=usageReceipts.begin();
    const response=await upstreamFetch(url,{method:'POST',headers:{'content-type':'application/json',accept:'text/event-stream',authorization},body:forwarded,signal:controller.signal,dispatcher});
    receipt?.headers(response.status,response.headers.get('content-type')??'application/json');
    if(response.status===429){
@@ -60,6 +67,7 @@ export async function startReliableUpstream(upstream:string,gateFile:string,noti
     const parser=new SseParser((event,payload)=>{
      if(terminal||payload==='[DONE]')return;
      let value:any;try{value=JSON.parse(payload)}catch{failure('upstream_invalid_sse','上游 Responses 流包含无效 JSON');return;}
+     if(['response.completed','response.failed','response.incomplete'].includes(value.type))usageReceipt.observe(value.response);
      if(value.type==='response.output_item.done')usable ||= hasOutput(value.item);
      if(value.type==='response.completed'){
       usable ||= (value.response?.output??[]).some(hasOutput);
@@ -77,6 +85,7 @@ export async function startReliableUpstream(upstream:string,gateFile:string,noti
     if(!terminal)failure('upstream_stream_incomplete','上游连接结束但没有完成事件');
     }else if(contentType.includes('application/json')){
     const bytes=Buffer.from(await response.arrayBuffer());receipt?.chunk(bytes);const value:any=JSON.parse(bytes.toString('utf8'));
+    usageReceipt.observe(value,endpoint==='/responses/compact');
     const usable=Array.isArray(value.output)&&value.output.some((item:any)=>['function_call','custom_tool_call'].includes(item.type)||(item.type==='message'&&item.content?.some((p:any)=>typeof p.text==='string'&&p.text.trim())));
     if(endpoint==='/responses'&&value.status==='completed'&&!usable){value.status='failed';value.error={code:'upstream_empty_response',message:'Upstream response contains no answer or tool calls'};notice('上游会话空返回，没有正文或工具调用');}
     let restored;try{restored=restore(value);}catch{res.writeHead(502,{'content-type':'application/json'});res.end(JSON.stringify({error:{code:'namespace_tool_incompatible',message:new NamespaceToolError().message}}));return;}
@@ -97,5 +106,5 @@ export async function startReliableUpstream(upstream:string,gateFile:string,noti
  })().catch(()=>{if(!res.destroyed){res.statusCode=500;res.end();}});});
  server.requestTimeout=0;server.headersTimeout=0;server.timeout=0;
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const address=server.address();
- return {baseUrl:`http://127.0.0.1:${typeof address==='object'&&address?address.port:0}`,upstreamBaseUrl:upstream,close:async()=>{await new Promise<void>(r=>server.close(()=>r()));gate.close();await dispatcher.close();}};
+ return {tokenUsage:(execution,complete)=>usageReceipts.summary(execution,complete),baseUrl:`http://127.0.0.1:${typeof address==='object'&&address?address.port:0}`,upstreamBaseUrl:upstream,close:async()=>{await new Promise<void>(r=>server.close(()=>r()));gate.close();await dispatcher.close();}};
 }

@@ -45,7 +45,7 @@ export async function runSDKOperation(task:ScanTask,signal:AbortSignal):Promise<
     if(outputMode==='json_object'&&(!overrides||!overrides.model_providers))throw new Error('JSON 兼容模式仅支持经本地适配器连接的 OpenAI-compatible 上游；当前连接不能应用此设置。');
     if(operation.kind==='validate'){await mkdir(path.join(task.outputPath,'logs'),{recursive:true,mode:0o700});await writeFile(path.join(task.outputPath,'logs/validation-output-mode.json'),JSON.stringify({schemaVersion:1,mode:outputMode,source:'scanner_environment',localValidation:'sdk_strict_schema_and_report_body',automaticFallback:false})+'\n',{mode:0o600});}
     // Preflight has no transport or inference; validation uses the same provider adapter.
-    if(operation.kind==='validate'&&!task.mock){transportJournal=new ValidationTransportJournal(task.outputPath);shim=await startResponsesTransport(task,overrides,message=>{void sink.warning(message).catch(()=>undefined);},transportJournal.record,outputMode);}
+    if(operation.kind==='validate'&&!task.mock){transportJournal=new ValidationTransportJournal(task.outputPath);shim=await startResponsesTransport(task,overrides,message=>{void sink.warning(message).catch(()=>undefined);},transportJournal.record,outputMode,candidateReview!==null);}
     security=new CodexSecurity(overrides?{codexOverrides:overrides}:{});
     await sink.operationStep(operation.kind==='preflight'?'preflight':'validation');
     await sink.activity({kind:'message',status:'running',description:operation.kind==='preflight'?'检查 SDK 目标、模型和扫描配置':'独立复核已冻结的漏洞证据；费用未知'});
@@ -63,6 +63,7 @@ export async function runSDKOperation(task:ScanTask,signal:AbortSignal):Promise<
         const value=await security!.validate({repositoryPath:task.sourcePath,finding:candidateReview?interimReviewModelFinding(candidateReview,await interimReviewSourceInventory(task.sourcePath)):operation.finding!,outputDir:raw,...(nativeOpenAI(task)?{auth:selectedSDKAuth(task)}:{}),signal});
         await writeFile(path.join(raw,'sdk-operation-native.json'),JSON.stringify(sanitizeSDKData(value,roots))+'\n',{mode:0o600});
         outcome.validation={disposition:value.disposition,report:sanitizeSDKData(value.report) as string,threadId:value.threadId};
+ result.executionUsage=shim?.tokenUsage?.(execution,true);
       }
     });
     if(candidateReview&&outcome.validation){
@@ -72,6 +73,7 @@ export async function runSDKOperation(task:ScanTask,signal:AbortSignal):Promise<
     if(operation.kind==='validate'&&!task.mock&&outcome.validation&&validationReportBodyState(outcome.validation.report)!=='body_present')throw new IncompleteScanError('复核报告输出不完整：报告结构不完整，未识别到独立评估正文（正文可能粘连在标题行）；原始响应与标签已保留；当前候选仍待核查，未自动重试模型。');
     try{decode('SDKOperationResult',JSON.stringify(outcome),execution);}catch{outcome.preflight=null;outcome.validation=null;throw new Error('SDK 原生响应超出当前操作合同或展示容量；完整响应保留在 sdk-operation-native.json。');}
   } catch(error) {
+ result.executionUsage=shim?.tokenUsage?.(execution,false);
     const mapped=mapEngineError(error);result.status=signal.aborted?'canceled':mapped.status;
     const originalMessage=sanitizeSDKData(error instanceof Error?error.message:String(error)) as string;
     const fullMessage=sanitizeSDKData(mapped.message) as string;

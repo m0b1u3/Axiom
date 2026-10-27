@@ -10,7 +10,7 @@ const operation=computed(()=>sdkOperationView(props.result.extensions?.sdkOperat
   <p v-if="!operation" role="alert">SDK 操作结果版本、身份或费用语义不受支持；完整归档仍可下载。</p>
   <template v-else>
    <h3>{{operation.kind==='preflight'?'SDK 原生预检':'SDK 独立漏洞复核'}}</h3>
-   <dl><dt>执行 / SDK</dt><dd>{{operation.execution.taskId}} / {{operation.execution.attempt}} · {{operation.sdkVersion}}</dd><dt>操作费用 · USD</dt><dd>{{operation.cost.state==='unknown'?'未知':'0'}}</dd></dl>
+   <dl><dt>执行 / SDK</dt><dd>{{operation.execution.taskId}} / {{operation.execution.attempt}} · {{operation.sdkVersion}}</dd><dt>SDK 原始费用 · USD</dt><dd>{{operation.cost.state==='unknown'?'未知':'0'}}</dd></dl>
    <p>{{operation.cost.reason}}</p>
    <p v-if="operation.error" role="alert" class="request-error">{{operation.error.code}}：{{operation.error.message}}</p>
    <template v-if="operation.preflight">

@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 1
+  },
+  "source": "sdk_on_usage",
+  "complete": true,
+  "inputTokens": 100000,
+  "cachedInputTokens": 20000,
+  "cacheWriteInputTokens": null,
+  "outputTokens": 10000,
+  "reasoningOutputTokens": 5000,
+  "totalTokens": 1,
+  "requestCount": null
+}

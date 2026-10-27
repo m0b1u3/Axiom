@@ -77,6 +77,7 @@ const selectedAttempt = ref(requestedAttempt());
 watch(()=>route.query.attempt,()=>{selectedAttempt.value=requestedAttempt();});
 const historicalAttempt = computed(() => attempts.value.find(a => String(a.attempt) === selectedAttempt.value));
 const unavailableAttempt=computed(()=>selectedAttempt.value!=='current'&&!historicalAttempt.value);
+const comparisonAvailable = computed(() => task.value !== null && !task.value.sdkOperation && !task.value.componentPlanning && selectedAttempt.value === 'current');
 const attemptOptions = computed(() => [
   {value:"current",label:task.value?.status === "pending" ? "当前任务 · 等待领取" : `当前执行${task.value?.attempt ? ` · 第 ${task.value.attempt} 次` : " · 等待领取"}`},
   ...attempts.value.map(a => ({value:String(a.attempt),label:`第 ${a.attempt} 次 · ${absoluteTime(a.startedAt)}`})),
@@ -445,18 +446,19 @@ async function loadFindings(): Promise<void> {
   } finally {
     if(request===findingsGeneration)findLoading.value = false;
   }
-  if (!disposed && generation === loadGeneration && request===findingsGeneration && !historicalAttempt.value) void loadCompare();
+  if (!disposed && generation === loadGeneration && request===findingsGeneration && comparisonAvailable.value) void loadCompare();
 }
 async function loadCompare(): Promise<void> {
+  if (!comparisonAvailable.value) { compare.value = null; compareError.value = ''; return; }
   const generation = loadGeneration;
   const selection=selectedAttempt.value;
   try {
     const result = await api.compareScan(id);
-    if (disposed || generation !== loadGeneration || selection!==selectedAttempt.value) return;
+    if (disposed || generation !== loadGeneration || selection!==selectedAttempt.value || !comparisonAvailable.value) return;
     compare.value = result;
     compareError.value = "";
   } catch (error) {
-    if (!disposed && generation === loadGeneration && selection===selectedAttempt.value) { compare.value = null; compareError.value = `扫描对比暂不可用：${(error as Error).message}`; }
+    if (!disposed && generation === loadGeneration && selection===selectedAttempt.value && comparisonAvailable.value) { compare.value = null; compareError.value = `扫描对比读取失败：${(error as Error).message}`; }
   }
 }
 
@@ -593,7 +595,7 @@ function sourceName(t: ScanTask): string {
     <div v-if="queueError" class="request-error" role="alert">调度状态暂不可用：{{queueError}}<Button variant="ghost" size="sm" @click="load">重新加载</Button></div>
     <SDKIdentityBinding v-if="task.sdkIdentity" :identity="task.sdkIdentity"/>
     <p v-if="actionError" class="request-error" role="alert">{{actionError}}。当前任务和历史结果已保留，可重试原操作。</p>
-    <p v-if="task.sdkOperation" class="deep-policy-summary">{{task.sdkOperation.kind==='validate'?'SDK 独立复核 · 完整源码快照 · 费用未知，不支持费用上限，不能自动重跑':'SDK 原生预检 · 只检查本地输入与配置，不启动模型'}} <RouterLink v-if="task.sdkOperation.origin" :to="'/scans/'+task.sdkOperation.origin.taskId+'?attempt='+task.sdkOperation.origin.attempt">来源执行 #{{task.sdkOperation.origin.taskId}} / {{task.sdkOperation.origin.attempt}}</RouterLink></p>
+    <p v-if="task.sdkOperation" class="deep-policy-summary">{{task.sdkOperation.kind==='validate'?'SDK 独立复核 · 完整源码快照 · SDK 未提供费用，不支持费用上限，不能自动重跑':'SDK 原生预检 · 只检查本地输入与配置，不启动模型'}} <RouterLink v-if="task.sdkOperation.origin" :to="'/scans/'+task.sdkOperation.origin.taskId+'?attempt='+task.sdkOperation.origin.attempt">来源执行 #{{task.sdkOperation.origin.taskId}} / {{task.sdkOperation.origin.attempt}}</RouterLink></p>
     <p v-else-if="task.componentPlanning" class="deep-policy-summary">{{task.componentPlanning.kind==='normalize'?'组件计划本地校验 · 不调用模型':'组件划分建议 · 费用未知'}} · <RouterLink :to="'/component-plans/'+task.componentPlanning.planId">返回组件计划</RouterLink></p>
     <SDKOperations v-else-if="task.inputContractVersion && task.sourceSnapshotId && !task.componentScan" :task="task" :revision="sdkOperationRevision"/>
     <InterimReviewDetails v-if="task.interimReviewGroupId" :group-id="task.interimReviewGroupId" @archived="loadFindings();load()"/>
@@ -708,8 +710,8 @@ function sourceName(t: ScanTask): string {
         <!-- 扫描信息 & 对比：Inspector 打开时收进主面底部 -->
 
 
-        <div v-if="compareError" class="request-error" role="alert"><span>{{compareError}}</span><Button variant="ghost" size="sm" @click="loadCompare">重新读取对比</Button></div>
-        <details v-if="compare && compare.previousScanId" class="compare">
+        <div v-if="comparisonAvailable && compareError" class="request-error" role="alert"><span>{{compareError}}</span><Button variant="ghost" size="sm" @click="loadCompare">重新读取对比</Button></div>
+        <details v-if="comparisonAvailable && compare && compare.previousScanId" class="compare">
           <summary class="compare-head">
             <span>与上次扫描对比（#{{ compare.previousScanId }}）</span>
             <span class="compare-sums">

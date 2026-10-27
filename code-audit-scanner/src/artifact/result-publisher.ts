@@ -68,6 +68,7 @@ function contractFinding(f:LegacyFinding,task:ScanTask):Finding {
 
 export async function publishResult(task:ScanTask,legacy:LegacyResult):Promise<ScanResult> {
   const result=contractResult(task,legacy,await artifactReferences(task.outputPath,legacy.rawArtifactDir),await installedPatchRevision());
+  if(legacy.executionUsage){validate('ExecutionTokenUsage',legacy.executionUsage,result.execution);result.extensions={...result.extensions,executionUsage:jsonObject(legacy.executionUsage)};}
   if(legacy.sdkSession){const summary={...legacy.sdkSession,journal:result.artifacts.find(a=>a.relativePath==='logs/sdk-session-events.jsonl')??null};if(summary.persistedCount&&!summary.journal){summary.state='incomplete';summary.reason='已记录的会话日志未随本次结果归档，完整性无法确认。';}validate('SDKSessionSummary',summary,result.execution);result.extensions={...result.extensions,sdkSession:jsonObject(summary)};}
   if(legacy.interimReviewOutcome){validate('InterimReviewOutcome',legacy.interimReviewOutcome,result.execution);result.extensions={...result.extensions,interimReviewOutcome:legacy.interimReviewOutcome};}
   if(legacy.sdkOperation){validate('SDKOperationResult',legacy.sdkOperation,result.execution);result.extensions={...result.extensions,sdkOperation:jsonObject(legacy.sdkOperation)};}

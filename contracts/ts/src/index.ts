@@ -68,6 +68,18 @@ export function validate<K extends ContractKind>(kind: K,value: unknown,expected
     validate('SDKDiagnostics',object['diagnostics'],execution as ExecutionRef);
     if((object['usageEstimate'] as Record<string,unknown>)['sdkVersion']!==object['sdkVersion'])throw new ContractValidationError('identity_mismatch',kind);
   }
+  if(kind==='ExecutionTokenUsage'){
+    const v=value as ContractTypes['ExecutionTokenUsage'];
+    if(v.inputTokens!==null&&v.outputTokens!==null){
+      if(!Number.isSafeInteger(v.inputTokens+v.outputTokens)||(v.totalTokens!==null&&v.totalTokens!==v.inputTokens+v.outputTokens)||(v.cachedInputTokens!==null&&v.cachedInputTokens>v.inputTokens)||(v.cacheWriteInputTokens!==null&&v.cacheWriteInputTokens>v.inputTokens-(v.cachedInputTokens??0))||(v.reasoningOutputTokens!==null&&v.reasoningOutputTokens>v.outputTokens))throw new ContractValidationError('invalid_contract',kind);
+    }
+  }
+  if(kind==='TokenCostEstimate'){
+    const v=value as ContractTypes['TokenCostEstimate'];validate('ModelPricingSnapshot',v.pricingSnapshot,v.execution);
+    if(v.usage!==null)validate('ExecutionTokenUsage',v.usage,v.execution);
+    if(v.status!=='unknown'&&(v.amountMicros===null||v.pricingSnapshot.pricing===null||v.currency!==v.pricingSnapshot.pricing.currency||v.usage===null||(v.status==='estimated'&&!v.usage.complete)||(v.status==='partial'&&v.usage.complete)))throw new ContractValidationError('invalid_contract',kind);
+  }
+  if((kind==='ScanResult'||kind==='ProgressSnapshotV2')&&isObject(object['extensions'])&&object['extensions']['executionUsage']!==undefined)validate('ExecutionTokenUsage',object['extensions']['executionUsage'],execution as ExecutionRef);
   if(kind==='ProgressSnapshotV2'&&isObject(object['extensions'])&&object['extensions']['sdkUsage']!==undefined){
     validate('SDKUsage',object['extensions']['sdkUsage'],execution as ExecutionRef);
   }

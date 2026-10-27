@@ -689,16 +689,17 @@ func friendlyHTTPStatus(status int, modelsURL string) string {
 
 func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *store.User) {
 	var body struct {
-		ReasoningEffort string `json:"reasoningEffort"`
-		SDKIdentityOnly bool   `json:"sdkIdentityOnly"`
-		Name            string `json:"name"`
-		Provider        string `json:"provider"`
-		BaseURL         string `json:"baseUrl"`
-		Model           string `json:"model"`
-		ApiKey          string `json:"apiKey"`
-		Remark          string `json:"remark"`
-		WebsiteURL      string `json:"websiteUrl"`
-		WireAPI         string `json:"wireApi"`
+		Pricing         json.RawMessage `json:"pricing"`
+		ReasoningEffort string          `json:"reasoningEffort"`
+		SDKIdentityOnly bool            `json:"sdkIdentityOnly"`
+		Name            string          `json:"name"`
+		Provider        string          `json:"provider"`
+		BaseURL         string          `json:"baseUrl"`
+		Model           string          `json:"model"`
+		ApiKey          string          `json:"apiKey"`
+		Remark          string          `json:"remark"`
+		WebsiteURL      string          `json:"websiteUrl"`
+		WireAPI         string          `json:"wireApi"`
 	}
 	if err := httputil.Decode(r, &body); err != nil || strings.TrimSpace(body.Name) == "" || (body.ApiKey == "" && !body.SDKIdentityOnly) {
 		httputil.Error(w, http.StatusBadRequest, 40000, "name and apiKey required")
@@ -738,6 +739,11 @@ func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		httputil.Error(w, 400, 40000, "仅原生 OpenAI Responses 模型可由 SDK 执行身份提供凭据")
 		return
 	}
+	pricing, pricingErr := store.ParseModelPricing(body.Pricing)
+	if pricingErr != nil {
+		httputil.Error(w, 400, 40000, pricingErr.Error())
+		return
+	}
 	enc := ""
 	var err error
 	if !body.SDKIdentityOnly {
@@ -748,6 +754,7 @@ func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		return
 	}
 	row, err := s.Store.CreateModelConfig(r.Context(), store.ModelConfigRow{
+		Pricing: pricing, PricingSet: len(body.Pricing) > 0,
 		SDKIdentityOnly: body.SDKIdentityOnly,
 		ReasoningEffort: body.ReasoningEffort,
 		Name:            strings.TrimSpace(body.Name),
@@ -773,17 +780,18 @@ func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		return
 	}
 	var body struct {
-		ReasoningEffort     *string `json:"reasoningEffort"`
-		Name                string  `json:"name"`
-		Provider            string  `json:"provider"`
-		BaseURL             string  `json:"baseUrl"`
-		Model               string  `json:"model"`
-		ApiKey              string  `json:"apiKey"`
-		Status              string  `json:"status"`
-		CompatibilityStatus string  `json:"compatibilityStatus"`
-		Remark              string  `json:"remark"`
-		WebsiteURL          string  `json:"websiteUrl"`
-		WireAPI             string  `json:"wireApi"`
+		Pricing             json.RawMessage `json:"pricing"`
+		ReasoningEffort     *string         `json:"reasoningEffort"`
+		Name                string          `json:"name"`
+		Provider            string          `json:"provider"`
+		BaseURL             string          `json:"baseUrl"`
+		Model               string          `json:"model"`
+		ApiKey              string          `json:"apiKey"`
+		Status              string          `json:"status"`
+		CompatibilityStatus string          `json:"compatibilityStatus"`
+		Remark              string          `json:"remark"`
+		WebsiteURL          string          `json:"websiteUrl"`
+		WireAPI             string          `json:"wireApi"`
 	}
 	if err := httputil.Decode(r, &body); err != nil || strings.TrimSpace(body.Name) == "" {
 		httputil.Error(w, http.StatusBadRequest, 40000, "name required")
@@ -810,6 +818,11 @@ func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		httputil.Error(w, 400, 40000, "推理强度无效，请选择支持的值或沿用 SDK 默认")
 		return
 	}
+	pricing, pricingErr := store.ParseModelPricing(body.Pricing)
+	if pricingErr != nil {
+		httputil.Error(w, 400, 40000, pricingErr.Error())
+		return
+	}
 	enc := ""
 	if body.ApiKey != "" {
 		var err error
@@ -820,6 +833,7 @@ func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		}
 	}
 	if err := s.Store.UpdateModelConfig(r.Context(), id, store.ModelConfigRow{
+		Pricing: pricing, PricingSet: len(body.Pricing) > 0,
 		ReasoningEffort:     effort,
 		Name:                strings.TrimSpace(body.Name),
 		Provider:            strings.TrimSpace(body.Provider),

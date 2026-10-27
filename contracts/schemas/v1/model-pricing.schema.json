@@ -1,0 +1,385 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/model-pricing.schema.json",
+  "title": "ModelPricing",
+  "$ref": "#/$defs/ModelPricing",
+  "$defs": {
+    "PricingCurrency": {
+      "type": "string",
+      "pattern": "^[A-Z]{3}$"
+    },
+    "TokenUnitPrice": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,8})(\\.[0-9]{1,6})?$"
+    },
+    "TokenCacheMode": {
+      "type": "string",
+      "enum": [
+        "input_only",
+        "cache_read",
+        "cache_read_write"
+      ]
+    },
+    "ModelPricing": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "currency": {
+          "$ref": "#/$defs/PricingCurrency"
+        },
+        "unit": {
+          "type": "string",
+          "const": "per_million_tokens"
+        },
+        "cacheMode": {
+          "$ref": "#/$defs/TokenCacheMode"
+        },
+        "inputPerMillion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TokenUnitPrice"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cacheReadPerMillion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TokenUnitPrice"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cacheWritePerMillion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TokenUnitPrice"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outputPerMillion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TokenUnitPrice"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 512
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "currency",
+        "unit",
+        "cacheMode",
+        "inputPerMillion",
+        "cacheReadPerMillion",
+        "cacheWritePerMillion",
+        "outputPerMillion",
+        "note"
+      ],
+      "additionalProperties": false
+    },
+    "ModelPricingSnapshot": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "modelConfigId": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "capturedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        },
+        "provider": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "model": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "pricing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelPricing"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "modelConfigId",
+        "revision",
+        "capturedAt",
+        "provider",
+        "model",
+        "pricing",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "ExecutionTokenUsage": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "sdk_on_usage",
+            "responses_usage"
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "inputTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cachedInputTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cacheWriteInputTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outputTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reasoningOutputTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "totalTokens": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "requestCount": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "source",
+        "complete",
+        "inputTokens",
+        "cachedInputTokens",
+        "cacheWriteInputTokens",
+        "outputTokens",
+        "reasoningOutputTokens",
+        "totalTokens",
+        "requestCount"
+      ],
+      "additionalProperties": false
+    },
+    "TokenCostEstimate": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "method": {
+          "type": "string",
+          "const": "configured_token_prices"
+        },
+        "pricingSnapshot": {
+          "$ref": "#/$defs/ModelPricingSnapshot"
+        },
+        "usage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExecutionTokenUsage"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "estimated",
+            "partial",
+            "unknown"
+          ]
+        },
+        "currency": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PricingCurrency"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "amountMicros": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "computedAt": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/Timestamp"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "method",
+        "pricingSnapshot",
+        "usage",
+        "status",
+        "currency",
+        "amountMicros",
+        "reason",
+        "computedAt"
+      ],
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "unknown"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          },
+          "then": {
+            "properties": {
+              "amountMicros": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

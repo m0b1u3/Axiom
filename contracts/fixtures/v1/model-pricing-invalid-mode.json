@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "currency": "USD",
+  "unit": "per_million_tokens",
+  "cacheMode": "invented",
+  "inputPerMillion": "1",
+  "cacheReadPerMillion": "0.1",
+  "cacheWritePerMillion": null,
+  "outputPerMillion": "4",
+  "note": "Fixtures / Mock pricing only"
+}

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "42",
+    "attempt": 1
+  },
+  "method": "configured_token_prices",
+  "pricingSnapshot": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "42",
+      "attempt": 1
+    },
+    "modelConfigId": 2,
+    "revision": 1,
+    "capturedAt": "2026-10-27T08:00:00Z",
+    "provider": "deepseek",
+    "model": "fixture-model",
+    "pricing": {
+      "schemaVersion": 1,
+      "currency": "USD",
+      "unit": "per_million_tokens",
+      "cacheMode": "cache_read",
+      "inputPerMillion": "1",
+      "cacheReadPerMillion": "0.1",
+      "cacheWritePerMillion": null,
+      "outputPerMillion": "4",
+      "note": "Fixtures / Mock pricing only"
+    },
+    "reason": ""
+  },
+  "usage": {
+    "schemaVersion": 1,
+    "execution": {
+      "taskId": "42",
+      "attempt": 1
+    },
+    "source": "sdk_on_usage",
+    "complete": false,
+    "inputTokens": 100000,
+    "cachedInputTokens": 20000,
+    "cacheWriteInputTokens": null,
+    "outputTokens": 10000,
+    "reasoningOutputTokens": 5000,
+    "totalTokens": 110000,
+    "requestCount": null
+  },
+  "status": "partial",
+  "currency": "USD",
+  "amountMicros": 122000,
+  "reason": "usage_incomplete",
+  "computedAt": "2026-10-27T08:01:00Z"
+}

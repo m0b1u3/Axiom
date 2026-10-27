@@ -3052,6 +3052,144 @@
       "kind": "StructuredDiagnosticPage",
       "file": "structured-page.json",
       "valid": true
+    },
+    {
+      "id": "model-pricing-valid",
+      "kind": "ModelPricing",
+      "file": "model-pricing-valid.json",
+      "valid": true
+    },
+    {
+      "id": "model-pricing-missing-rate",
+      "kind": "ModelPricing",
+      "file": "model-pricing-missing-rate.json",
+      "valid": true
+    },
+    {
+      "id": "model-pricing-zero",
+      "kind": "ModelPricing",
+      "file": "model-pricing-zero.json",
+      "valid": true
+    },
+    {
+      "id": "model-pricing-invalid-negative",
+      "kind": "ModelPricing",
+      "file": "model-pricing-invalid-negative.json",
+      "valid": false
+    },
+    {
+      "id": "model-pricing-invalid-numeric",
+      "kind": "ModelPricing",
+      "file": "model-pricing-invalid-numeric.json",
+      "valid": false
+    },
+    {
+      "id": "model-pricing-invalid-precision",
+      "kind": "ModelPricing",
+      "file": "model-pricing-invalid-precision.json",
+      "valid": false
+    },
+    {
+      "id": "model-pricing-invalid-currency",
+      "kind": "ModelPricing",
+      "file": "model-pricing-invalid-currency.json",
+      "valid": false
+    },
+    {
+      "id": "model-pricing-invalid-huge",
+      "kind": "ModelPricing",
+      "file": "model-pricing-invalid-huge.json",
+      "valid": false
+    },
+    {
+      "id": "model-pricing-invalid-mode",
+      "kind": "ModelPricing",
+      "file": "model-pricing-invalid-mode.json",
+      "valid": false
+    },
+    {
+      "id": "pricing-snapshot-valid",
+      "kind": "ModelPricingSnapshot",
+      "file": "pricing-snapshot-valid.json",
+      "valid": true
+    },
+    {
+      "id": "execution-token-usage-valid",
+      "kind": "ExecutionTokenUsage",
+      "file": "execution-token-usage-valid.json",
+      "valid": true
+    },
+    {
+      "id": "execution-token-usage-invalid-reasoning",
+      "kind": "ExecutionTokenUsage",
+      "file": "execution-token-usage-invalid-reasoning.json",
+      "valid": false
+    },
+    {
+      "id": "execution-token-usage-invalid-total",
+      "kind": "ExecutionTokenUsage",
+      "file": "execution-token-usage-invalid-total.json",
+      "valid": false
+    },
+    {
+      "id": "execution-token-usage-invalid-cached",
+      "kind": "ExecutionTokenUsage",
+      "file": "execution-token-usage-invalid-cached.json",
+      "valid": false
+    },
+    {
+      "id": "execution-token-usage-invalid-overflow",
+      "kind": "ExecutionTokenUsage",
+      "file": "execution-token-usage-invalid-overflow.json",
+      "valid": false
+    },
+    {
+      "id": "token-cost-estimated",
+      "kind": "TokenCostEstimate",
+      "file": "token-cost-estimated.json",
+      "valid": true
+    },
+    {
+      "id": "token-cost-partial",
+      "kind": "TokenCostEstimate",
+      "file": "token-cost-partial.json",
+      "valid": true
+    },
+    {
+      "id": "token-cost-unknown",
+      "kind": "TokenCostEstimate",
+      "file": "token-cost-unknown.json",
+      "valid": true
+    },
+    {
+      "id": "token-cost-invalid-foreign-price",
+      "kind": "TokenCostEstimate",
+      "file": "token-cost-invalid-foreign-price.json",
+      "valid": false
+    },
+    {
+      "id": "token-cost-invalid-foreign-usage",
+      "kind": "TokenCostEstimate",
+      "file": "token-cost-invalid-foreign-usage.json",
+      "valid": false
+    },
+    {
+      "id": "token-cost-invalid-currency",
+      "kind": "TokenCostEstimate",
+      "file": "token-cost-invalid-currency.json",
+      "valid": false
+    },
+    {
+      "id": "token-cost-invalid-complete",
+      "kind": "TokenCostEstimate",
+      "file": "token-cost-invalid-complete.json",
+      "valid": false
+    },
+    {
+      "id": "token-cost-invalid-unknown-amount",
+      "kind": "TokenCostEstimate",
+      "file": "token-cost-invalid-unknown-amount.json",
+      "valid": false
     }
   ]
 }

@@ -131,6 +131,55 @@ func ValidateJSON(kind Kind, data []byte, expected *ExecutionRef) error {
 			return err
 		}
 	}
+	if kind == KindExecutionTokenUsage {
+		var v ExecutionTokenUsage
+		if e := json.Unmarshal(data, &v); e != nil {
+			return invalid("invalid_contract", kind)
+		}
+		if v.InputTokens != nil && v.OutputTokens != nil {
+			input, output := *v.InputTokens, *v.OutputTokens
+			if input > 9007199254740991-output || (v.TotalTokens != nil && *v.TotalTokens != input+output) || (v.CachedInputTokens != nil && *v.CachedInputTokens > input) || (v.ReasoningOutputTokens != nil && *v.ReasoningOutputTokens > output) {
+				return invalid("invalid_contract", kind)
+			}
+			cached := int64(0)
+			if v.CachedInputTokens != nil {
+				cached = *v.CachedInputTokens
+			}
+			if v.CacheWriteInputTokens != nil && *v.CacheWriteInputTokens > input-cached {
+				return invalid("invalid_contract", kind)
+			}
+		}
+	}
+	if kind == KindTokenCostEstimate {
+		var v TokenCostEstimate
+		if e := json.Unmarshal(data, &v); e != nil {
+			return invalid("invalid_contract", kind)
+		}
+		raw, _ := EncodeJSON(v.PricingSnapshot)
+		if e := ValidateJSON(KindModelPricingSnapshot, raw, &v.Execution); e != nil {
+			return e
+		}
+		if v.Usage != nil {
+			raw, _ := EncodeJSON(v.Usage)
+			if e := ValidateJSON(KindExecutionTokenUsage, raw, &v.Execution); e != nil {
+				return e
+			}
+		}
+		if v.Status != "unknown" && (v.AmountMicros == nil || v.PricingSnapshot.Pricing == nil || v.Currency == nil || *v.Currency != v.PricingSnapshot.Pricing.Currency || v.Usage == nil || (v.Status == "estimated" && !v.Usage.Complete) || (v.Status == "partial" && v.Usage.Complete)) {
+			return invalid("invalid_contract", kind)
+		}
+	}
+	if kind == KindScanResult || kind == KindProgressSnapshotV2 {
+		if ext, ok := object["extensions"].(map[string]any); ok {
+			if usage, exists := ext["executionUsage"]; exists {
+				raw, _ := json.Marshal(usage)
+				ref := &ExecutionRef{TaskID: TaskID(execution["taskId"].(string)), Attempt: int64(execution["attempt"].(float64))}
+				if e := ValidateJSON(KindExecutionTokenUsage, raw, ref); e != nil {
+					return e
+				}
+			}
+		}
+	}
 	if kind == KindProgressSnapshotV2 {
 		if ext, ok := object["extensions"].(map[string]any); ok {
 			if usage, exists := ext["sdkUsage"]; exists {

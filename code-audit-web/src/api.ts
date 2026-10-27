@@ -30,6 +30,8 @@ export interface SnapshotQuery extends CatalogQuery { usage?: string; id?: numbe
 export interface FindingQuery extends CatalogQuery { severity?: string; status?: string; sourceSnapshotId?: string | number; sourcePath?: string }
 
 export interface ModelConfig {
+ pricing?:import("./contracts").ModelPricing|null;
+ pricingRevision?:number;
  reasoningEffort?:import("./contracts").ReasoningEffort;
  sdkIdentityOnly?:boolean;
   id: number;
@@ -71,6 +73,7 @@ export interface ProviderPreset {
 
 /** 模型配置的写载荷：API Key 留空 = 不修改（仅 update） */
 export interface ModelConfigPayload {
+ pricing?:import("./contracts").ModelPricing|null;
  reasoningEffort?:string;
  sdkIdentityOnly?:boolean;
   name: string;

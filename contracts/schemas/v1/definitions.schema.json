@@ -3909,7 +3909,8 @@
         "none",
         "sdk_progress",
         "sdk_result",
-        "manual_estimate"
+        "manual_estimate",
+        "configured_pricing"
       ]
     },
     "BudgetState": {
@@ -3995,6 +3996,9 @@
         "updatedBy": {
           "type": "string",
           "maxLength": 128
+        },
+        "tokenEstimate": {
+          "$ref": "https://axiom.invalid/contracts/v1/model-pricing.schema.json#/$defs/TokenCostEstimate"
         }
       },
       "required": [

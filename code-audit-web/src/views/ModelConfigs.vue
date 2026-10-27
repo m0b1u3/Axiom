@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import ModelPricingFields from "../components/ModelPricingFields.vue";
+import type {ModelPricing} from "../contracts";
+import {checkedModelPricing} from "../utils/model-pricing";
+const pricingRevision=ref(0);
 import { useAuth } from "../composables/auth";
 const { canAdmin } = useAuth();
 import { computed, h, onMounted, reactive, ref } from "vue";
@@ -53,6 +57,7 @@ const enablingId = ref(0);
 
 const reasoningOptions=[{value:"sdk-default",label:"沿用 SDK 默认"},...["none","minimal","low","medium","high","xhigh"].map(value=>({value,label:value}))];
  const form = reactive({
+ pricing:null as ModelPricing|null,
  reasoningEffort:"sdk-default",
  sdkIdentityOnly:false,
   name: "",
@@ -191,7 +196,8 @@ function openCreate(): void {
   editing.value = false;
   editingId.value = 0;
   editingKeyHint.value = "";
-  Object.assign(form, { sdkIdentityOnly:false,name: "", remark: "", provider: "", websiteUrl: "", apiKey: "", baseUrl: "", model: "", wireApi: "", reasoningEffort:"sdk-default" });
+  pricingRevision.value=0;
+  Object.assign(form, { pricing:null,sdkIdentityOnly:false,name: "", remark: "", provider: "", websiteUrl: "", apiKey: "", baseUrl: "", model: "", wireApi: "", reasoningEffort:"sdk-default" });
   fetchedModels.value = [];
   probeResult.value = null;
   dialogOpen.value = true;
@@ -204,7 +210,9 @@ function openEdit(row: ModelConfig): void {
   editingId.value = row.id;
   editingKeyHint.value = row.apiKeyHint ?? "";
  form.sdkIdentityOnly=!!row.sdkIdentityOnly;
+ pricingRevision.value=row.pricingRevision??0;
   Object.assign(form, {
+ pricing:row.pricing?JSON.parse(JSON.stringify(row.pricing)):null,
     name: row.name,
     remark: row.remark ?? "",
     provider: row.provider,
@@ -235,9 +243,12 @@ async function save(): Promise<void> {
     formError.value = "请填写 Base URL。";
     return;
   }
+  let pricing:ModelPricing|null;
+  try{pricing=checkedModelPricing(form.pricing?JSON.parse(JSON.stringify(form.pricing)):null)}catch{formError.value='单价无效：币种填三位大写代码，金额最多六位小数；留空表示未知。';return}
   saving.value = true;
   try {
     const payload: ModelConfigPayload = {
+ pricing,
  ...(!editing.value&&form.sdkIdentityOnly?{sdkIdentityOnly:true}:{}),
       name: form.name.trim(),
       provider: form.provider,
@@ -305,7 +316,7 @@ const columns: ColumnDef<ModelConfig>[] = [
     accessorKey: "model",
     header: "模型",
     cell: (c) =>
-      h("div",{class:"model-identity-copy"},[h("span",{class:"mono"},c.getValue<string>()),h("small",`推理强度 · ${c.row.original.reasoningEffort??"SDK 默认"}`)]),
+      h("div",{class:"model-identity-copy"},[h("span",{class:"mono"},c.getValue<string>()),h("small",`推理强度 · ${c.row.original.reasoningEffort??"SDK 默认"}`),h("small",c.row.original.pricing?`用量计价 · ${c.row.original.pricing.currency} · 版本 ${c.row.original.pricingRevision??0}`:"未配置用量单价")]),
   },
   { accessorKey:"updatedAt", header:"更新时间", size:150, cell:c=>h("span",{class:"model-time"}, new Date(c.getValue<string>()).toLocaleString("zh-CN",{hour12:false})) },
   {
@@ -460,6 +471,7 @@ onMounted(() => {
         </label>
 
         <label class="field full" for="model-reasoning-effort"><span class="lab">推理强度</span><Select id="model-reasoning-effort" v-model="form.reasoningEffort" :options="reasoningOptions" :disabled="saving" placeholder="沿用 SDK 默认" aria-label="推理强度"/><span class="hint">沿用默认时不覆盖 SDK 配置。供应商和模型须支持所选强度；连接测试不验证其生效情况。</span></label>
+ <ModelPricingFields v-model="form.pricing" :revision="pricingRevision" :disabled="saving" class="full"/>
  <div class="split full">
           <label class="field">
             <span class="lab">官网</span>

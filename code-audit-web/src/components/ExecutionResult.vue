@@ -44,14 +44,14 @@ async function artifact(ref:ArtifactRef){artifactError.value='';downloading.valu
    <p v-if="processMismatch(archive?.completion)" class="result-note" role="status">SDK 结果已校验并归档；进程退出与结果状态不同，退出记录保留在执行元数据中。</p>
    <p v-if="archive?.completion && archive.completion.process.code==null && archive.completion.process.signal==null" class="result-note" role="status">原进程退出状态未采集；已保留提交结果，不能据此推定进程成功退出。</p>
    <dl class="result-properties">
-    <div v-if="!operationKind"><dt>估算费用 · USD</dt><dd class="mono">{{estimatedCost(result.cost?.estimatedUsd)}}</dd></div>
+    <div v-if="!operationKind"><dt>SDK 原始估算 · USD</dt><dd class="mono">{{estimatedCost(result.cost?.estimatedUsd)}}</dd></div>
     <div v-if="!operationKind"><dt>输入 / 输出 Token</dt><dd class="mono">{{result.cost?.inputTokens??'未知'}} / {{result.cost?.outputTokens??'未知'}}</dd></div>
     <div><dt>配置模型</dt><dd>{{result.model.providerId}} · {{result.model.model}}</dd></div>
     <div v-if="!operationKind"><dt>SDK 报告的模型</dt><dd>{{reportedModel(sdk)}}</dd></div>
     <div><dt>引擎 / SDK 版本</dt><dd>{{result.engine.name}} · {{result.engine.version??'未知'}}</dd></div>
     <div v-if="!operationKind"><dt>插件版本</dt><dd>{{result.engine.pluginVersion??'未知'}}</dd></div>
    </dl>
-   <p v-if="!operationKind" class="result-note">费用由引擎估算，可能与供应商账单不同；缓存、推理 Token 和原生计费字段保留在完整 SDK JSON 中。</p>
+   <p v-if="!operationKind" class="result-note">此处保留 SDK 原始估算；平台按配置单价计算的金额见“任务预算与费用”。缓存、推理 Token 和原生计费字段保留在完整 SDK JSON 中。</p>
    <details v-if="costs.length" class="result-details"><summary>原生计费与 Token 记录</summary><section v-for="section in costs" :key="section.title"><h3>{{section.title}}</h3><dl class="metadata"><div v-for="row in section.rows" :key="row.key"><dt>{{row.label}}</dt><dd class="mono">{{row.value}}</dd></div></dl></section></details>
    <details class="result-details"><summary>执行元数据与模型快照</summary><dl class="metadata">
     <div><dt>执行身份</dt><dd class="mono">{{result.execution.taskId}} / attempt {{result.execution.attempt}}</dd></div>

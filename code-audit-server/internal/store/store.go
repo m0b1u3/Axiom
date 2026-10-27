@@ -123,14 +123,17 @@ var FindingStatuses = map[string]bool{
 }
 
 type ModelConfigRow struct {
-	ReasoningEffort string `json:"reasoningEffort,omitempty"`
-	SDKIdentityOnly bool   `json:"sdkIdentityOnly,omitempty"`
-	ID              int64  `json:"id"`
-	Name            string `json:"name"`
-	Provider        string `json:"provider"`
-	BaseURL         string `json:"baseUrl"`
-	Model           string `json:"model"`
-	ApiKeyEncrypted string `json:"-"`
+	Pricing         *contracts.ModelPricing `json:"pricing"`
+	PricingRevision int64                   `json:"pricingRevision"`
+	PricingSet      bool                    `json:"-"`
+	ReasoningEffort string                  `json:"reasoningEffort,omitempty"`
+	SDKIdentityOnly bool                    `json:"sdkIdentityOnly,omitempty"`
+	ID              int64                   `json:"id"`
+	Name            string                  `json:"name"`
+	Provider        string                  `json:"provider"`
+	BaseURL         string                  `json:"baseUrl"`
+	Model           string                  `json:"model"`
+	ApiKeyEncrypted string                  `json:"-"`
 	// 掩码提示（如 sk-…wxyz）：仅 listModelConfigs 瞬态填充，不落库不持久化
 	ApiKeyHint          string `json:"apiKeyHint,omitempty"`
 	Status              string `json:"status"`
@@ -146,13 +149,21 @@ type ModelConfigRow struct {
 }
 
 func (s *Store) CreateModelConfig(ctx context.Context, m ModelConfigRow) (*ModelConfigRow, error) {
+	pricing, e := pricingJSON(m.Pricing)
+	if e != nil {
+		return nil, e
+	}
+	revision := int64(0)
+	if pricing != "" {
+		revision = 1
+	}
 	now := time.Now().UTC().Format(time.RFC3339)
 	var id int64
 	err := s.db.QueryRowContext(ctx, `
-INSERT INTO model_configs (name, provider, base_url, model, api_key_encrypted, status, compatibility_status, remark, website_url, wire_api, reasoning_effort, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+INSERT INTO model_configs (name, provider, base_url, model, api_key_encrypted, status, compatibility_status, remark, website_url, wire_api, reasoning_effort, pricing_json, pricing_revision, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
 		m.Name, m.Provider, m.BaseURL, m.Model, m.ApiKeyEncrypted, defaultIfEmpty(m.Status, "active"),
-		defaultIfEmpty(m.CompatibilityStatus, "experimental"), m.Remark, m.WebsiteURL, m.WireAPI, m.ReasoningEffort, now, now).Scan(&id)
+		defaultIfEmpty(m.CompatibilityStatus, "experimental"), m.Remark, m.WebsiteURL, m.WireAPI, m.ReasoningEffort, pricing, revision, now, now).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -163,11 +174,16 @@ func (s *Store) GetModelConfig(ctx context.Context, id int64) (*ModelConfigRow, 
 	row := s.db.QueryRowContext(ctx, `
 SELECT id, name, provider, COALESCE(base_url,''), model, COALESCE(api_key_encrypted,''),
        COALESCE(status,'active'), COALESCE(compatibility_status,'experimental'), COALESCE(enabled,0),
-       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), COALESCE(reasoning_effort,''), created_at, updated_at
+       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), COALESCE(reasoning_effort,''), pricing_json, pricing_revision, created_at, updated_at
 FROM model_configs WHERE id = ?`, id)
 	var m ModelConfigRow
+	var pricing string
 	err := row.Scan(&m.ID, &m.Name, &m.Provider, &m.BaseURL, &m.Model, &m.ApiKeyEncrypted,
-		&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.ReasoningEffort, &m.CreatedAt, &m.UpdatedAt)
+		&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.ReasoningEffort, &pricing, &m.PricingRevision, &m.CreatedAt, &m.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	m.Pricing, err = decodePricing(pricing)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +194,7 @@ func (s *Store) ListModelConfigs(ctx context.Context) ([]ModelConfigRow, error) 
 	rows, err := s.db.QueryContext(ctx, `
 SELECT id, name, provider, COALESCE(base_url,''), model,
        COALESCE(status,'active'), COALESCE(compatibility_status,'experimental'), COALESCE(enabled,0),
-       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), COALESCE(reasoning_effort,''), created_at, updated_at,
+       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), COALESCE(reasoning_effort,''), pricing_json, pricing_revision, created_at, updated_at,
        COALESCE(api_key_encrypted,'')
 FROM model_configs ORDER BY id`)
 	if err != nil {
@@ -188,9 +204,14 @@ FROM model_configs ORDER BY id`)
 	var out []ModelConfigRow
 	for rows.Next() {
 		var m ModelConfigRow
+		var pricing string
 		if err := rows.Scan(&m.ID, &m.Name, &m.Provider, &m.BaseURL, &m.Model,
-			&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.ReasoningEffort, &m.CreatedAt, &m.UpdatedAt,
+			&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.ReasoningEffort, &pricing, &m.PricingRevision, &m.CreatedAt, &m.UpdatedAt,
 			&m.ApiKeyEncrypted); err != nil {
+			return nil, err
+		}
+		m.Pricing, err = decodePricing(pricing)
+		if err != nil {
 			return nil, err
 		}
 		out = append(out, m)
@@ -230,11 +251,16 @@ func (s *Store) GetEnabledModelConfig(ctx context.Context) (*ModelConfigRow, err
 	row := s.db.QueryRowContext(ctx, `
 SELECT id, name, provider, COALESCE(base_url,''), model, COALESCE(api_key_encrypted,''),
        COALESCE(status,'active'), COALESCE(compatibility_status,'experimental'), COALESCE(enabled,0),
-       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), COALESCE(reasoning_effort,''), created_at, updated_at
+       COALESCE(remark,''), COALESCE(website_url,''), COALESCE(wire_api,''), COALESCE(reasoning_effort,''), pricing_json, pricing_revision, created_at, updated_at
 FROM model_configs WHERE enabled = 1 ORDER BY id LIMIT 1`)
 	var m ModelConfigRow
+	var pricing string
 	err := row.Scan(&m.ID, &m.Name, &m.Provider, &m.BaseURL, &m.Model, &m.ApiKeyEncrypted,
-		&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.ReasoningEffort, &m.CreatedAt, &m.UpdatedAt)
+		&m.Status, &m.CompatibilityStatus, &m.Enabled, &m.Remark, &m.WebsiteURL, &m.WireAPI, &m.ReasoningEffort, &pricing, &m.PricingRevision, &m.CreatedAt, &m.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	m.Pricing, err = decodePricing(pricing)
 	if err != nil {
 		return nil, err
 	}
@@ -242,19 +268,46 @@ FROM model_configs WHERE enabled = 1 ORDER BY id LIMIT 1`)
 }
 
 func (s *Store) UpdateModelConfig(ctx context.Context, id int64, m ModelConfigRow) error {
+	pricing, e := pricingJSON(m.Pricing)
+	if e != nil {
+		return e
+	}
+	tx, e := s.db.BeginTx(ctx, nil)
+	if e != nil {
+		return e
+	}
+	defer tx.Rollback()
+	var prior, provider, model, base string
+	var revision int64
+	query := `SELECT pricing_json,pricing_revision,provider,model,COALESCE(base_url,'') FROM model_configs WHERE id=?`
+	if s.db.postgres {
+		query += ` FOR UPDATE`
+	}
+	if e = tx.QueryRowContext(ctx, query, id).Scan(&prior, &revision, &provider, &model, &base); e != nil {
+		return e
+	}
+	if !m.PricingSet && m.Pricing == nil {
+		pricing = prior
+		if provider != m.Provider || model != m.Model || strings.TrimRight(base, "/") != strings.TrimRight(m.BaseURL, "/") {
+			pricing = ""
+		}
+	}
+	if pricing != prior {
+		revision++
+	}
 	now := time.Now().UTC().Format(time.RFC3339)
-	_, err := s.db.ExecContext(ctx, `
+	_, e = tx.ExecContext(ctx, `
 UPDATE model_configs
 SET name = ?, provider = ?, base_url = ?, model = ?,
-    api_key_encrypted = COALESCE(?, api_key_encrypted),
-    status = COALESCE(?, status),
-    compatibility_status = COALESCE(?, compatibility_status),
-    remark = ?, website_url = ?, wire_api = ?, reasoning_effort = ?,
-    updated_at = ?
-WHERE id = ?`,
-		m.Name, m.Provider, m.BaseURL, m.Model, nullIfEmpty(m.ApiKeyEncrypted),
-		nullIfEmpty(m.Status), nullIfEmpty(m.CompatibilityStatus), m.Remark, m.WebsiteURL, m.WireAPI, m.ReasoningEffort, now, id)
-	return err
+ api_key_encrypted = COALESCE(?, api_key_encrypted),
+ status = COALESCE(?, status), compatibility_status = COALESCE(?, compatibility_status),
+ remark = ?, website_url = ?, wire_api = ?, reasoning_effort = ?,
+ pricing_json=?,pricing_revision=?,updated_at = ? WHERE id = ?`,
+		m.Name, m.Provider, m.BaseURL, m.Model, nullIfEmpty(m.ApiKeyEncrypted), nullIfEmpty(m.Status), nullIfEmpty(m.CompatibilityStatus), m.Remark, m.WebsiteURL, m.WireAPI, m.ReasoningEffort, pricing, revision, now, id)
+	if e != nil {
+		return e
+	}
+	return tx.Commit()
 }
 
 func (s *Store) DeleteModelConfig(ctx context.Context, id int64) error {
@@ -456,6 +509,10 @@ func Open(path string) (*Store, error) {
 	}
 	if err := migrateModelCompatibilitySQLite(db); err != nil {
 		_ = db.Close()
+		return nil, err
+	}
+	if err := migrateModelPricingSQLite(db); err != nil {
+		db.Close()
 		return nil, err
 	}
 	return &Store{db: &database{DB: db}}, nil

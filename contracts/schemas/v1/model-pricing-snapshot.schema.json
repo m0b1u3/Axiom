@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/model-pricing-snapshot.schema.json",
+  "title": "ModelPricingSnapshot",
+  "$ref": "https://axiom.invalid/contracts/v1/model-pricing.schema.json#/$defs/ModelPricingSnapshot"
+}

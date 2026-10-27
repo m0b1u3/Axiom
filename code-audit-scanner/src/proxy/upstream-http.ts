@@ -1,4 +1,5 @@
 import {Agent,ProxyAgent} from "undici";
+import type {ExecutionRef,ExecutionTokenUsage} from '@axiom/contracts';
 
 /** Model turns follow SDK/task cancellation. Do not add the HTTP client's
  * default five-minute header/body timeout on either loopback proxy hop. */
@@ -16,6 +17,7 @@ export interface UpstreamProxy {
   /** 给 Codex 用的 base_url（http://127.0.0.1:<port>） */
   readonly baseUrl: string;
   readonly upstreamBaseUrl: string;
+  tokenUsage?(execution:ExecutionRef,complete:boolean):ExecutionTokenUsage|undefined;
   close(): Promise<void>;
 }
 

@@ -112,7 +112,7 @@ func (s *Store) readBudget(ctx context.Context, tx *transaction, id int64) (budg
 	if s.db.postgres {
 		q += `,a.status,COALESCE(a.lease_expires_at,'')`
 	}
-	q += ` FROM task_cost_attempts c`
+	q += `,COALESCE(tc.estimate_json,'') FROM task_cost_attempts c LEFT JOIN task_token_costs tc ON tc.task_id=c.task_id AND tc.attempt=c.attempt`
 	if s.db.postgres {
 		q += ` LEFT JOIN scan_attempts a ON a.task_id=c.task_id AND a.attempt=c.attempt`
 	}
@@ -129,9 +129,11 @@ func (s *Store) readBudget(ctx context.Context, tx *transaction, id int64) (budg
 		var state, source, updated string
 		args := []any{&index, &grant, &booked, &observed, &final, &state, &source, &a.ProgressRevision, &a.Reason, &updated, &a.Note, &a.UpdatedBy}
 		var attemptStatus, expires sql.NullString
+		var estimateRaw string
 		if s.db.postgres {
 			args = append(args, &attemptStatus, &expires)
 		}
+		args = append(args, &estimateRaw)
 		if e = rows.Scan(args...); e != nil {
 			return v, e
 		}
@@ -147,6 +149,13 @@ func (s *Store) readBudget(ctx context.Context, tx *transaction, id int64) (budg
 		a.ObservedMicros = amount(observed)
 		a.FinalMicros = amount(final)
 		a.UpdatedAt = contracts.Timestamp(updated)
+		if estimateRaw != "" {
+			estimate, e := contracts.DecodeTokenCostEstimate([]byte(estimateRaw), &a.Execution)
+			if e != nil {
+				return v, e
+			}
+			a.TokenEstimate = contracts.Some(estimate)
+		}
 		if booked != nil {
 			if v.sum > MaxMoneyMicros-*booked {
 				v.overflow = true
@@ -276,10 +285,33 @@ func (s *Store) reserveAttemptBudget(ctx context.Context, tx *transaction, id in
 	if e != nil {
 		return e
 	}
+	if e = s.freezeAttemptPricing(ctx, tx, id, index); e != nil {
+		return e
+	}
 	_, e = tx.ExecContext(ctx, `UPDATE task_budgets SET revision=revision+1 WHERE task_id=?`, id)
 	return e
 }
 func (s *Store) recordProgressCost(ctx context.Context, tx *transaction, id int64, index int64, p *contracts.ProgressSnapshotV2) error {
+	if e := s.recordTokenProgress(ctx, tx, id, index, p); e != nil {
+		return e
+	}
+	// Configured prices own platform accounting; native SDK cost evidence is kept
+	// separately and must not be mixed with another provider or currency tariff.
+	var raw string
+	e := tx.QueryRowContext(ctx, `SELECT pricing_snapshot_json FROM task_token_costs WHERE task_id=? AND attempt=?`, id, index).Scan(&raw)
+	if e != nil && !errors.Is(e, sql.ErrNoRows) {
+		return e
+	}
+	if raw != "" {
+		snap, e := contracts.DecodeModelPricingSnapshot([]byte(raw), nil)
+		if e != nil {
+			return e
+		}
+		if snap.Pricing != nil {
+			return nil
+		}
+	}
+
 	if p == nil || p.Cost == nil {
 		return nil
 	}
@@ -346,6 +378,30 @@ func (s *Store) recordFinalCost(ctx context.Context, tx *transaction, c Completi
 		n = nil
 		reason = "execution_incomplete"
 	}
+	configured, e := s.finalTokenEstimate(ctx, tx, c)
+	if e != nil {
+		return e
+	}
+	configuredTotal := false
+	localPreflight := false
+	if c.contract != nil && c.contract.Result.Present && c.contract.Result.Value.Extensions.Present {
+		if raw := c.contract.Result.Value.Extensions.Value["sdkOperation"]; len(raw) > 0 {
+			op, e := contracts.DecodeSDKOperationResult(raw, &c.contract.Execution)
+			localPreflight = e == nil && op.Kind == "preflight"
+		}
+	}
+	if !localPreflight && configured != nil && configured.PricingSnapshot.Pricing != nil {
+		n = nil
+		reason = "configured_price_unknown"
+		if configured.Currency != nil && *configured.Currency != "USD" {
+			reason = "configured_price_currency"
+		}
+		if configured.Status == "estimated" && configured.Currency != nil && *configured.Currency == "USD" && configured.AmountMicros != nil {
+			n = configured.AmountMicros
+			reason = "configured_price_estimate"
+			configuredTotal = true
+		}
+	}
 	state, source := "unknown", "none"
 	if c.recovery != nil {
 		var previousSource string
@@ -365,8 +421,11 @@ func (s *Store) recordFinalCost(ctx context.Context, tx *transaction, c Completi
 	}
 	if n != nil {
 		state, source = "complete", "sdk_result"
+		if configuredTotal {
+			source = "configured_pricing"
+		}
 	}
-	_, e := tx.ExecContext(ctx, `UPDATE task_cost_attempts SET final_micros=?,booked_micros=CASE WHEN CAST(? AS BIGINT) IS NULL THEN booked_micros WHEN booked_micros IS NULL OR booked_micros<? THEN ? ELSE booked_micros END,state=?,source=CASE WHEN CAST(? AS BIGINT) IS NULL AND observed_micros IS NOT NULL THEN 'sdk_progress' ELSE ? END,reason=CASE WHEN CAST(? AS BIGINT) IS NOT NULL AND observed_micros>? THEN 'final_below_progress' ELSE ? END,updated_at=? WHERE task_id=? AND attempt=?`, n, n, n, n, state, n, source, n, n, reason, securityTime(time.Now()), c.TaskID, c.Attempt)
+	_, e = tx.ExecContext(ctx, `UPDATE task_cost_attempts SET final_micros=?,booked_micros=CASE WHEN CAST(? AS BIGINT) IS NULL THEN booked_micros WHEN booked_micros IS NULL OR booked_micros<? THEN ? ELSE booked_micros END,state=?,source=CASE WHEN CAST(? AS BIGINT) IS NULL AND observed_micros IS NOT NULL THEN CASE WHEN source='configured_pricing' THEN 'configured_pricing' ELSE 'sdk_progress' END ELSE ? END,reason=CASE WHEN CAST(? AS BIGINT) IS NOT NULL AND observed_micros>? THEN 'final_below_progress' ELSE ? END,updated_at=? WHERE task_id=? AND attempt=?`, n, n, n, n, state, n, source, n, n, reason, securityTime(time.Now()), c.TaskID, c.Attempt)
 	if e != nil {
 		return e
 	}

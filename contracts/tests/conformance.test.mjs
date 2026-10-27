@@ -82,7 +82,7 @@ test('aliases, limits, enum kinds and source hashes are stable',()=>{
   assert.deepEqual(normalizeLegacyErrorCode('HTTP 401 in arbitrary text'),{code:'unknown',recognized:false});
   assert.equal(exitCode('partial'),2);
   assert.match(SCHEMA_HASH,/^[a-f0-9]{64}$/);
-  assert.equal(CONTRACT_KINDS.length,112);
+  assert.equal(CONTRACT_KINDS.length,116);
   assert.ok(CONTRACT_KINDS.includes('AgentRuntime'));
   assert.throws(()=>decode('ProgressSnapshot',' '.repeat(COMPATIBILITY.limits.progressBytes+1)),e=>e.code==='payload_too_large');
   assert.throws(()=>decode('ExecutionRef',new Uint8Array([255])),e=>e.code==='invalid_json');

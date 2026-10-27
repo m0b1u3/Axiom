@@ -34,3 +34,7 @@ export type {InterimReviewInput,InterimReviewEnvelope,InterimReviewRequest,Inter
 export type { InterimReviewSourceCheck } from "../../contracts/ts/src/types.gen";
 
 export type {StructuredDiagnosticCatalog,StructuredDiagnosticRequest,StructuredDiagnosticRecord,StructuredDiagnosticPage,StructuredDiagnosticCheck,StructuredDiagnosticProfile,StructuredDiagnosticProtocol,StructuredDiagnosticScenario} from '../../contracts/ts/src/types.gen';
+
+export type {ModelPricing,ModelPricingSnapshot,ExecutionTokenUsage,TokenCostEstimate} from '../../contracts/ts/src/types.gen';
+
+export {validate} from "../../contracts/ts/src/index";

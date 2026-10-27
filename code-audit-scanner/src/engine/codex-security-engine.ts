@@ -1,3 +1,4 @@
+import {sdkExecutionUsage} from '../runtime/execution-token-usage.js';
 import {InterimFindings} from '../runtime/interim-findings.js';
 import {prepareDeepResume,saveDeepManifest,acquireDeepGuard,runPinnedDeep,deltaUsage,originOutput} from '../runtime/deep-resume.js';
 import {selectedSDKAuth} from "../runtime/sdk-identity.js";
@@ -110,6 +111,8 @@ export class CodexSecurityEngine implements AuditEngine {
 
     let parentExportScanId:string|undefined;
     let lastObservedCost: Record<string,unknown>|undefined;
+ let lastObservedUsage:Record<string,unknown>|undefined;
+ const tokenExecution={taskId:String(task.taskId),attempt:task.executionAttempt??1};
     const diagnostics=task.resultSchemaVersion&&task.executionAttempt?new SDKDiagnosticTracker({taskId:String(task.taskId),attempt:task.executionAttempt},task.outputPath):null;
     const sessions=task.resultSchemaVersion&&task.executionAttempt?new SDKSessionJournal({taskId:String(task.taskId),attempt:task.executionAttempt},task.outputPath):null;
     try {
@@ -176,7 +179,8 @@ export class CodexSecurityEngine implements AuditEngine {
               else observe(sink.activity(`SDK 已记录 Worker ${event.worker}；运行状态尚未提供`));
             },
             onUsage: (usage) => {
-              if(sink instanceof ContractProgressSink)observe(sink.usage(task.deepResume?deltaUsage({...usage},task.deepResume.inspection.baseline):{...usage}));
+ lastObservedUsage=task.deepResume?deltaUsage({...usage},task.deepResume.inspection.baseline):{...usage};
+              if(sink instanceof ContractProgressSink)observe(sink.usage(lastObservedUsage));
             },
             onCost: (nativeCost) => {
               const cost=task.deepResume?deltaUsage({...nativeCost},task.deepResume.inspection.baseline):nativeCost;
@@ -221,6 +225,7 @@ export class CodexSecurityEngine implements AuditEngine {
           if(["completed","partial"].includes(converted.status))parentExportScanId=sdkResult.manifest.scan.id;
           if(task.deepResume&&converted.cost){const delta=deltaUsage({...converted.cost},task.deepResume.inspection.baseline);if(typeof delta.estimatedUsd==="number")converted.cost=delta;else delete converted.cost;}
           if(lastObservedCost)converted.lastObservedCost=lastObservedCost;
+ converted.executionUsage=sdkExecutionUsage(tokenExecution,lastObservedUsage,converted.status==='completed'&&!converted.error)??shim?.tokenUsage?.(tokenExecution,converted.status==='completed'&&!converted.error);
           if(diagnostics)converted.sdkDiagnostics=diagnostics.snapshot();
           if(sessions)converted.sdkSession=sessions.close();
           await attachValidationReview(task,converted,rawDir);
@@ -234,6 +239,7 @@ export class CodexSecurityEngine implements AuditEngine {
         } catch (error) {
           try{await continuation?.copyArtifacts()}catch{observe(sink.warning("续扫原生产物复制未完成，原目录和预执行备份仍保留"))}
           const result = await salvageOrFail(task, error, startedAt, rawDir);
+ result.executionUsage=sdkExecutionUsage(tokenExecution,lastObservedUsage,false)??shim?.tokenUsage?.(tokenExecution,false);
           if(diagnostics)result.sdkDiagnostics=diagnostics.snapshot();
           if(sessions)result.sdkSession=sessions.close();
           if(lastObservedCost){result.lastObservedCost=lastObservedCost;if(!task.resultSchemaVersion && !result.cost)result.cost={estimatedUsd:lastObservedCost.estimatedUsd as number,inputTokens:lastObservedCost.inputTokens as number,outputTokens:lastObservedCost.outputTokens as number};}
@@ -267,7 +273,7 @@ export class CodexSecurityEngine implements AuditEngine {
 /**
  * Keep the SDK on Responses; this guard does not translate protocols.
  */
-async function startResponsesTransport(task: ScanTask, overrides: JsonObject | undefined, notice: (message:string)=>void, observeTurn?:((value:import('../proxy/turn-diagnostic.js').TurnDiagnostic)=>void), outputMode:import('../proxy/validation-output-mode.js').ValidationOutputMode='native_schema'): Promise<UpstreamProxy | null> {
+async function startResponsesTransport(task: ScanTask, overrides: JsonObject | undefined, notice: (message:string)=>void, observeTurn?:((value:import('../proxy/turn-diagnostic.js').TurnDiagnostic)=>void), outputMode:import('../proxy/validation-output-mode.js').ValidationOutputMode='native_schema',frozenReview=false): Promise<UpstreamProxy | null> {
   if (overrides === undefined || overrides["model_providers"]===undefined) return null;
   const spec = resolveTaskProvider(task);
   const wire = task.wireApi ?? spec.wireApi;
@@ -277,7 +283,7 @@ async function startResponsesTransport(task: ScanTask, overrides: JsonObject | u
   if (upstream === undefined || upstream === "") {
     throw new Error(`Responses transport: ScanTask.baseUrl is required for provider ${task.provider}`);
   }
-  const transport = await startReliableUpstream(upstream, path.resolve(task.outputPath, '../../model-request-gate.sqlite'), notice,observeTurn,outputMode);
+  const transport = await startReliableUpstream(upstream, path.resolve(task.outputPath, '../../model-request-gate.sqlite'), notice,observeTurn,outputMode,frozenReview);
   const shim: UpstreamProxy = transport;
   // codex(reqwest) 会吃 HTTPS_PROXY；环回地址必须进 NO_PROXY，否则代理把
   // 127.0.0.1 请求转发走，shim 永远收不到

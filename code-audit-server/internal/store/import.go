@@ -31,7 +31,7 @@ func (s *Store) ImportSQLite(ctx context.Context, source string) (map[string]int
 	tables := []string{"users", "projects", "source_snapshots", "model_configs", "scan_tasks", "findings"}
 	// Preserve opt-in budget metadata from newer SQLite sources. Old sources
 	// have no such tables and retain their historical budget semantics.
-	for _, name := range []string{"task_budgets", "task_cost_attempts", "storage_settings", "storage_cleanup_jobs"} {
+	for _, name := range []string{"task_budgets", "task_cost_attempts", "task_token_costs", "storage_settings", "storage_cleanup_jobs"} {
 		var exists int
 		if err = read.QueryRowContext(ctx, `SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?`, name).Scan(&exists); err != nil {
 			return nil, err
@@ -55,7 +55,7 @@ func (s *Store) ImportSQLite(ctx context.Context, source string) (map[string]int
 		if table == "task_budgets" {
 			order = "task_id"
 		}
-		if table == "task_cost_attempts" {
+		if table == "task_cost_attempts" || table == "task_token_costs" {
 			order = "task_id,attempt"
 		}
 		rows, err := read.QueryContext(ctx, "SELECT * FROM "+table+" ORDER BY "+order)
@@ -104,7 +104,7 @@ func (s *Store) ImportSQLite(ctx context.Context, source string) (map[string]int
 		if err = tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+table).Scan(&n); err != nil || n != counts[table] {
 			return nil, fmt.Errorf("count verification failed for %s", table)
 		}
-		if table == "task_budgets" || table == "task_cost_attempts" || table == "storage_settings" || table == "storage_cleanup_jobs" {
+		if table == "task_budgets" || table == "task_cost_attempts" || table == "task_token_costs" || table == "storage_settings" || table == "storage_cleanup_jobs" {
 			continue
 		}
 		if _, err = tx.ExecContext(ctx, `SELECT setval(pg_get_serial_sequence(?, 'id'),COALESCE((SELECT MAX(id) FROM `+table+`),1),(SELECT COUNT(*)>0 FROM `+table+`))`, table); err != nil {
