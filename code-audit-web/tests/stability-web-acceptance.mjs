@@ -69,7 +69,7 @@ try {
     await page.goto(origin + '/scans/' + ids.fault);
     const recovery = page.getByRole('region', {name: '扫描中断与恢复', exact: true});
     await recovery.getByRole('button', {name: /^扫描中断与恢复/}).click();
-    await recovery.getByText(`SDK ${sdk} · 此入口不支持断点续扫`, {exact: true}).waitFor();
+    await recovery.getByText(`SDK ${sdk} · Standard 不支持断点续扫`, {exact: true}).waitFor();
     // Leave the panel open while the genuine 60-second lease expires. No Agent
     // remains online to poll the queue or mutate the task status for this test.
     const interrupt = recovery.getByRole('button', {name: '登记租约过期中断', exact: true});
@@ -88,7 +88,7 @@ try {
     await budget.getByRole('button', {name: '核对第 1 次费用', exact: true}).click();
     let dialog = page.getByRole('dialog', {name: '核对执行费用', exact: true});
     await dialog.getByLabel('本次执行估算费用（USD）', {exact: true}).fill('0.125');
-    await dialog.getByLabel('核对依据', {exact: true}).fill('Fixtures / Mock only: synthetic callback estimate retained after forced Agent death; no supplier bill.');
+    await dialog.getByLabel('核对依据', {exact: true}).fill('Fixtures / Mock only: configured fixture price and synthetic Token usage retained after forced Agent death; no supplier bill.');
     await dialog.getByRole('button', {name: '保存人工估算', exact: true}).click(); await dialog.waitFor({state: 'hidden'});
     await page.getByRole('button', {name: '重新执行', exact: true}).click();
     dialog = page.getByRole('dialog', {name: '确认重新执行扫描', exact: true});

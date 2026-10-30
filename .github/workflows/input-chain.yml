@@ -41,6 +41,8 @@ jobs:
       AXIOM_TEST_CATALOG_REPORT_DIR: ${{ github.workspace }}/output/playwright/catalog
       AXIOM_TEST_PARAMETER_REPORT_DIR: ${{ github.workspace }}/output/playwright/sdk-parameters
       AXIOM_TEST_DISPATCH_REPORT_DIR: ${{ github.workspace }}/output/playwright/unbounded-dispatch
+      AXIOM_CI_SCAN_TESTS: '^Test(InputPipelineToSDK|StandardInterimPipeline|InterimReviewPipeline|RecoveryPipeline|DeepResumePipeline)$'
+      AXIOM_CI_SOURCE_TESTS: '^Test(CompatibilityVersionPipeline|Component.*Pipeline|EvidenceGraphPipeline|GitDiffPipeline)$'
     services:
       postgres:
         image: postgres:16.15-alpine3.24@sha256:1a66d744c1b459e13b05a8fca341da84cb63383e99ce262210efee5a319d4551
@@ -95,13 +97,28 @@ jobs:
       - run: go test -count=1 ./...
         working-directory: shared/sourceidentity
       # Store and process fixtures share one disposable database. Keep groups
-      # sequential and every test selected exactly once; each retains Go's
-      # default package timeout and the browser/fault-specific deadlines.
+      # sequential and select each test once. Pipeline tests are split by
+      # workflow so their aggregate runtime does not exhaust Go's default
+      # package timeout; browser and fault deadlines remain unchanged.
       - name: Test Server core and non-SDK workflows
-        run: go test -p 1 -count=1 -skip '^TestSDK.*Pipeline$' ./...
+        run: |
+          axiom_core_packages=()
+          while IFS= read -r axiom_package; do
+            if [[ "$axiom_package" != */internal/httpserver ]]; then
+              axiom_core_packages+=("$axiom_package")
+            fi
+          done < <(go list ./...)
+          go test -p 1 -count=1 "${axiom_core_packages[@]}"
+          go test -count=1 -skip '^Test.*Pipeline' ./internal/httpserver
         working-directory: code-audit-server
-      - name: Test SDK workflows and browser compatibility
-        run: go test -count=1 -run '^TestSDK.*Pipeline$' ./internal/httpserver
+      - name: Test scan and recovery pipelines
+        run: go test -count=1 -run "$AXIOM_CI_SCAN_TESTS" ./internal/httpserver
+        working-directory: code-audit-server
+      - name: Test source and component pipelines
+        run: go test -count=1 -run "$AXIOM_CI_SOURCE_TESTS" ./internal/httpserver
+        working-directory: code-audit-server
+      - name: Test remaining SDK and pricing pipelines
+        run: go test -count=1 -run '^Test.*Pipeline' -skip "$AXIOM_CI_SCAN_TESTS|$AXIOM_CI_SOURCE_TESTS" ./internal/httpserver
         working-directory: code-audit-server
       - run: npm test
         working-directory: contracts
