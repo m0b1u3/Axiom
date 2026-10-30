@@ -7,6 +7,10 @@ The upstream license is preserved in deploy/sdk/UPSTREAM_LICENSE. Changes and
 their before/after hashes are recorded in deploy/sdk/manifest.json and
 deploy/sdk/patches/. The SDK is an independently maintained upstream project.
 
+The container sandbox profiles in deploy/docker/sdk-sandbox/ are unmodified
+OpenAI Codex Security files under the same license. Their pinned upstream
+commit and original file hashes are recorded in that directory's upstream.json.
+
 Other third-party dependencies, fonts, and provider marks retain their own
 licenses and notices. Package lockfiles and Go module files identify the
 dependencies used by this source distribution. This notice does not relicense

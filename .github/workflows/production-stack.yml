@@ -49,6 +49,20 @@ jobs:
             --env HOME=/tmp/empty-home --env CODEX_HOME=/tmp/empty-codex \
             --env CODEX_SECURITY_STATE_DIR=/tmp/empty-state \
             "axiom/agent:$(cat VERSION)" node deploy/sdk/verify-runtime.mjs
+      - name: Verify native Linux SDK shell and temporary directory isolation
+        working-directory: ${{ runner.temp }}/axiom-candidate-source
+        run: |
+          axiom_sandbox_options=(--security-opt "seccomp=$PWD/deploy/docker/sdk-sandbox/codex-security-seccomp.json")
+          if [[ -f /sys/module/apparmor/parameters/enabled ]] && [[ "$(cat /sys/module/apparmor/parameters/enabled)" == Y ]]; then
+            sudo apparmor_parser -r deploy/docker/sdk-sandbox/codex-security.apparmor
+            axiom_sandbox_options+=(--security-opt apparmor=codex-security-container)
+          fi
+          docker run --rm --init --platform linux/amd64 --network none --read-only \
+            --cap-drop ALL --security-opt no-new-privileges:true "${axiom_sandbox_options[@]}" \
+            --tmpfs /tmp:rw,uid=1001,gid=1001,mode=1777 \
+            --tmpfs /app/data:rw,uid=1001,gid=1001,mode=0700 \
+            --env AXIOM_ISOLATED_TEMP_FIXTURE=1 \
+            "axiom/agent:$(cat VERSION)" node deploy/sdk/native-temp-acceptance.mjs
       - name: Verify static Web proxy with isolated mock identity
         working-directory: ${{ runner.temp }}/axiom-candidate-source
         run: python3 deploy/ops/static_web_acceptance.py --image "axiom/web:$(cat VERSION)" --work "$RUNNER_TEMP/axiom-static-web-acceptance"

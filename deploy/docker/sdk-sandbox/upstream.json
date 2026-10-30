@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "sdkVersion": "0.5.0",
+  "repository": "https://github.com/openai/codex-security",
+  "commit": "03414ad84e91a8638bde85af08c47fe957dc9323",
+  "license": "Apache-2.0",
+  "files": [
+    {
+      "path": "codex-security-seccomp.json",
+      "upstreamPath": "docker/codex-security-seccomp.json",
+      "sha256": "4d9767cdcdc79338c0ce172baab5042d1c5a7d847a0d73a10e308f54c44a286d"
+    },
+    {
+      "path": "codex-security.apparmor",
+      "upstreamPath": "docker/codex-security.apparmor",
+      "sha256": "bcfee32927deb02ce279b2d18e55b1780acdf8324232e7bc0424011eadd8c855"
+    }
+  ]
+}
