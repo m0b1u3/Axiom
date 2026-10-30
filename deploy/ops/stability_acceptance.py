@@ -13,7 +13,7 @@ import time
 import uuid
 import zipfile
 
-from acceptance import Web, wait_for
+from acceptance import Web, wait_for, fixture_token_pricing
 from stack import ROOT, Stack, env_bytes, private_write, read_env
 
 
@@ -101,6 +101,7 @@ def suite(env_file, work, seconds=180, files=12000, mib=48, parallel=6, burst=10
       AXIOM_STABILITY_FIXTURE: '1'
       AXIOM_INPUT_TEST_CAPTURE: /app/data/stability/sdk.json
       AXIOM_RESULT_TEST_SCENARIO: rich
+      AXIOM_ACCEPTANCE_PRICED_USAGE_FIXTURE: '1'
       NODE_OPTIONS: --import=/opt/axiom/deploy/ops/fixtures/stability-register.mjs
     volumes:
       - type: bind
@@ -154,7 +155,7 @@ networks:
         assert agent["Config"]["User"] == "axiom" and agent["HostConfig"]["ReadonlyRootfs"]
         assert stack.output("exec", "-T", "agent", "node", "-p", "require('/opt/axiom/code-audit-scanner/node_modules/@openai/codex-security/package.json').version") == sdk_version
         web = Web(stack); web.login()  # A newly generated synthetic console identity, never a business account.
-        model = web.data("POST", "/api/v1/model-configs", {"name":"Fixtures / Mock stability", "provider":"openai", "model":"fixture-stability-model", "apiKey":"fixture-not-a-real-key"})
+        model = web.data("POST", "/api/v1/model-configs", {"name":"Fixtures / Mock stability", "provider":"openai", "model":"fixture-stability-model", "apiKey":"fixture-not-a-real-key", "pricing":fixture_token_pricing()})
         web.data("PUT", f"/api/v1/model-configs/{model['id']}/enable", {"enabled":True})
         project = web.data("POST", "/api/v1/projects", {"name":"Fixtures / Mock stability"})
         large_path, small_path = work/"fixture-large.zip", work/"fixture-small.zip"

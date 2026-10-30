@@ -20,7 +20,7 @@ try {
  const blocked=nodes.getByRole('row').filter({hasText:'fixture-input-agent'}),old=nodes.getByRole('row').filter({hasText:'fixture-legacy-node'});
  await blocked.getByText('预检被阻止',{exact:true}).waitFor();await blocked.getByText(/Scanner 能力描述缺失、无效或版本不受支持/).waitFor();
  await old.getByText('组件版本未上报',{exact:true}).waitFor();assert.match(await old.innerText(),/费用预算/);assert.match(await old.innerText(),/完整结果/);assert.match(await old.innerText(),/进度与事件/);
- await panel.getByText(/Server 与执行节点的兼容矩阵不一致/).waitFor();await nodes.getByRole('row').filter({hasText:'fixture-matrix-node'}).getByText('配套组件矩阵',{exact:true}).waitFor();
+ await panel.getByText(/Server 与执行节点的兼容矩阵不一致/).waitFor();const matrixNode=nodes.getByRole('row').filter({hasText:'fixture-matrix-node'});await matrixNode.getByText(/配套组件矩阵/).waitFor();await matrixNode.getByText(/token_budget/).waitFor();
  assert.equal(await page.getByRole('progressbar').count(),0,'waiting compatibility cannot invent progress');
  const raw=panel.getByText('兼容判定原始数据',{exact:true});await raw.focus();await page.keyboard.press('Space');await panel.getByText(/"matrix_incompatible"/).waitFor();await page.keyboard.press('Space');
  const shots=process.env.AXIOM_TEST_COMPAT_SCREENSHOT_DIR;

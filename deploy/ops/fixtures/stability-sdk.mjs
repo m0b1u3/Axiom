@@ -1,5 +1,5 @@
 // Fixtures / Mock only: no model, authentication, or external network calls.
-import {CodexSecurity as FixtureSDK, ScanInterruptedError} from '../../../contracts/tests/fixtures/input-sdk.mjs';
+import {CodexSecurity as FixtureSDK, ScanInterruptedError, pricedAcceptanceUsage} from '../../../contracts/tests/fixtures/input-sdk.mjs';
 export * from '../../../contracts/tests/fixtures/input-sdk.mjs';
 import {readFile, writeFile, mkdir, readdir, appendFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
@@ -54,7 +54,7 @@ export class CodexSecurity extends FixtureSDK {
       leakedCredentials: ['AXIOM_DATABASE_URL', 'AXIOM_AGENT_TOKEN', 'AXIOM_MASTER_KEY', 'AXIOM_JWT_SECRET'].some(name => process.env[name] !== undefined)}), {flag: 'wx'});
     options.onWorkerStatus?.({kind: 'preflight', delegation: 'available', configuredSlots: 1});
     options.onProgress?.({phase: 'discovery', filesTotal: inventory.files, filesCompleted: 0});
-    options.onCost?.({model: 'fixture-stability-model', estimatedUsd: .125, inputTokens: 10, outputTokens: 5});
+    options.onUsage?.(pricedAcceptanceUsage(125000));
     try {
       for (let i = 0; i < settings.sessionBurst; i++) event({index: i, type: 'synthetic_evidence', authorization: 'Bearer fixture-stability-private-token'});
       for (let i = 0; i < 520; i++) options.onActivity?.({id: `fixture-burst-${i}`, kind: 'tool', status: 'completed', description: 'Fixtures / Mock: synthetic source inspection ' + i, paths: ['src/file-000000.ts'], worker: 1});

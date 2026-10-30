@@ -533,5 +533,24 @@
     "Latest local changes have not been deployed to VPS.",
     "Deep continuation still uses a pinned internal SDK bridge; finite component defer_mailbox_preemption remains under development in Codex 0.163.0.",
     "This supplemental local evidence does not certify the entire release candidate or remote CI."
-  ]
+  ],
+  "postAcceptanceCorrections": {
+    "realModelCalls": 0,
+    "modelExecutionSourceChanged": false,
+    "productionFiles": [
+      {
+        "path": "code-audit-web/src/components/ExecutionRecovery.vue",
+        "sha256": "d6eda934436952bbc4a9d87bd8995bee5cc506a3e000d80712cf9f78289112cb",
+        "change": "Preserve explicit restart confirmation across a same-execution background refresh; retain task/attempt/status and Server-side frozen action checks."
+      }
+    ],
+    "verification": {
+      "webUnitTests": 102,
+      "frontendBrowser": "Passed: held confirmation response overlapped with a background budget/recovery refresh, then confirmation and existing failure/retry actions completed.",
+      "sdkOperationsBrowser": "Passed: manual cost reconciliation preserves the raw independent-review result.",
+      "deploymentFixtureTests": 22
+    },
+    "fixtureMaintenance": "Use explicit synthetic price and Token fixtures for current pricing/budgets; preserve the pinned old SDK upgrade baseline. Current runtime description is checked against generated contract constants.",
+    "identityScope": "implementationIdentity above records production source at real-model execution time. It is not a claim that the subsequent Web-only correction was exercised by those model calls."
+  }
 }

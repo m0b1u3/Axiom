@@ -75,6 +75,29 @@ class RuntimeBaselineAcceptance(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, "no certified"):
             runtime_baseline("0.6.0")
 
+    def test_current_description_includes_capabilities_beyond_the_sdk_adapter(self):
+        baseline = runtime_baseline("0.5.0")
+        contract = baseline["descriptionContract"]
+        self.assertEqual(contract["schemaVersion"], 15)
+        self.assertEqual(contract["tokenBudgetVersion"], 1)
+        description = {**contract, "configuredSdk":{"package":"@openai/codex-security", "version":"0.5.0"}}
+        runtime = {**self.runtime, "scannerDescriptionVersion":15}
+
+        def check(value):
+            verify_runtime_baseline(runtime, baseline["matrix"], value, baseline["identity"], baseline["parameters"],
+                                    baseline["concurrency"], "0.5.0", "fixture-release", baseline["adapter"], contract)
+
+        check(description)
+        for change in ({"schemaVersion":13}, {"schemaVersion":14}, {"schemaVersion":16},
+                       {"tokenBudgetVersion":0}, {"tokenBudgetVersion":2}, {"sdkDeepResumeVersion":0}):
+            with self.subTest(change=change), self.assertRaises(AssertionError):
+                check({**description, **change})
+        for key in ("tokenBudgetVersion", "sdkDeepResumeVersion"):
+            missing = {k:v for k,v in description.items() if k != key}
+            with self.subTest(missing=key), self.assertRaises(AssertionError):
+                check(missing)
+        self.assertNotIn("descriptionContract", runtime_baseline("0.1.25"))
+
 
 if __name__ == "__main__":
     unittest.main()

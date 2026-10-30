@@ -14,7 +14,7 @@ const emit=defineEmits<{changed:[task:ScanTask,action:ScanRecoveryAction['action
 const snapshot=shallowRef<ScanRecoverySnapshot|null>(null),confirmation=shallowRef<ScanRecoverySnapshot|null>(null);
 const expanded=ref(['failed','partial','canceled','timeout'].includes(props.task.status));
 const loading=ref(false),busy=ref(false),error=ref(''),actionError=ref(''),restartOpen=ref(false),acknowledged=ref(false);
-let epoch=0,disposed=false,timer:ReturnType<typeof setInterval>|undefined;
+let epoch=0,disposed=false,requestingRestart=false,timer:ReturnType<typeof setInterval>|undefined;
 onMounted(()=>{
  // With every Agent offline, neither status nor budget revision changes when
  // the lease expires. Re-observe the open panel without starting any action.
@@ -24,25 +24,32 @@ onMounted(()=>{
 });
 onBeforeUnmount(()=>{disposed=true;epoch++;clearInterval(timer)});
 
-async function load():Promise<ScanRecoverySnapshot|null>{
+async function load(purpose:'panel'|'confirmation'='panel'):Promise<ScanRecoverySnapshot|null>{
  const run=++epoch,{id,attempt,status}=props.task;loading.value=true;error.value='';
  try {
   const value=recoveryView(await api.scanRecovery(id),id,attempt,status);
-  if(disposed||run!==epoch)return null;
+  if(disposed||props.task.id!==id||props.task.attempt!==attempt||props.task.status!==status)return null;
   if(!value)throw new Error('Server 返回的恢复合同或执行身份不匹配，操作已停用；历史结果仍可读取。');
-  snapshot.value=value;return value;
- } catch(e){if(!disposed&&run===epoch){snapshot.value=null;error.value=e instanceof ApiError&&e.status===404?'当前 Server 尚未提供扫描恢复入口，请升级配套 Server；历史任务与报告仍可读取。':(e as Error).message;}return null;}
+  if(run===epoch)snapshot.value=value;
+  // A panel refresh may supersede rendering, but cannot discard an explicit
+  // confirmation read for the same task/attempt/status. New executions still
+  // invalidate it, and the Server checks the frozen action again on submit.
+  return run===epoch||purpose==='confirmation'?value:null;
+ } catch(e){if(!disposed&&props.task.id===id&&props.task.attempt===attempt&&props.task.status===status){const message=e instanceof ApiError&&e.status===404?'当前 Server 尚未提供扫描恢复入口，请升级配套 Server；历史任务与报告仍可读取。':(e as Error).message;if(run===epoch){snapshot.value=null;error.value=message;}if(purpose==='confirmation')actionError.value=message;}return null;}
  finally{if(!disposed&&run===epoch)loading.value=false;}
 }
 watch(()=>[props.task.id,props.task.attempt,props.task.status,props.budgetRevision],()=>{snapshot.value=null;if(expanded.value||restartOpen.value)void load();});
 watch(expanded,open=>{if(open&&!loading.value)void load();},{immediate:true});
 
 async function requestRestart(){
- if(!props.canOperate||busy.value)return;
- expanded.value=true;
- const value=await load();
- if(!value||!value.restart.allowed)return;
- confirmation.value=value;acknowledged.value=false;actionError.value='';restartOpen.value=true;
+ if(!props.canOperate||busy.value||requestingRestart||restartOpen.value)return;
+ requestingRestart=true;
+ try{
+  expanded.value=true;
+  const value=await load('confirmation');
+  if(!value||!value.restart.allowed)return;
+  confirmation.value=value;acknowledged.value=false;actionError.value='';restartOpen.value=true;
+ }finally{requestingRestart=false;}
 }
 defineExpose({requestRestart});
 
@@ -68,7 +75,7 @@ async function act(action:ScanRecoveryAction['action']){
   <template v-if="expanded">
    <p class="recovery-note">关闭或刷新浏览器不会停止后台扫描。断点续扫会复用原 SDK 会话与已完成工作；重新执行会启动新的会话。</p>
    <p v-if="loading" role="status">正在核验当前执行与恢复证据…</p>
-   <div v-if="error" class="recovery-error" role="alert">{{error}} <Button variant="ghost" size="sm" :disabled="loading" @click="load">重新核验</Button></div>
+   <div v-if="error" class="recovery-error" role="alert">{{error}} <Button variant="ghost" size="sm" :disabled="loading" @click="load()">重新核验</Button></div>
    <template v-if="snapshot">
     <dl class="recovery-properties">
      <div><dt>断点续扫</dt><dd><DeepResumeControls v-if="task.scanMode==='deep'&&task.attempt>0" :task="task" :can-operate="canOperate" :budget-revision="budgetRevision" @changed="next=>emit('changed',next,'resume_deep')"/><template v-else><strong>SDK {{snapshot.sdkVersion}} · Standard 不支持断点续扫</strong><p>{{snapshot.checkpointResume.reason}}</p></template></dd></div>

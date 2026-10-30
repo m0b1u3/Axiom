@@ -10,6 +10,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -72,6 +73,13 @@ def task_wait(web, task_id):
     return wait_for(get, 50, "fixture scan did not reach a terminal state")
 
 
+def fixture_token_pricing():
+    """One USD per million synthetic Tokens; never a real provider price."""
+    return {"schemaVersion":1, "currency":"USD", "unit":"per_million_tokens", "cacheMode":"input_only",
+            "inputPerMillion":"1", "outputPerMillion":"1", "cacheReadPerMillion":None,
+            "cacheWritePerMillion":None, "note":"Fixtures / Mock only: synthetic usage, no model calls or supplier charge."}
+
+
 def fixture_credentials(stack, create=False):
     """Private, synthetic SDK-state sentinel; never authenticate with its content."""
     assert stack.project.startswith("axiom-accept-")
@@ -85,7 +93,7 @@ console.log(JSON.stringify({sha256:c.createHash('sha256').update(fs.readFileSync
     return result
 
 
-def verify_runtime_baseline(runtime, matrix, description, identity, parameters, concurrency, sdk_version, release, adapter=None):
+def verify_runtime_baseline(runtime, matrix, description, identity, parameters, concurrency, sdk_version, release, adapter=None, description_contract=None):
     assert runtime["state"] == "ready", "Agent runtime is not ready"
     assert runtime["controlAPI"] == max(matrix["controlAPIs"]), "Agent selected a different control API"
     # Independent SDK capabilities advance the Scanner description without
@@ -96,6 +104,11 @@ def verify_runtime_baseline(runtime, matrix, description, identity, parameters, 
         assert adapter["sdkVersion"] == sdk_version, "SDK adapter differs from the pinned dependency"
         expected_description = max(expected_description, adapter["descriptionVersion"])
         assert description["sdkResultAdapterVersion"] == adapter["adapterVersion"], "SDK result adapter version drift"
+    if description_contract is not None:
+        assert description_contract["schemaVersion"] >= expected_description, "Scanner contract predates its SDK capability baselines"
+        expected_description = description_contract["schemaVersion"]
+        for key, value in description_contract.items():
+            assert description.get(key) == value, f"Scanner {key} differs from its generated contract"
     assert description["schemaVersion"] == expected_description, "Scanner description differs from the SDK capability baselines"
     assert description["sdkIdentityVersion"] == identity["identityVersion"], "Scanner identity contract differs from the baseline"
     assert description["sdkParametersVersion"] == parameters["parametersVersion"], "Scanner parameters contract differs from the baseline"
@@ -114,7 +127,16 @@ def runtime_baseline(sdk_version):
     current = json.loads((ROOT/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"]
     if sdk_version == current:
         matrix_path = ROOT/"contracts/data/execution-compatibility.json"
+        generated = (ROOT/"code-audit-scanner/src/runtime/contract-baseline.gen.ts").read_text()
+        version = re.search(r"^export const SCANNER_DESCRIPTION_VERSION = (\d+) as const;$", generated, re.MULTILINE)
+        assert version is not None, "Generated Scanner description version is missing"
+        version = int(version[1])
+        schema = json.loads((ROOT/f"contracts/schemas/v{version}/scanner-description.schema.json").read_text())
+        properties = schema["$defs"][f"ScannerDescriptionV{version}"]["properties"]
+        description_contract = {key:value["const"] for key,value in properties.items() if "const" in value}
+        assert description_contract["schemaVersion"] == version, "Generated Scanner description and schema differ"
         return {"sdkVersion":current, "matrix":json.loads(matrix_path.read_text()), "matrixHash":hashlib.sha256(matrix_path.read_bytes()).hexdigest(),
+                "descriptionContract":description_contract,
                 **{key:json.loads((ROOT/("contracts/data/sdk-"+key+"-compatibility.json")).read_text()) for key in ("identity", "parameters", "concurrency", "adapter")}}
     if sdk_version == "0.1.25":
         baseline = json.loads((ROOT/"deploy/sdk/legacy/0.1.25/execution-baseline.json").read_text())
@@ -131,7 +153,7 @@ def verify_stack_runtime(stack, web, release):
         return next((a.get("runtime") for a in agents if a.get("runtime", {}).get("matrixHash") == baseline["matrixHash"]), None)
     runtime = wait_for(matching_runtime, 30, "Agent did not publish its version's compatibility matrix")
     description = json.loads(stack.output("exec", "-T", "agent", "node", "/opt/axiom/code-audit-scanner/dist/main.js", "--describe"))
-    verify_runtime_baseline(runtime,baseline["matrix"],description,baseline["identity"],baseline["parameters"],baseline["concurrency"],version,release,baseline["adapter"])
+    verify_runtime_baseline(runtime,baseline["matrix"],description,baseline["identity"],baseline["parameters"],baseline["concurrency"],version,release,baseline["adapter"],baseline.get("descriptionContract"))
 
 
 def suite(env_file, work, candidate_env=None):
@@ -154,6 +176,7 @@ def suite(env_file, work, candidate_env=None):
     environment:
       AXIOM_INPUT_TEST_CAPTURE: /app/data/acceptance/sdk.json
       AXIOM_RESULT_TEST_SCENARIO: reliability-controlled
+      AXIOM_ACCEPTANCE_PRICED_USAGE_FIXTURE: '1'
       NODE_OPTIONS: --import=/opt/axiom/contracts/tests/input-sdk-register.mjs
     volumes:
       - type: bind
@@ -180,7 +203,11 @@ networks:
         assert web.raw("POST", "/api/internal/v4/executions/claim", {})[0] == 404
         checks.append("static Web, SPA refresh, readiness, missing assets, private Agent API")
 
-        model = web.data("POST", "/api/v1/model-configs", {"name":"Fixture deployment (no model calls)", "provider":"openai", "model":"fixture-deployment-model", "apiKey":"fixture-not-a-real-key"})
+        initial_sdk = stack.output("exec", "-T", "agent", "node", "-p", "require('/opt/axiom/code-audit-scanner/node_modules/@openai/codex-security/package.json').version")
+        model_input = {"name":"Fixture deployment (no model calls)", "provider":"openai", "model":"fixture-deployment-model", "apiKey":"fixture-not-a-real-key"}
+        if initial_sdk != "0.1.25":
+            model_input["pricing"] = fixture_token_pricing()
+        model = web.data("POST", "/api/v1/model-configs", model_input)
         web.data("PUT", f"/api/v1/model-configs/{model['id']}/enable", {"enabled":True})
         memory = io.BytesIO()
         with zipfile.ZipFile(memory, "w") as archive:
@@ -240,7 +267,14 @@ networks:
         web.data("POST", f"/api/v1/scans/{task_id}/retry", {})
         assert task_wait(web, task_id)["attempt"] == 2
         capture = json.loads(stack.output("exec", "-T", "agent", "cat", "/app/data/acceptance/sdk.json"))
-        assert capture["fixtureOnly"] and capture["options"]["maxCostUsd"] == 1.125
+        assert capture["fixtureOnly"]
+        if initial_sdk == "0.1.25":
+            assert capture["options"]["maxCostUsd"] == 1.125
+        else:
+            assert "maxCostUsd" not in capture["options"], "configured budget reached SDK built-in pricing"
+            attempt = web.data("GET", f"/api/v1/scans/{task_id}")
+            assignment = json.loads(stack.output("exec", "-T", "agent", "cat", attempt["outputPath"]+"/runtime/token-budget.json"))
+            assert assignment["limitMicros"] == 1125000
         spent_budget = web.data("GET", budget_path)
         assert spent_budget["state"] == "exhausted" and spent_budget["estimatedMicros"] == 2250000
         assert not spent_budget["retryAllowed"] and web.raw("POST", f"/api/v1/scans/{task_id}/retry", {})[0] == 409
@@ -365,7 +399,11 @@ networks:
                 return any(a.get("runtime", {}).get("agentBuild") == candidate_values["AXIOM_RELEASE"] for a in agents)
             wait_for(candidate_ready, 30, "upgraded Agent did not publish the candidate build")
             verify_stack_runtime(candidate, web, candidate_values["AXIOM_RELEASE"])
-            upgraded_task = web.data("POST", "/api/v1/scans", {"sourceSnapshotId":snapshot["id"], "modelConfigId":model["id"], "maxCostUsd":1.25, "maxTotalCostUsd":2.25})["id"]
+            # Keep the old model and its historical unknown price untouched.
+            # New finite-budget tasks require an explicitly priced connection.
+            candidate_model = web.data("POST", "/api/v1/model-configs", {**model_input, "name":"Fixtures / Mock candidate configured pricing", "pricing":fixture_token_pricing()})
+            web.data("PUT", f"/api/v1/model-configs/{candidate_model['id']}/enable", {"enabled":True})
+            upgraded_task = web.data("POST", "/api/v1/scans", {"sourceSnapshotId":snapshot["id"], "modelConfigId":candidate_model["id"], "maxCostUsd":1.25, "maxTotalCostUsd":2.25})["id"]
             assert task_wait(web, upgraded_task)["status"] == "completed", "candidate could not run the isolated SDK fixture"
             upgrade = {"kind":"internal-image-upgrade", "status":"passed", "baselineImages":baseline_images,
                        "candidateImages":candidate_images, "historyAndCostEvidence":"preserved"}

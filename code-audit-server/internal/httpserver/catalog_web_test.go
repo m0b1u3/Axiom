@@ -2,9 +2,11 @@ package httpserver_test
 
 import (
 	"axiom/code-audit-server/internal/auth"
+	"axiom/code-audit-server/internal/cryptokey"
 	"axiom/code-audit-server/internal/httpserver"
 	"axiom/code-audit-server/internal/snapshot"
 	"axiom/code-audit-server/internal/store"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -77,7 +79,12 @@ func TestCatalogPagesHTTPAndBrowser(t *testing.T) {
 			referenced = item
 		}
 	}
-	model, err := s.CreateModelConfig(ctx, store.ModelConfigRow{Name: "Fixture 无调用模型", Provider: "custom", Model: "fixture-only", BaseURL: "http://127.0.0.1:1", ApiKeyEncrypted: ""})
+	t.Setenv("AXIOM_MASTER_KEY", base64.RawURLEncoding.EncodeToString(make([]byte, 32)))
+	encrypted, err := cryptokey.Encrypt("fixture-catalog-unused-model-key")
+	if err != nil {
+		t.Fatal(err)
+	}
+	model, err := s.CreateModelConfig(ctx, store.ModelConfigRow{Name: "Fixture 无调用模型", Provider: "custom", Model: "fixture-only", BaseURL: "http://127.0.0.1:1", WireAPI: "responses", ApiKeyEncrypted: encrypted})
 	if err != nil {
 		t.Fatal(err)
 	}

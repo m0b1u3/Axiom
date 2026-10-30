@@ -259,7 +259,20 @@ try {
   undo = await fault('/scans/' + newTask.id + '/cancel', 'POST');
   await button('取消').click(); await acknowledge('取消扫描'); await alert('取消请求未完成').waitFor(); await undo();
   await button('取消').click(); await acknowledge('取消扫描'); await button('重新执行').waitFor();
-  undo = await fault('/scans/' + newTask.id + '/recovery', 'POST'); await button('重新执行').click(); await page.getByLabel('我已知悉这会重新调用模型并可能重复产生费用',{exact:true}).check(); await button('确认重新执行').click(); await alert('重新执行未完成').waitFor(); await undo();
+  const recoveryToggle=page.getByRole('button',{name:/^扫描中断与恢复/});if(await recoveryToggle.getAttribute('aria-expanded')==='true')await recoveryToggle.click();
+  let reads=0,releaseConfirmation,markConfirmationRead,markPanelRead;const heldConfirmation=new Promise(resolve=>{releaseConfirmation=resolve}),confirmationRead=new Promise(resolve=>{markConfirmationRead=resolve}),laterPanelRead=new Promise(resolve=>{markPanelRead=resolve});
+  const recoveryURL=base+'/api/v1/scans/'+newTask.id+'/recovery';
+  const reorderRecovery=async route=>{
+    if(route.request().method()!=='GET')return route.fallback();
+    if(++reads===1){const response=await route.fetch();markConfirmationRead();await heldConfirmation;return route.fulfill({response});}
+    markPanelRead();return route.continue();
+  };
+  undo = await fault('/scans/' + newTask.id + '/recovery', 'POST');await page.route(recoveryURL,reorderRecovery);await button('重新执行').click();await confirmationRead;
+  // Simulate a newer read-only budget observation while confirmation is held.
+  // Amounts and the Server's actual ledger stay unchanged.
+  await page.route(base+'/api/v1/scans/'+newTask.id+'/budget',async route=>{const response=await route.fetch();const body=await response.json();body.data.revision++;await route.fulfill({response,json:body});},{times:1});
+  await page.getByRole('region',{name:'任务预算与费用',exact:true}).getByRole('button',{name:'刷新费用',exact:true}).click();await laterPanelRead;releaseConfirmation();await page.getByRole('dialog',{name:'确认重新执行扫描',exact:true}).waitFor();assert.ok(reads>=2,'fixture did not overlap confirmation and background reads');await page.unroute(recoveryURL,reorderRecovery);await page.getByLabel('我已知悉这会重新调用模型并可能重复产生费用',{exact:true}).check(); await button('确认重新执行').click(); await alert('重新执行未完成').waitFor(); await undo();
+  checks.push('background-recovery-refresh-cannot-discard-explicit-restart-confirmation');
   await button('确认重新执行').click(); await button('取消').waitFor(); await button('取消').click(); await acknowledge('取消扫描'); await button('重新执行').waitFor();
   checks.push('Scan input failure/retry retains fields; select clear; Web create/cancel/retry with persistent failures and no worker');
 
@@ -284,7 +297,7 @@ try {
   assert.equal(await page.locator('.f-cell .f-val').first().innerText(),'1','confirmed Server total was replaced with an empty failed list');
   assert.equal(await page.locator('.f-cell .f-val').nth(1).innerText(),'—','unavailable severity counts were displayed as zero');
   await undo(); await button('重新读取漏洞').click(); await page.getByRole('heading', {name: 'Fixture 合成证据：界面验收', exact: true}).waitFor();
-  undo = await fault('/scans/' + history + '/compare'); await page.reload(); await alert('扫描对比暂不可用').waitFor();
+  undo = await fault('/scans/' + history + '/compare'); await page.reload(); await alert('扫描对比读取失败').waitFor();
   await undo(); await button('重新读取对比').click(); await page.getByText(/与上次扫描对比/).waitFor();
   undo = await fault('/findings/2/status','PUT',400,'Fixture 状态保存被拒绝'); await choose('漏洞处理状态','已确认'); await alert('漏洞处理状态未保存').waitFor();
   assert.ok((await combobox('漏洞处理状态').innerText()).includes('未处理')); await undo();

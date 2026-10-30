@@ -19,6 +19,7 @@ try{
   await page.goto(base+'/settings?section=models');await page.getByRole('button',{name:'添加模型',exact:true}).click();let dialog=page.getByRole('dialog',{name:'添加模型',exact:true});
   await dialog.locator('button.provider').filter({hasText:/^OpenAI 官方$/}).click();
   await dialog.getByPlaceholder('给这条配置起个名字',{exact:true}).fill('Fixtures / Mock SDK 参数模型');await dialog.getByPlaceholder('模型 ID',{exact:true}).fill('fixture-sdk-parameter-model');await dialog.getByPlaceholder('sk-…',{exact:true}).fill('fixture-sdk-parameter-key-not-real');
+  await dialog.getByLabel('按配置单价自动估算费用',{exact:true}).check();await choose('缓存计价规则','全部输入按同一单价');await dialog.getByLabel('输入单价 / 百万 Token',{exact:true}).fill('1');await dialog.getByLabel('输出单价 / 百万 Token',{exact:true}).fill('1');
   await choose('推理强度','medium');await page.locator('#model-reasoning-effort').filter({hasText:'medium'}).waitFor();await shot('model-reasoning-desktop',dialog);await page.setViewportSize({width:390,height:844});await shot('model-reasoning-mobile',dialog.locator('label[for="model-reasoning-effort"]'));await page.setViewportSize({width:1440,height:1000});
   let releaseSave,startSave;const heldSave=new Promise(r=>{releaseSave=r}),saveStarted=new Promise(r=>{startSave=r});
   await page.route('**/api/v1/model-configs',async r=>{if(r.request().method()!=='POST')return r.continue();startSave();await heldSave;await r.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'Fixtures / Mock 推理配置保存失败'})})},{times:1});

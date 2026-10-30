@@ -7,6 +7,8 @@ import {runComponentFixture} from './component-scan-sdk.mjs';
 import {runComponentScans as actualComponentScans} from '../../../code-audit-scanner/node_modules/@openai/codex-security/dist/component-scan.js';
 import {DatabaseSync} from 'node:sqlite';
 export const VERSION='fixture-input-sdk';
+// Used only by explicit, network-isolated deployment/stability acceptance.
+export const pricedAcceptanceUsage=(input=1125000)=>({input_tokens:input,cached_input_tokens:0,cache_write_input_tokens:0,output_tokens:0,reasoning_output_tokens:0,total_tokens:input});
 // The public estimate function is pure. Resolve from this fixture directory so
 // the runtime replacement loader does not replace the real estimator itself.
 export {DiffTarget,estimateScanCost,normalizeComponentPlan,bundledPluginRoot,loadContract} from '../../../code-audit-scanner/node_modules/@openai/codex-security/dist/index.js';
@@ -111,10 +113,10 @@ export class CodexSecurity {
         });
       }finally{child.kill('SIGKILL');}
     }
-    const sdk050=process.env.AXIOM_SDK050_FIXTURE==='1';
-    if(sdk050){options.onProgress?.({phase:'discovery'});options.onWorkerStatus?.({kind:'dispatch',phase:'discovery',planned:2,started:1});options.onWorkerEvent?.({kind:'observed',worker:1});options.onUsage?.({input_tokens:123,cached_input_tokens:20,cache_write_input_tokens:0,output_tokens:0,reasoning_output_tokens:0,total_tokens:123});}
+    const sdk050=process.env.AXIOM_SDK050_FIXTURE==='1',pricedAcceptance=process.env.AXIOM_ACCEPTANCE_PRICED_USAGE_FIXTURE==='1';
+    if(sdk050){options.onProgress?.({phase:'discovery'});options.onWorkerStatus?.({kind:'dispatch',phase:'discovery',planned:2,started:1});options.onWorkerEvent?.({kind:'observed',worker:1});options.onUsage?.(pricedAcceptance?pricedAcceptanceUsage():{input_tokens:123,cached_input_tokens:20,cache_write_input_tokens:0,output_tokens:0,reasoning_output_tokens:0,total_tokens:123});}
     const cost=(scenario==='empty'||sdk050)?null:{model:'fixture-reported-model',estimatedUsd:1.125,inputTokens:0,cachedInputTokens:0,cacheWriteInputTokens:3,outputTokens:17};
-    if(cost){options.onUsage?.({input_tokens:0,cached_input_tokens:0,cache_write_input_tokens:0,output_tokens:17,reasoning_output_tokens:0,total_tokens:17});options.onCost?.(cost);}
+    if(cost){options.onUsage?.(pricedAcceptance?pricedAcceptanceUsage():{input_tokens:0,cached_input_tokens:0,cache_write_input_tokens:0,output_tokens:17,reasoning_output_tokens:0,total_tokens:17});options.onCost?.(cost);}
     if(scenario==='observations'||scenario==='observation-cancel'){
       options.onAuthentication?.({method:'api_key',source:'OPENAI_API_KEY',verified:false});
       options.onTrustedAccessStatus?.('not_granted');
@@ -161,6 +163,7 @@ export class CodexSecurity {
     const result={scanId:'fixture-input',manifest:{scan:{id:'fixture-input',status:scenario==='canceled'?'canceled':'completed',producer:{version:'fixture-plugin-1'}},futureManifest:{retained:true}},
       findings:{findings:['empty','partial-empty'].includes(scenario)?[]:[finding],futureFindings:{retained:true}},coverage:{completeness:scenario==='partial-empty'?'partial':'complete',futureCoverage:{retained:true}},
       cost,turn:{model:'fixture-reported-model',usage:{input_tokens:0,output_tokens:17,cached_input_tokens:0,reasoning_output_tokens:5,total_tokens:17}},repositoryFindings:{fixtureOnly:true},unknownNativeResult:{retained:[null,0,false,'']}};
+    if(pricedAcceptance)result.turn.usage=pricedAcceptanceUsage();
     if(sdk050){result.cost={model:'fixture-reported-model',estimatedUsd:1.125,estimatedUsdRange:{min:1.125,max:null,context:'unknown'},inputTokens:123,outputTokens:0};options.onCost?.(result.cost);}
     if(sdk050)result.coverage={documentType:'codex-security.coverage',schemaVersion:'1.0',surfaces:[],deferred:['Fixtures / Mock 未审查项'],resolvedDeferred:['Fixtures / Mock 已完成审查'],openQuestions:['Fixtures / Mock 未决问题'],fixtureOnly:true};
     if(scenario==='evidence-chain'||scenario==='git-evidence'){

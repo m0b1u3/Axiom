@@ -57,10 +57,12 @@ try {
     checks.push('same-model-same-project-parallelism-visible', 'live-activity-survives-route-refresh', 'cancel-through-Web-without-closing-other-tasks');
   } else if (phase === 'completed') {
     await page.goto(origin + '/scans/' + ids.long); await page.reload();
-    const archive = page.getByRole('region', {name: '归档结果', exact: true}); await archive.getByText('$1.125', {exact: true}).waitFor();
+    const archive = page.getByRole('region', {name: '归档结果', exact: true});
+    await page.getByRole('region', {name:'任务预算与费用',exact:true}).getByText('$1.125', {exact: true}).first().waitFor();
     const event = page.waitForEvent('download'); await archive.getByRole('button', {name: '下载完整结果 JSON', exact: true}).click();
     const download = await event, value = JSON.parse(await readFile(await download.path(), 'utf8'));
     assert.equal(value.result.extensions.sdk.stability.fixtureOnly, true); assert.equal(value.result.extensions.sdk.stability.inventory.files, Number(process.env.AXIOM_TEST_STABILITY_FILES || 12000));
+    assert.equal(value.result.extensions.executionUsage.inputTokens,1125000);
     await screenshot('completed-large-repository'); await page.setViewportSize({width: 390, height: 844}); await screenshot('completed-mobile');
     checks.push('large-source-result-and-evidence-download-through-static-Web', 'completed-result-route-refresh-and-mobile-layout');
   } else if (phase === 'interrupt') {

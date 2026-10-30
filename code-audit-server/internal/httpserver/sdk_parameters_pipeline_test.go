@@ -64,7 +64,7 @@ func runSDKParametersWebAcceptance(t *testing.T, s *store.Store, agent, root, ur
 		t.Fatal("Frozen ordinary reasoning did not reach SDK", string(raw))
 	}
 	if os.Getenv("AXIOM_TEST_NATIVE_CONCURRENCY") == "1" {
-		for key, want := range map[string]any{"mode": "deep", "workers": float64(129), "subagents": float64(65), "maxDiscoveryRuns": float64(1001), "stopAfterNoNew": float64(1002), "maxTimeMinutes": float64(47), "maxCostUsd": float64(3)} {
+		for key, want := range map[string]any{"mode": "deep", "workers": float64(129), "subagents": float64(65), "maxDiscoveryRuns": float64(1001), "stopAfterNoNew": float64(1002), "maxTimeMinutes": float64(47)} {
 			if ordinary.Options[key] != want {
 				t.Fatalf("Web -> SDK parameter %s = %v, want %v", key, ordinary.Options[key], want)
 			}
@@ -77,6 +77,14 @@ func runSDKParametersWebAcceptance(t *testing.T, s *store.Store, agent, root, ur
 	task, e := s.Get(t.Context(), ids.ScanID)
 	if e != nil || task.Status != "completed" || task.SDKParameters == nil || task.SDKParameters.ReasoningEffort.Value != "medium" {
 		t.Fatal(e, task)
+	}
+	if ordinary.Options["maxCostUsd"] != nil {
+		t.Fatal("Configured-price budget leaked into SDK's built-in price table")
+	}
+	budgetRaw, e := os.ReadFile(filepath.Join(task.OutputPath, "runtime/token-budget.json"))
+	var budget struct{ LimitMicros int64 }
+	if e != nil || json.Unmarshal(budgetRaw, &budget) != nil || budget.LimitMicros != 3000000 {
+		t.Fatal("Frozen USD Token budget did not reach the Scanner", e, string(budgetRaw))
 	}
 	current, e := s.GetModelConfig(t.Context(), ids.ModelID)
 	if e != nil || current.ReasoningEffort != "high" {
@@ -114,7 +122,8 @@ func runSDKParametersWebAcceptance(t *testing.T, s *store.Store, agent, root, ur
 		if e := json.Unmarshal([]byte(line), &v); e != nil {
 			t.Fatal(e)
 		}
-		if v.Config.Overrides["model_reasoning_effort"] != "medium" || v.Options["scanPrompt"] != "合成组件扫描指令\n第二行" || v.Options["postScanPrompt"] != "合成组件后处理\n保留证据" || len(v.Knowledge) != 1 || !strings.Contains(v.Knowledge[0].Content, "冻结第一版") || strings.Contains(v.Knowledge[0].Content, "第二版") {
+		prompt, _ := v.Options["scanPrompt"].(string)
+		if v.Config.Overrides["model_reasoning_effort"] != "medium" || !strings.HasPrefix(prompt, "合成组件扫描指令\n第二行\n\n") || !strings.Contains(prompt, "source-evidence.mjs") || !strings.Contains(prompt, "检查非零退出时") || v.Options["postScanPrompt"] != "合成组件后处理\n保留证据" || len(v.Knowledge) != 1 || !strings.Contains(v.Knowledge[0].Content, "冻结第一版") || strings.Contains(v.Knowledge[0].Content, "第二版") {
 			t.Fatal("Component SDK inputs changed or disappeared", line)
 		}
 	}

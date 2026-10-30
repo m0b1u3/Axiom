@@ -79,7 +79,7 @@ func TestFrontendPageActionsAndRecovery(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	model, err := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture UI 模型（无真实调用）", Provider: "custom", Model: "fixture-ui-model", BaseURL: provider.URL, WireAPI: "responses", ApiKeyEncrypted: encrypted})
+	model, err := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixture UI 模型（无真实调用）", Provider: "custom", Model: "fixture-ui-model", BaseURL: provider.URL, WireAPI: "responses", ApiKeyEncrypted: encrypted})
 	if err != nil {
 		t.Fatal(err)
 	}
