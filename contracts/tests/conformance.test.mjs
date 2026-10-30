@@ -118,8 +118,7 @@ test('legacy CLI keeps its existing task fields and environment forwarding',asyn
     const code=await new Promise((resolve,reject)=>{p.on('error',reject);p.on('close',resolve)});
     assert.equal(code,0,stderr);
     const {sdkRuntime,...legacyTask}=JSON.parse(stdout).legacyTask;
-    const runtimes=JSON.parse(await readFile(path.join(root,'../code-audit-scanner/node_modules/.axiom-sdk-runtimes.json'),'utf8')).runtimes;
-    assert.deepEqual(sdkRuntime,{id:'official-v2',fingerprint:runtimes['official-v2'].fingerprint});
+    assert.deepEqual(sdkRuntime,{id:'official-v2',fingerprint:'f'.repeat(64)});
     assert.deepEqual(legacyTask,{taskId:42,sourcePath:fixtureRoot,outputPath:output,provider:'openai',model:'fixture-model',scanMode:'standard',timeoutMinutes:2,
       validationMode:'exploitability',businessContext:'fixture\n第二行',includePaths:['src/a.ts','src/中文.ts'],scanFocus:['authz'],maxCostUsd:4,mock:true});
   } finally {await rm(output,{recursive:true,force:true});}

@@ -1,6 +1,6 @@
 # 当前状态与验收范围
 
-更新日期：2026-10-30。源码发布候选 **0.1.0-beta.2**；SDK **0.5.0**，Scanner description **15**（当前源码；参考部署仍为 14），SDK result adapter **2**，数据库迁移截至 **028_model_token_pricing.sql**。Linux amd64、单主机、可信用户自托管仍为支持范围。
+更新日期：2026-10-30。源码发布候选 **0.1.0-beta.2**；SDK **0.5.0**，Scanner description **15**（当前源码；参考部署仍为 14），SDK result adapter **2**，数据库迁移截至 **028_model_token_pricing.sql**。Linux amd64、单主机、可信用户自托管仍为支持范围。合同 CI 的 CLI 转发用例现使用明确的运行环境 Fixture，与其已有 Engine Fixture 一致；在没有 Scanner 依赖的独立目录中，511 项合同测试通过。真实 SDK 文件指纹仍由 Scanner 专项测试检查，生产绑定逻辑未修改。
 
 本页是当前状态入口。其他带日期的基线保留其当时版本与验收事实；其中的 SDK 0.1.25、未部署或未真实验收描述，不代表当前状态。Schema、npm 包和应用发布版本分别管理。
 

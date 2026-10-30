@@ -12,6 +12,9 @@ export async function resolve(specifier,context,nextResolve) {
   if(context.parentURL===new URL('../../code-audit-scanner/src/main.ts',import.meta.url).href && specifier==='./engine/codex-security-engine.js' && process.env.AXIOM_CONTRACT_ENGINE_STUB) {
     return await nextResolve(new URL(process.env.AXIOM_CONTRACT_ENGINE_STUB).href,context);
   }
+  if(context.parentURL===new URL('../../code-audit-scanner/src/main.ts',import.meta.url).href && specifier==='./runtime/sdk-runtime.js' && process.env.AXIOM_CONTRACT_ENGINE_STUB) {
+    return await nextResolve(new URL('../tests/fixtures/sdk-runtime.mjs',import.meta.url).href,context);
+  }
   try{return await nextResolve(specifier,context)}
   catch(error) {
     if(error.code==='ERR_MODULE_NOT_FOUND' && specifier.endsWith('.js') && context.parentURL?.startsWith(prefix)) {
