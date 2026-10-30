@@ -70,7 +70,7 @@ func TestUnboundedDispatchPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	model, err := s.CreateModelConfig(ctx, store.ModelConfigRow{Name: "Fixtures / Mock unrestricted model", Provider: "openai", Model: "fixture-unbounded-model", ApiKeyEncrypted: encrypted})
+	model, err := s.CreateModelConfig(ctx, store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixtures / Mock unrestricted model", Provider: "openai", Model: "fixture-unbounded-model", ApiKeyEncrypted: encrypted})
 	if err != nil {
 		t.Fatal(err)
 	}

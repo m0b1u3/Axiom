@@ -5,7 +5,7 @@ export function hardTimeoutMinutes(task: Pick<ScanTask, "scanMode" | "timeoutMin
   if(task.timeBudget)return (task.timeBudget.scanSeconds+task.timeBudget.finalizationGraceSeconds)/60;
   return task.timeoutMinutes + (task.scanMode === "deep" ? DEEP_FINALIZE_MINUTES : 0);
 }
-export function deepScanOptions(task: ScanTask): {maxTimeHours?: number; maxDiscoveryRuns?: number; stopAfterNoNew?: number} {
+export function deepScanOptions(task: ScanTask): {maxTimeMinutes?: number; maxDiscoveryRuns?: number; stopAfterNoNew?: number} {
   if (task.scanMode !== "deep") {
     if (task.deepMaxDiscoveryRuns !== undefined || task.deepStopAfterNoNew !== undefined) throw new Error("Deep scan limits require deep mode");
     return {};
@@ -13,7 +13,7 @@ export function deepScanOptions(task: ScanTask): {maxTimeHours?: number; maxDisc
   for (const n of [task.deepMaxDiscoveryRuns, task.deepStopAfterNoNew]) {
     if (n !== undefined && (!Number.isSafeInteger(n) || n < 1)) throw new Error("Deep scan counts must be positive safe integers");
   }
-  return {maxTimeHours: task.timeoutMinutes / 60,
+  return {maxTimeMinutes: task.timeoutMinutes,
     ...(task.deepMaxDiscoveryRuns !== undefined ? {maxDiscoveryRuns: task.deepMaxDiscoveryRuns} : {}),
     ...(task.deepStopAfterNoNew !== undefined ? {stopAfterNoNew: task.deepStopAfterNoNew} : {})};
 }

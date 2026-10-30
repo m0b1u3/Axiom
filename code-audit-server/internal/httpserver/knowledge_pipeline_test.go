@@ -70,7 +70,7 @@ func runKnowledgeInputAcceptance(t *testing.T, s *store.Store, agent, root, url,
 	if e != nil {
 		t.Fatal(e)
 	}
-	cfg, e := s.CreateModelConfig(ctx, store.ModelConfigRow{Name: "Fixture advanced input", Provider: "openai", Model: "fixture-advanced", ApiKeyEncrypted: encrypted})
+	cfg, e := s.CreateModelConfig(ctx, store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixture advanced input", Provider: "openai", Model: "fixture-advanced", ApiKeyEncrypted: encrypted})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -188,8 +188,20 @@ func runKnowledgeInputAcceptance(t *testing.T, s *store.Store, agent, root, url,
 		Options map[string]any `json:"options"`
 	}
 	json.Unmarshal(retryRaw, &retry)
-	if retry.Options["maxCostUsd"] != 1.875 {
-		t.Fatal("advanced retry bypassed remaining task budget", retry.Options["maxCostUsd"])
+	if _, ok := retry.Options["maxCostUsd"]; ok {
+		t.Fatal("configured retry budget reached the SDK built-in price list")
+	}
+	retried, e := s.Get(ctx, standardTask.ID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	budgetRaw, e := os.ReadFile(filepath.Join(retried.OutputPath, "runtime/token-budget.json"))
+	if e != nil {
+		t.Fatal(e)
+	}
+	budgetValue, e := contracts.DecodeTokenBudgetAssignment(budgetRaw, &contracts.ExecutionRef{TaskID: contracts.TaskID(fmt.Sprint(retried.ID)), Attempt: int64(retried.Attempt)})
+	if e != nil || budgetValue.LimitMicros != 1875000 {
+		t.Fatal("advanced retry bypassed remaining configured budget", e, budgetValue)
 	}
 	for _, extra := range []map[string]any{{"scanInput": map[string]any{"schemaVersion": 1, "knowledge": []any{}, "subagents": 0}}, {"scanInput": map[string]any{"schemaVersion": 1, "knowledge": []any{}, "knowledgeBasePaths": []string{"/etc/passwd"}}}, {"knowledgeVersionIds": []int64{first.ID, first.ID}}, {"knowledgeVersionIds": []int64{999999}}, {"scanInput": map[string]any{"schemaVersion": 1, "knowledge": []any{}, "expectedPluginVersion": "latest"}}} {
 		body := map[string]any{"sourceSnapshotId": snapshot, "modelConfigId": cfg.ID}
@@ -203,7 +215,7 @@ func runKnowledgeInputAcceptance(t *testing.T, s *store.Store, agent, root, url,
 	}
 }
 func runKnowledgeWebAcceptance(t *testing.T, s *store.Store, agent, root, url, token, agentToken, scratch string, snapshot int64, encrypted string) {
-	cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Browser knowledge model", Provider: "openai", Model: "fixture-web-knowledge", ApiKeyEncrypted: encrypted})
+	cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Browser knowledge model", Provider: "openai", Model: "fixture-web-knowledge", ApiKeyEncrypted: encrypted})
 	if e != nil {
 		t.Fatal(e)
 	}

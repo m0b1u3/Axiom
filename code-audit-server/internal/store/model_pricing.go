@@ -267,6 +267,24 @@ func (s *Store) recordTokenProgress(ctx context.Context, tx *transaction, id, in
 	if p == nil {
 		return nil
 	}
+	if p.Extensions.Present {
+		estimate, e := frozenMatchingEstimate(ctx, tx, p.Extensions.Value["componentMatchingEstimate"], p.Execution)
+		if e != nil {
+			return ErrInvalidProgress
+		}
+		// Prefer one rounding over the combined Token counts. Sum independently
+		// rounded stage observations only when complete counters are unavailable.
+		if estimate != nil && estimate.AmountMicros != nil && estimateTokens(estimate.PricingSnapshot, executionUsage(p)).AmountMicros == nil {
+			state, e := componentProgress(p)
+			if e != nil || state == nil || state.ObservedMicros > MaxMoneyMicros-*estimate.AmountMicros {
+				return ErrInvalidProgress
+			}
+			n := state.ObservedMicros + *estimate.AmountMicros
+			if _, e = tx.ExecContext(ctx, `UPDATE task_cost_attempts SET observed_micros=CASE WHEN observed_micros IS NULL OR observed_micros<? THEN ? ELSE observed_micros END,booked_micros=CASE WHEN booked_micros IS NULL OR booked_micros<? THEN ? ELSE booked_micros END,source='configured_pricing',reason='configured_price_progress',updated_at=? WHERE task_id=? AND attempt=? AND state='active'`, n, n, n, n, securityTime(time.Now()), id, index); e != nil {
+				return e
+			}
+		}
+	}
 	usage := executionUsage(p)
 	if usage == nil {
 		return nil

@@ -246,6 +246,9 @@ func (s *Store) validateComponentScanCompletion(ctx context.Context, id int64, f
 		return ErrInvalidResult
 	}
 	result := full.Result.Value
+	if _, e = frozenMatchingEstimate(ctx, s.db, result.Extensions.Value["componentMatchingEstimate"], full.Execution); e != nil {
+		return ErrInvalidResult
+	}
 	if result.Error.Present {
 		if out.Error == nil || !sameJSON(*out.Error, result.Error.Value) {
 			return ErrInvalidResult
@@ -370,13 +373,14 @@ func (s *Store) prepareComponentRetry(ctx context.Context, tx *transaction, id i
 }
 
 type ComponentAttemptView struct {
-	Request  contracts.ComponentScanRequest   `json:"request"`
-	Snapshot *contracts.ComponentScanSnapshot `json:"snapshot"`
-	Status   string                           `json:"status"`
+	Request          contracts.ComponentScanRequest   `json:"request"`
+	Snapshot         *contracts.ComponentScanSnapshot `json:"snapshot"`
+	Status           string                           `json:"status"`
+	MatchingEstimate *contracts.TokenCostEstimate     `json:"matchingEstimate,omitempty"`
 }
 
 func (s *Store) ComponentAttempts(ctx context.Context, id int64) ([]ComponentAttemptView, error) {
-	rows, e := s.db.QueryContext(ctx, `SELECT c.request_json,c.snapshot_json,a.status FROM component_scan_attempts c JOIN scan_attempts a ON a.task_id=c.task_id AND a.attempt=c.attempt WHERE c.task_id=? ORDER BY c.attempt DESC`, id)
+	rows, e := s.db.QueryContext(ctx, `SELECT c.request_json,c.snapshot_json,a.status,COALESCE(a.result_json,''),COALESCE(a.progress_json,'') FROM component_scan_attempts c JOIN scan_attempts a ON a.task_id=c.task_id AND a.attempt=c.attempt WHERE c.task_id=? ORDER BY c.attempt DESC`, id)
 	if e != nil {
 		return nil, e
 	}
@@ -386,10 +390,15 @@ func (s *Store) ComponentAttempts(ctx context.Context, id int64) ([]ComponentAtt
 		var r string
 		var state *string
 		var v ComponentAttemptView
-		if e = rows.Scan(&r, &state, &v.Status); e != nil {
+		var result, progress string
+		if e = rows.Scan(&r, &state, &v.Status, &result, &progress); e != nil {
 			return nil, e
 		}
 		v.Request, e = contracts.DecodeComponentScanRequest([]byte(r), nil)
+		if e != nil {
+			return nil, e
+		}
+		v.MatchingEstimate, e = savedMatchingEstimate(v.Request.Execution, result, progress)
 		if e != nil {
 			return nil, e
 		}

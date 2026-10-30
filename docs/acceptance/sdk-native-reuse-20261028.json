@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "sdk": "@openai/codex-security",
+  "sdkVersion": "0.5.0",
+  "scope": "Local SDK native reuse review and equivalent replacements; source/price/history protection retained.",
+  "declarationFilesChecked": 21,
+  "capabilityGroupsChecked": 35,
+  "documentation": "docs/SDK_NATIVE_REUSE_REVIEW.md",
+  "changes": [
+    {
+      "area": "sealed result recovery",
+      "nativeAPI": "loadContract + bundledPluginRoot",
+      "result": "Native schema, identity and seal validation replaces permissive completed-result parsing. Rejected seals do not fall back."
+    },
+    {
+      "area": "audit checkpoints and completion",
+      "nativeAPI": "SDK semantic checkpoints + callbacks",
+      "result": "Removed AuditCheckpoints duplicate session writer and empty-worker completion override. Single portable SDK callback journal and read-only interim projection remain."
+    },
+    {
+      "area": "orchestration prompts",
+      "nativeAPI": "SDK bundled audit workflow",
+      "result": "Removed host-defined subtask retry/takeover/checkpoint instructions. Chinese language, scope, exact source citation and source-read boundaries remain."
+    },
+    {
+      "area": "plugin lookup",
+      "nativeAPI": "bundledPluginRoot",
+      "result": "No dependency entry-path guess for the guidance helper."
+    },
+    {
+      "area": "Deep time setting",
+      "nativeAPI": "ScanOptions.maxTimeMinutes",
+      "result": "Replace deprecated maxTimeHours alias; SDK pure validator confirms identical Deep limit. Standard advisory time is not substituted for the platform hard timeout."
+    }
+  ],
+  "requiredPlatformLogic": [
+    "Web, project and platform users/permissions, PostgreSQL and audit logs",
+    "Upload, immutable source snapshots, execution/source/credential binding",
+    "Cross-service queue, leases, Agent binding, cancellation, attempt history and result commit recovery",
+    "Credential isolation and fenced session refresh/revocation",
+    "Configured purchase prices, frozen historical pricing, cost ledger and platform token budgets",
+    "Validation Responses usage observation where the public SDK validate API lacks onUsage",
+    "Redacted interim evidence projection and a single portable callback journal",
+    "Evidence graph, frozen-source exact excerpt verification and pre-submit extraction/check",
+    "Report-body completeness, safe artifact delivery, secret-safe diagnostics and platform HTML/PDF/manual finding states",
+    "Outer process timeout/cleanup distinct from native investigation timing"
+  ],
+  "conditionalCompatibility": [
+    "Third-party Responses input/namespace/model-catalog compatibility; native OpenAI bypasses this transport",
+    "Cross-process Retry-After coordination with SDK as the only model-request retry owner",
+    "Read-only native workbench phase/receipt observations absent from public callbacks",
+    "Pinned parent-state and Deep continuation bridge; no public SDK resume/state-transfer equivalent",
+    "Seven managed provider/V1 runtime compatibility patches and matching document fingerprints; not declared permanently required"
+  ],
+  "validation": {
+    "scannerFullSuite": {
+      "passed": 311,
+      "failed": 0
+    },
+    "scannerBuildAndTypecheck": "passed",
+    "targetedNativeTests": 40,
+    "officialSDKMock": "passed, no model/authentication calls",
+    "nativeSealTamperingRejection": "passed",
+    "emptyWorkerObservationDoesNotOverrideSDKCompletion": "passed; observation remains archived",
+    "nativeDeepTimeEquivalence": "passed",
+    "historicalRealArtifactReplay": {
+      "proofs": [
+        {
+          "attempt": 2,
+          "validation": "sdk_load_contract",
+          "status": "completed",
+          "findings": 1,
+          "bytesUnchanged": true
+        },
+        {
+          "attempt": 3,
+          "validation": "sdk_load_contract",
+          "status": "completed",
+          "findings": 1,
+          "bytesUnchanged": true
+        }
+      ],
+      "realModelCalls": 0
+    },
+    "serverInputPipeline": {
+      "initialFullRun": "All branches except result-observations passed; that assertion expected the removed host completion override.",
+      "followup": "Updated expected final status to the SDK outcome; result-observations passed.",
+      "sourceBoundaryChanged": false
+    },
+    "serverGraphPipelines": {
+      "legacy": "passed",
+      "sdk050": "passed",
+      "fixtureAdjustment": "Complete synthetic USD prices added to meet the existing budget admission guard; production checks unchanged."
+    },
+    "sdkSurfaceCheck": {
+      "integrated": 15,
+      "partial": 2,
+      "planned": 13,
+      "adapter_required": 1,
+      "sdk_internal_use": 1,
+      "not_public": 3
+    },
+    "sdkPatchVerification": {
+      "patches": 7,
+      "filesUpdated": 0
+    },
+    "recoveryBaselineCheck": {
+      "passed": true,
+      "sourceFiles": 10
+    },
+    "diffWhitespace": "passed",
+    "webHistoricalResultTests": {
+      "passed": 8,
+      "failed": 0
+    }
+  },
+  "realModelCalls": 0,
+  "realLoginRequests": 0,
+  "externalPublications": 0,
+  "databaseMigrationsAdded": 0,
+  "historicalReportsRewritten": false,
+  "historicalPricesOrFeesRewritten": false,
+  "sdkPatchBytesChanged": false,
+  "wireAPI": "responses",
+  "outputMode": "native_schema",
+  "nativeRetryPolicyChanged": false,
+  "deployedToVPS": false,
+  "limitations": [
+    "This review does not assert that every SDK workflow is exposed in the Web UI. Planned native APIs remain planned.",
+    "Compatibility adapters remain only for documented gaps, with exit conditions in the review.",
+    "No post-refactor real model scan was run; previous live acceptances retain their original scope."
+  ],
+  "evidenceRoot": "/Users/noah/.codex/worktrees/responses-input-fix/Axiom/output/sdk-native-review-20261028"
+}

@@ -26,5 +26,10 @@
     "latestMigration": "028_model_token_pricing.sql"
   },
   "currentCandidateRealModelAcceptance": "not-run",
-  "configuredPricingRealAcceptance": "not-run"
+  "configuredPricingRealAcceptance": "not-run",
+  "sourceCandidate": {
+    "sdkVersion": "0.5.0",
+    "scannerDescriptionVersion": 15,
+    "latestMigration": "028_model_token_pricing.sql"
+  }
 }

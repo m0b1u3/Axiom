@@ -10,6 +10,35 @@ import (
 	"testing"
 )
 
+// Producer fixes must not turn dedented or sentence-only quotations into
+// matched source evidence. Keep the Server's independent exact-line check.
+func TestSourceLinesRejectsDedentedAndSentenceOnlyEvidence(t *testing.T) {
+	root := t.TempDir()
+	for name, source := range map[string]string{
+		"app.py":    "# Fixtures / Mock\n        user = USERS.get(token)\n        return get_contact(user, contact_id)\n",
+		"README.md": "# Fixtures / Mock\nOnly same-tenant reads are allowed. Cross-tenant reads are forbidden.\n",
+	} {
+		if e := os.WriteFile(filepath.Join(root, name), []byte(source), 0600); e != nil {
+			t.Fatal(e)
+		}
+	}
+	start := int64(2)
+	for _, tc := range []struct {
+		name, code string
+		want       bool
+	}{
+		{"app.py", "user = USERS.get(token)\nreturn get_contact(user, contact_id)", false},
+		{"app.py", "        user = USERS.get(token)\n        return get_contact(user, contact_id)", true},
+		{"README.md", "Only same-tenant reads are allowed.", false},
+		{"README.md", "Only same-tenant reads are allowed. Cross-tenant reads are forbidden.", true},
+	} {
+		matched, _, e := sourceLines(root, contracts.EvidenceLocation{Path: contracts.RelativePath(tc.name), StartLine: &start}, tc.code)
+		if e != nil || matched != tc.want {
+			t.Fatalf("%s: matched=%t want=%t err=%v", tc.name, matched, tc.want, e)
+		}
+	}
+}
+
 func setup(t *testing.T) (contracts.Finding, contracts.ExecutionRef, string, string) {
 	t.Helper()
 	raw, e := os.ReadFile("../../../contracts/fixtures/v1/evidence-source.json")

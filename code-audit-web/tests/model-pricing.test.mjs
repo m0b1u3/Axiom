@@ -24,3 +24,12 @@ test('currency display distinguishes unknown, known zero and sub-cent estimates'
  assert.equal(pricingMoney(null,'USD'),'未知');assert.equal(pricingMoney(0,'CNY'),'CNY 0');
  assert.equal(pricingMoney(1,'USD'),'USD 0.000001');assert.equal(pricingMoney(122000,'EUR'),'EUR 0.122');
 });
+test('independent review usage displays cache hits even when cache writes or prices are unknown',async()=>{
+ const original=await fixture('token-cost-estimated');
+ original.usage={...original.usage,source:'responses_usage',inputTokens:24126,cachedInputTokens:15488,cacheWriteInputTokens:null,outputTokens:3436,reasoningOutputTokens:1729,totalTokens:27562,requestCount:2};
+ original.amountMicros=23931;
+ const known=tokenEstimateView(original,42,1);assert.ok(known);assert.equal(known.usage.cachedInputTokens,15488);assert.equal(known.usage.cacheWriteInputTokens,null);
+ const missingPrice=structuredClone(original);missingPrice.status='unknown';missingPrice.reason='price_missing';missingPrice.amountMicros=null;missingPrice.pricingSnapshot.pricing=null;
+ const unknown=tokenEstimateView(missingPrice,42,1);assert.ok(unknown);assert.equal(unknown.usage.inputTokens,24126);assert.equal(unknown.usage.cachedInputTokens,15488);assert.equal(pricingMoney(unknown.amountMicros,unknown.currency),'未知');
+ assert.equal(original.pricingSnapshot.revision,1);assert.equal(original.pricingSnapshot.pricing.inputPerMillion,'1');
+});

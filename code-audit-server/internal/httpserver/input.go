@@ -66,6 +66,11 @@ func decodeScanRequest(w http.ResponseWriter, r *http.Request) (createScanReques
 }
 
 func normalizePolicy(v createScanRequest) (contracts.ScanPolicy, error) {
+	if v.MaxCostUSD != nil {
+		if _, e := store.BudgetLimitMicros(*v.MaxCostUSD); e != nil {
+			return contracts.ScanPolicy{}, e
+		}
+	}
 	if v.MaxTotalCostUSD != nil {
 		if _, e := store.BudgetLimitMicros(*v.MaxTotalCostUSD); e != nil {
 			return contracts.ScanPolicy{}, e
@@ -178,7 +183,7 @@ func resolveModel(v createScanRequest, cfg *store.ModelConfigRow) (contracts.Res
 		baseURL = preset.BaseURL
 	}
 	connection := contracts.ResolvedModelConnectionTypeOpenaiCompatible
-	if provider == "openai" && baseURL == "" && wire == "responses" {
+	if nativeOpenAIModel(provider, baseURL, wire) {
 		connection = contracts.ResolvedModelConnectionTypeOpenai
 	}
 	m := contracts.ResolvedModel{ProviderID: contracts.Identifier(provider), ConnectionType: connection, Model: model, WireAPI: contracts.ResolvedModelWireAPI(wire), CredentialEnv: preset.CredentialEnv, ConfigurationRevision: "pending"}
@@ -230,6 +235,14 @@ func (s *Server) prepareScan(r *http.Request, v createScanRequest) (store.Task, 
 	m, err := resolveModel(v, cfg)
 	if err != nil {
 		return store.Task{}, err
+	}
+	if v.MaxCostUSD != nil || v.MaxTotalCostUSD != nil {
+		if cfg == nil {
+			return store.Task{}, errors.New("设置预算前，请选择已配置完整 USD Token 单价的模型")
+		}
+		if err := contracts.ValidateBudgetPricing(cfg.Pricing); err != nil {
+			return store.Task{}, err
+		}
 	}
 	t := store.Task{ScanNo: "SCAN-" + strconv.FormatInt(time.Now().UnixNano(), 36), SourcePath: v.SourcePath, SourceSnapshotID: v.SourceSnapshotID, ModelConfigID: v.ModelConfigID, ProjectID: v.ProjectID,
 		Provider: string(m.ProviderID), Model: m.Model, BaseURL: m.BaseURL.Value, ScanMode: string(p.Mode), TimeoutMinutes: int(p.TimeBudget.ScanSeconds / 60), MaxCostUSD: v.MaxCostUSD, Workers: v.Workers,
@@ -338,7 +351,7 @@ func (s *Server) prepareScan(r *http.Request, v createScanRequest) (store.Task, 
 		if err != nil || identityID < 1 {
 			return t, store.ErrSDKIdentity
 		}
-		if t.SourceSnapshotID <= 0 || m.ProviderID != "openai" || m.ConnectionType != "openai" || (m.BaseURL.Present && m.BaseURL.Value != "https://api.openai.com/v1") || m.WireAPI != "responses" {
+		if t.SourceSnapshotID <= 0 || m.ConnectionType != "openai" || !nativeOpenAIModel(string(m.ProviderID), m.BaseURL.Value, string(m.WireAPI)) {
 			return t, errors.New("SDK 执行身份仅用于不可变源码的原生 OpenAI Responses 模型，请选择配套模型配置")
 		}
 		identity, e := s.Store.SDKIdentity(r.Context(), identityID)

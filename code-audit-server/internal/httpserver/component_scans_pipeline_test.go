@@ -6,11 +6,13 @@ import (
 	"axiom/code-audit-server/internal/httpserver"
 	"axiom/code-audit-server/internal/store"
 	"axiom/contracts"
+	"axiom/contracts/control"
 	"axiom/sourceidentity"
 	"context"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -38,7 +40,7 @@ func TestComponentScansPipeline(t *testing.T) {
 	if _, e := s.EnsureAdministrator(t.Context(), "input-fixture-admin", auth.HashPassword(secret, "fixture-password")); e != nil {
 		t.Fatal(e)
 	}
-	limits := store.ClaimLimits{Global: 3, PerModel: 3, PerProject: 3, Lease: time.Minute, OutputRoot: filepath.Join(scratch, "output"), MaxRecoveries: 3}
+	limits := store.ClaimLimits{Global: 3, PerModel: 3, PerProject: 3, Lease: time.Minute, OutputRoot: filepath.Join(scratch, "output"), MaxRecoveries: 3, TokenBudgetCapable: true, SDKConcurrencyCapable: true, SDKParametersCapable: true}
 	server := &httpserver.Server{Store: s, Secret: secret, AgentToken: agentToken, SnapshotDir: filepath.Join(scratch, "uploads"), QueueLimits: limits}
 	routes := server.Routes()
 	dist := filepath.Join(root, "code-audit-web/dist")
@@ -59,7 +61,10 @@ func TestComponentScansPipeline(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Component execution fixture", Provider: "openai", Model: "fixture-component-model", ApiKeyEncrypted: encrypted})
+	price := inputFixturePrice()
+	fixtureInput, fixtureOutput := contracts.TokenUnitPrice("5000"), contracts.TokenUnitPrice("15000")
+	price.InputPerMillion, price.OutputPerMillion = &fixtureInput, &fixtureOutput
+	cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: price, Name: "Component execution fixture", Provider: "openai", Model: "fixture-component-model", ApiKeyEncrypted: encrypted})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -253,6 +258,22 @@ func TestComponentScansPipeline(t *testing.T) {
 		if e != nil || a.Completion.ExecutionStatus != "completed" {
 			t.Fatal("batch completion was overwritten by parent status", e)
 		}
+		// This single-component retry has complete scoped usage and no matching
+		// request. Its frozen-price estimate is known even while the parent still
+		// has an unfinished component; do not overwrite it with a manual amount.
+		b, _ = s.BudgetSnapshot(t.Context(), id)
+		var second *contracts.AttemptCost
+		for i := range b.Attempts {
+			if b.Attempts[i].Execution.Attempt == 2 {
+				second = &b.Attempts[i]
+			}
+		}
+		if second == nil || second.State != "complete" || second.FinalMicros == nil || *second.FinalMicros != 125000 || !second.TokenEstimate.Present || second.TokenEstimate.Value.Status != "estimated" {
+			t.Fatal("complete retry usage was treated as an unknown whole-parent fee", b)
+		}
+		if e := s.ReconcileAttemptCost(t.Context(), id, 2, 0.5, "Fixture only fee reconciliation", "1", b.Revision); !errors.Is(e, store.ErrBudgetConflict) {
+			t.Fatal("a known estimate could be overwritten manually", e)
+		}
 		changed, e = s.RetryComponents(t.Context(), id, 2, "partial", []int64{2})
 		if e != nil || !changed {
 			t.Fatal(e)
@@ -275,6 +296,21 @@ func TestComponentScansPipeline(t *testing.T) {
 		second := launch()
 		old := observations
 		old.JobVersions = []int64{3, 4, 5, 6, 7}
+		// Budgeted claims require an explicit current runtime advertisement.
+		for _, node := range []string{"fixture-old-component", "fixture-component-node", "fixture-component-node-2", "fixture-next-node", "fixture-expiry-drain"} {
+			advertised := observations
+			if node == "fixture-old-component" {
+				advertised = old
+			}
+			if e := s.ReportAgentWithObservations(t.Context(), node, 1, caps, results, advertised); e != nil {
+				t.Fatal(e)
+			}
+			version, build := int64(15), "fixtures-component-budget"
+			apis := control.ControlAPIs()
+			if e := s.ReportAgentRuntime(t.Context(), node, contracts.AgentRuntime{SchemaVersion: 1, AgentBuild: "fixtures", ScannerBuild: &build, ControlAPI: int64(apis[len(apis)-1]), State: "ready", MatrixHash: control.MatrixHash, ScannerDescriptionVersion: &version}); e != nil {
+				t.Fatal(e)
+			}
+		}
 		claimed, e := s.ClaimExecutionWithObservations(t.Context(), "fixture-old-component", limits, caps, results, old)
 		if e != nil || claimed != nil {
 			t.Fatal("old node claimed new format", e)

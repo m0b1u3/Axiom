@@ -77,6 +77,8 @@ services:
       AXIOM_AGENT_ID: ${AXIOM_AGENT_ID:-agent-local}
       AXIOM_SCAN_MOCK: ${AXIOM_SCAN_MOCK:-0}
       AXIOM_VALIDATION_OUTPUT_MODE: ${AXIOM_VALIDATION_OUTPUT_MODE:-native_schema}
+      # Explicit provider/baseUrl[/model] allowlist; native OpenAI always stays V2.
+      AXIOM_SDK_LEGACY_CONNECTIONS: "${AXIOM_SDK_LEGACY_CONNECTIONS:-[]}"
       AXIOM_DATA_DIR: /app/data
       AXIOM_SCANNER_DIR: /opt/axiom/code-audit-scanner
       AXIOM_NODE: /usr/local/bin/node

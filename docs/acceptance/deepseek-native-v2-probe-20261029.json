@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "scope": "Genuine targeted native MultiAgentV2 delivery probes with the unmodified Codex runtime shipped by the installed and latest Codex Security SDK; not a full Security SDK Standard scan",
+  "apiUsed": "@openai/codex-sdk Codex.startThread().runStreamed() with each Security SDK DEFAULT_CODEX_CONFIG, the same Axiom Responses provider adapter and explicit native V2 model catalog",
+  "connection": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "baseUrl": "https://api.deepseek.com",
+    "wireApi": "responses"
+  },
+  "protocol": "Responses with SDK outputSchema for the parent; no JSON mode or protocol fallback",
+  "verdict": "not_fixed_for_this_connection_in_tested_runtimes",
+  "tests": [
+    {
+      "securitySDKVersion": "0.5.0",
+      "codexRuntimeVersion": "0.163.0",
+      "actualCLIConfirmed": true,
+      "startedAt": "2026-10-29T03:46:16.288Z",
+      "finishedAt": "2026-10-29T03:46:46.028Z",
+      "verdict": "child_task_payload_not_delivered",
+      "runtime": "native-v2",
+      "independentContext": "fork_turns=none",
+      "model": "deepseek-flash",
+      "spawn": {
+        "messageContainsExpectedToken": true,
+        "childReturnedToken": false,
+        "childFinal": "No actionable task was provided. The workspace README identifies this as a synthetic message-delivery acceptance test, so no changes were made."
+      },
+      "followup": {
+        "messageContainsExpectedToken": true,
+        "childReturnedToken": false,
+        "childFinal": "No actionable task was provided. The workspace README identifies this as a synthetic message-delivery acceptance test, so no changes were made."
+      },
+      "expectedTokenSha256": [
+        "51ac75cebd1b2a136f5714fbdb8c3e41393fe117ace9a8b989b539a32416d37d",
+        "7c9a174032de2c458551d69bc4d822c6edb9ae698ad7067af985c0f1b1c86b25"
+      ],
+      "contexts": [
+        {
+          "model": "deepseek-flash",
+          "multiAgentVersion": "v2"
+        },
+        {
+          "model": "deepseek-flash",
+          "multiAgentVersion": "v2"
+        }
+      ],
+      "parentTurn": {
+        "completed": true,
+        "error": null,
+        "timeoutSeconds": null
+      },
+      "requests": {
+        "count": 10,
+        "httpStatuses": [
+          200
+        ],
+        "completedResponses": 10,
+        "parentFormatObserved": "json_schema",
+        "childFormatObserved": "unspecified",
+        "strictFieldDirectlyCaptured": false
+      },
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "20261029",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": true,
+        "inputTokens": 76079,
+        "cachedInputTokens": 63744,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 3861,
+        "reasoningOutputTokens": 2829,
+        "totalTokens": 79940,
+        "requestCount": 10
+      }
+    },
+    {
+      "securitySDKVersion": "0.8.1",
+      "codexRuntimeVersion": "0.165.0",
+      "actualCLIConfirmed": true,
+      "startedAt": "2026-10-29T03:47:06.611Z",
+      "finishedAt": "2026-10-29T03:50:06.734Z",
+      "verdict": "child_task_payload_not_delivered",
+      "runtime": "native-v2",
+      "independentContext": "fork_turns=none",
+      "model": "deepseek-flash",
+      "spawn": {
+        "messageContainsExpectedToken": true,
+        "childReturnedToken": false,
+        "childFinal": "No task was provided. The fixture only contains a message-delivery acceptance README and requires no implementation work."
+      },
+      "followup": {
+        "messageContainsExpectedToken": true,
+        "childReturnedToken": false,
+        "childFinal": "No task was provided. The fixture only contains a message-delivery acceptance README and requires no implementation work."
+      },
+      "expectedTokenSha256": [
+        "708de2accf41b61ffdcb7bf1dae609bad30d7888c01ae95dad35571f999c7f73",
+        "0ed3bc5b8cc6edf4f9025971315907ca7567ad1bb7f90c97c5a9e5cb2767544f"
+      ],
+      "contexts": [
+        {
+          "model": "deepseek-flash",
+          "multiAgentVersion": "v2"
+        },
+        {
+          "model": "deepseek-flash",
+          "multiAgentVersion": "v2"
+        }
+      ],
+      "parentTurn": {
+        "completed": false,
+        "error": "The operation was aborted",
+        "timeoutSeconds": 180
+      },
+      "requests": {
+        "count": 11,
+        "httpStatuses": [
+          200
+        ],
+        "completedResponses": 10,
+        "parentFormatObserved": "json_schema",
+        "childFormatObserved": "unspecified",
+        "strictFieldDirectlyCaptured": false
+      },
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "20261029",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": false,
+        "inputTokens": 75245,
+        "cachedInputTokens": 66176,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 1660,
+        "reasoningOutputTokens": 651,
+        "totalTokens": 76905,
+        "requestCount": 11
+      }
+    }
+  ],
+  "totalModelRequestsObserved": 21,
+  "observations": [
+    "Both parents sent an initial spawn message and a subsequent followup message containing fresh distinct 128-bit random tokens.",
+    "Both children were created with fork_turns=none and actually ran deepseek-flash with multi_agent_version=v2.",
+    "Each child completed twice, reporting no task rather than returning either token.",
+    "Latest-version parent remained in a native wait call and was aborted at the 180-second test limit after both child replies had been observed.",
+    "No application or SDK source patch, V1 switch or protocol fallback was used in these probes."
+  ],
+  "accounting": {
+    "feeState": "unknown",
+    "estimatedUsd": null,
+    "pricingConfigured": false,
+    "cacheWriteInputTokens": null,
+    "latestUsageComplete": false,
+    "reason": "No configured prices; latest probe was cancelled while the parent was waiting, so its observed usage is incomplete."
+  },
+  "production": {
+    "projectSDKVersionUnchanged": "0.5.0",
+    "defaultDeepSeekRuntimeUnchanged": "legacy-v1",
+    "vpsDeployed": false,
+    "historicalResultsAndPricesRewritten": false
+  },
+  "limitations": [
+    "Targeted task-delivery failure does not locate responsibility between Codex serialization and the provider implementation.",
+    "No full native V2 security scan, report, archive or graph pass is claimed.",
+    "The previously successful V1 full-workflow acceptance remains a separate result."
+  ]
+}

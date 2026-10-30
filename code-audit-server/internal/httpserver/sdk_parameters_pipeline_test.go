@@ -64,7 +64,7 @@ func runSDKParametersWebAcceptance(t *testing.T, s *store.Store, agent, root, ur
 		t.Fatal("Frozen ordinary reasoning did not reach SDK", string(raw))
 	}
 	if os.Getenv("AXIOM_TEST_NATIVE_CONCURRENCY") == "1" {
-		for key, want := range map[string]any{"mode": "deep", "workers": float64(129), "subagents": float64(65), "maxDiscoveryRuns": float64(1001), "stopAfterNoNew": float64(1002), "maxTimeHours": float64(47.0 / 60), "maxCostUsd": float64(3)} {
+		for key, want := range map[string]any{"mode": "deep", "workers": float64(129), "subagents": float64(65), "maxDiscoveryRuns": float64(1001), "stopAfterNoNew": float64(1002), "maxTimeMinutes": float64(47), "maxCostUsd": float64(3)} {
 			if ordinary.Options[key] != want {
 				t.Fatalf("Web -> SDK parameter %s = %v, want %v", key, ordinary.Options[key], want)
 			}

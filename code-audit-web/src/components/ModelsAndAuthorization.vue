@@ -6,7 +6,7 @@ import SDKIdentities from './SDKIdentities.vue';
 import PageHeader from './PageHeader.vue';
 const route=useRoute(),router=useRouter();
 const tab=computed(()=>route.query.tab==='accounts'?'accounts':'models');
-function select(value:string){void router.replace({query:{...route.query,tab:value}})}
+function select(value:string){const {setup,...query}=route.query;void router.replace({query:{...query,tab:value}})}
 </script>
 
 <template>

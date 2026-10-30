@@ -1,0 +1,502 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "status": "fixed_and_genuine_native_v2_workflow_passed",
+  "scope": "Local DeepSeek Responses compatibility fix after real byte capture and direct one-variable controls; project SDK remains 0.5.0; not a VPS deployment",
+  "connection": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "baseUrl": "https://api.deepseek.com",
+    "wireApi": "responses",
+    "validationOutputMode": "native_schema"
+  },
+  "rootCause": {
+    "boundary": "DeepSeek Responses input interpretation of Codex V2 agent_message",
+    "finding": "SDK V2 put the complete task in an agent_message item. Axiom preserved that item unchanged, but DeepSeek ignored its type. Only changing it to a standard message after exposing the known plaintext content delivered the task.",
+    "notEstablished": "No claim that the provider and SDK have identical vendor-item contracts or that the upstream SDK is patched."
+  },
+  "layerEvidence": {
+    "parentToolArgumentsContainExactPayload": true,
+    "sdkSavedChildInputContainsExactPayload": true,
+    "SDKHTTPInputContainsExactPayload": true,
+    "adapterOutputContainsExactPayload": true,
+    "payloadSha256": "2fe50b7244cb87a838658f653b1eb8b65dc50475df38868c49a919b9e7400ab0",
+    "agentEnvelopeCanonicalSha256Before": "e3969f43993c425acd0ebbec3e21d652b326460b7eb2babb766ae66e07ef2f48",
+    "agentEnvelopeCanonicalSha256After": "e3969f43993c425acd0ebbec3e21d652b326460b7eb2babb766ae66e07ef2f48",
+    "adapterPreservedEntireAgentEnvelope": true,
+    "directControlsBypassSDKAndAxiom": true
+  },
+  "directControls": [
+    {
+      "name": "A_original_agent_message",
+      "change": "unchanged captured agent-message envelope",
+      "httpStatus": 200,
+      "status": "completed",
+      "requestSha256": "6be3d0bb88bb5a7af463181f2e1521bd1df34511ef3d18a57523d6932c009af2",
+      "format": "json_schema",
+      "strict": true,
+      "received": false,
+      "returnedExpectedToken": false,
+      "returnedTokenCharacters": 0,
+      "error": null,
+      "usage": {
+        "input_tokens": 138,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 59,
+        "output_tokens_details": {
+          "reasoning_tokens": 49
+        },
+        "total_tokens": 197
+      }
+    },
+    {
+      "name": "B_plain_content",
+      "change": "only task content-block representation: encrypted_content -> input_text",
+      "httpStatus": 200,
+      "status": "completed",
+      "requestSha256": "204c37890e88c4938d4eb51d172c9ea7cd20122d0abdb77d668a74f2ef5b8f85",
+      "format": "json_schema",
+      "strict": true,
+      "received": false,
+      "returnedExpectedToken": false,
+      "returnedTokenCharacters": 0,
+      "error": null,
+      "usage": {
+        "input_tokens": 138,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 62,
+        "output_tokens_details": {
+          "reasoning_tokens": 51
+        },
+        "total_tokens": 200
+      }
+    },
+    {
+      "name": "C_explicit_user_role",
+      "change": "only add role=user to B",
+      "httpStatus": 200,
+      "status": "completed",
+      "requestSha256": "0b59561ec11908b7098f145c970305f742f2abb7d2a9b15c419ca7531270bfab",
+      "format": "json_schema",
+      "strict": true,
+      "received": false,
+      "returnedExpectedToken": false,
+      "returnedTokenCharacters": 0,
+      "error": null,
+      "usage": {
+        "input_tokens": 138,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 98,
+        "output_tokens_details": {
+          "reasoning_tokens": 88
+        },
+        "total_tokens": 236
+      }
+    },
+    {
+      "name": "D_standard_message_type",
+      "change": "only change type=message from C",
+      "httpStatus": 200,
+      "status": "completed",
+      "requestSha256": "54f7b92ff3e5a6be9b8dd14cde577ba789e01354f004038d45f93094aface7bc",
+      "format": "json_schema",
+      "strict": true,
+      "received": true,
+      "returnedExpectedToken": true,
+      "returnedTokenCharacters": 32,
+      "error": null,
+      "usage": {
+        "input_tokens": 200,
+        "input_tokens_details": {
+          "cached_tokens": 0
+        },
+        "output_tokens": 124,
+        "output_tokens_details": {
+          "reasoning_tokens": 92
+        },
+        "total_tokens": 324
+      }
+    }
+  ],
+  "fix": {
+    "officialSDKModifiedFiles": 0,
+    "nativeV2ToolsPreserved": true,
+    "standardMessageConversionScopedToExactDeepSeekConnection": true,
+    "hiddenPayloadRequiresExactPreviouslyObservedPlaintextDispatchMatch": true,
+    "opaqueOrUnverifiedPayloadRejected": true,
+    "referenceAndUnknownContentGuards": true,
+    "sourceAndReportValidationRelaxed": false,
+    "schemaAndProtocolUnchanged": true,
+    "requestReplayAdded": false,
+    "newDeepSeekDefaultRuntime": "official-v2",
+    "legacyV1AvailableOnlyForExplicitPinsAndHistoricalBindings": true
+  },
+  "targetedRealProbes": [
+    {
+      "sdkVersion": "0.5.0",
+      "codexVersion": "0.163.0",
+      "status": "passed",
+      "nativeV2": true,
+      "independentContext": true,
+      "spawnTokenDelivered": true,
+      "followupTokenDelivered": true,
+      "parentAndChildRepliesVerified": true,
+      "parentFormatObserved": "json_schema",
+      "parentStrictObserved": true,
+      "requestCount": 9,
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "20261029",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": false,
+        "inputTokens": 51916,
+        "cachedInputTokens": 43264,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 659,
+        "reasoningOutputTokens": 202,
+        "totalTokens": 52575,
+        "requestCount": 9
+      }
+    },
+    {
+      "sdkVersion": "0.8.1",
+      "codexVersion": "0.165.0",
+      "status": "passed",
+      "nativeV2": true,
+      "independentContext": true,
+      "spawnTokenDelivered": true,
+      "followupTokenDelivered": true,
+      "parentAndChildRepliesVerified": true,
+      "parentFormatObserved": "json_schema",
+      "parentStrictObserved": true,
+      "requestCount": 7,
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "20261029",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": false,
+        "inputTokens": 36297,
+        "cachedInputTokens": 28160,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 555,
+        "reasoningOutputTokens": 233,
+        "totalTokens": 36852,
+        "requestCount": 7
+      }
+    }
+  ],
+  "fullWorkflow": {
+    "source": {
+      "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+      "unchanged": true,
+      "quotes": [
+        {
+          "id": "expected-tenant-isolation",
+          "path": "README.md",
+          "startLine": 5,
+          "endLine": 5,
+          "exact": true,
+          "sha256": "2d76dbe8549af940e9abe80302cbd4695bd3034bb94bb72b4d2c8980339c6287"
+        },
+        {
+          "id": "contacts-store",
+          "path": "app.py",
+          "startLine": 11,
+          "endLine": 14,
+          "exact": true,
+          "sha256": "317b1591aa80c86e163c8f0631284356114337ffce739679a0b4d9a62cf8ea37"
+        },
+        {
+          "id": "request-contact-id",
+          "path": "app.py",
+          "startLine": 28,
+          "endLine": 35,
+          "exact": true,
+          "sha256": "9deefd35af603b81b7555c8c8b0696ff1e675f3dc43e3f4672faa3a1c599dc2c"
+        },
+        {
+          "id": "tenant-auth-decision",
+          "path": "app.py",
+          "startLine": 17,
+          "endLine": 23,
+          "exact": true,
+          "sha256": "f32f8c81d5ce9ec141b3810ddd06eb08ed2a638dc927f5eb9b2b47dc00863023"
+        },
+        {
+          "id": "json-response",
+          "path": "app.py",
+          "startLine": 37,
+          "endLine": 43,
+          "exact": true,
+          "sha256": "2a61b3f7fd5372fbfeb53bab92f8d10254342c46138697d246fc7512d513271a"
+        }
+      ]
+    },
+    "scan": {
+      "taskId": 6,
+      "attempt": 1,
+      "status": "completed",
+      "model": "deepseek-flash",
+      "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+      "runtime": {
+        "id": "official-v2",
+        "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+      },
+      "resultSha256": "b2134ac19fbe0a7630b4e50dd531482f279441b1889d64d5c5da4f073012b2ab",
+      "artifactCount": 27,
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "6",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": true,
+        "inputTokens": 4526769,
+        "cachedInputTokens": 4385792,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 86123,
+        "reasoningOutputTokens": 29204,
+        "totalTokens": 4612892,
+        "requestCount": 54
+      },
+      "findingCount": 1,
+      "engine": {
+        "name": "codex-security",
+        "version": "0.5.0",
+        "pluginVersion": "0.1.95",
+        "patchRevision": null
+      },
+      "startedAt": "2026-10-29T04:12:14.807Z",
+      "finishedAt": "2026-10-29T04:17:33.543Z",
+      "failedToolActivities": 1
+    },
+    "review": {
+      "taskId": 7,
+      "attempt": 1,
+      "status": "completed",
+      "model": "deepseek-flash",
+      "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+      "runtime": {
+        "id": "official-v2",
+        "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+      },
+      "resultSha256": "e146d33857487e23b662e8cdad5eb7af75e9125a2aa99af016cf545244bbd727",
+      "artifactCount": 3,
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "7",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": true,
+        "inputTokens": 24885,
+        "cachedInputTokens": 13440,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 2992,
+        "reasoningOutputTokens": 881,
+        "totalTokens": 27877,
+        "requestCount": 2
+      },
+      "disposition": "reportable",
+      "bodyState": "body_present",
+      "reportCharacters": 4549,
+      "reportSha256": "7ee81bf147102daa378d579d1bb7bbc35143eaec22cae1870b4f85c684e5f993",
+      "reportPreservedAfterPathRedaction": true,
+      "archivedReportSha256": "7ee81bf147102daa378d579d1bb7bbc35143eaec22cae1870b4f85c684e5f993",
+      "feeState": "unknown",
+      "protocol": "responses",
+      "format": "json_schema",
+      "transportTurns": 2,
+      "transportSummary": {
+        "schemaVersion": 1,
+        "received": 2,
+        "omitted": 0,
+        "state": "complete"
+      },
+      "engine": {
+        "name": "codex-security",
+        "version": "0.5.0",
+        "pluginVersion": null,
+        "patchRevision": null
+      },
+      "startedAt": "2026-10-29T04:18:00.453Z",
+      "finishedAt": "2026-10-29T04:18:17.883Z",
+      "failedToolActivities": 0
+    },
+    "graph": {
+      "completeness": "complete",
+      "nodes": 36,
+      "edges": 60,
+      "diagnostics": 0
+    },
+    "history": {
+      "taskIds": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "attemptsAndCostsUnchanged": true,
+      "archivedFilesUnchanged": 120
+    },
+    "downloadedArtifacts": [
+      {
+        "taskId": 6,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "logs/sdk-runtime.json",
+        "sizeBytes": 1452,
+        "sha256": "a39dc617a4e91c6fdda5ce9dfd266b644590b4ffefdde165d303637675a76b33",
+        "verified": true
+      },
+      {
+        "taskId": 6,
+        "attempt": 1,
+        "kind": "sarif",
+        "relativePath": "raw/codex-security/exports/results.sarif",
+        "sizeBytes": 7624,
+        "sha256": "7987d771a426676d693f9e8c6b4ffc3dafae96daad18c4abc877ec3005017eff",
+        "verified": true
+      },
+      {
+        "taskId": 6,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/findings.json",
+        "sizeBytes": 19240,
+        "sha256": "3355fe9a482a07e940ecb0e26816c457c0da742378f2068b58a87c3cdf10dbb8",
+        "verified": true
+      },
+      {
+        "taskId": 6,
+        "attempt": 1,
+        "kind": "report",
+        "relativePath": "raw/codex-security/report.md",
+        "sizeBytes": 21325,
+        "sha256": "6ea760b54dbe76050b5613cdc4436c0e9829929740e9ed4685d4149a5b765177",
+        "verified": true
+      },
+      {
+        "taskId": 6,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/scan-manifest.json",
+        "sizeBytes": 9974,
+        "sha256": "81e029ebb3bab6ad774a84441e0a02b7c314a01186ee44af0c1cef9dd7425a2a",
+        "verified": true
+      },
+      {
+        "taskId": 7,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "logs/sdk-runtime.json",
+        "sizeBytes": 1452,
+        "sha256": "721b2f043b2b4b38493481e1dbb2401f4d3b2331cb302fc2845dc27094f5d01d",
+        "verified": true
+      },
+      {
+        "taskId": 7,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/sdk-operation-native.json",
+        "sizeBytes": 4744,
+        "sha256": "e7030bb2d0f4db50f0ace807decbd644316b1c4b48c6d3038917a159224bee04",
+        "verified": true
+      },
+      {
+        "taskId": 7,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/sdk-operation.json",
+        "sizeBytes": 5085,
+        "sha256": "68b2246136d3ffd0532556c305757a851e763a33047eedd57fc15627fc501d85",
+        "verified": true
+      }
+    ],
+    "delegation": {
+      "actualVersion": "v2",
+      "childSessions": 3,
+      "childrenCompleted": 3,
+      "childrenReturnedAcceptanceMarker": 3,
+      "rootAndChildrenUsedSelectedModel": true,
+      "spawnCalls": 3,
+      "independentContextConfirmed": true,
+      "childFinals": [
+        {
+          "worker": 1,
+          "characters": 3684,
+          "sha256": "fefb747d5b43ce381ece208145cda284e9dfe716329c959700b189fa96280cf5",
+          "returnedAcceptanceMarker": true
+        },
+        {
+          "worker": 2,
+          "characters": 20285,
+          "sha256": "f6f9d2a7d6c6a505fa91df28cf52da2c84a7715d29f7a8a58eebfae9bcd84924",
+          "returnedAcceptanceMarker": true
+        },
+        {
+          "worker": 3,
+          "characters": 5446,
+          "sha256": "be24545ed7b0ca2ae3be61975ba2cc7e23fc2710c7634804e0775ba48ec0e514",
+          "returnedAcceptanceMarker": true
+        }
+      ]
+    }
+  },
+  "checks": {
+    "scannerPassed": 326,
+    "crossLanguageContractCasesPassed": 506,
+    "focusedPassed": 26,
+    "build": "passed",
+    "sdkImmutableBaseline": "passed",
+    "goEvidenceSourceChanged": false
+  },
+  "accounting": {
+    "diagnosticModelRequests": 29,
+    "workflowModelRequests": 56,
+    "diagnosticUsageMayBePartial": true,
+    "workflowUsageComplete": true,
+    "pricingConfigured": false,
+    "feeState": "unknown",
+    "estimatedUsd": null,
+    "cacheWriteInputTokens": null,
+    "historicalPricesAndFeesUnchanged": true
+  },
+  "source": {
+    "head": "3379d4d43756d104478046f152cafcf2fbb11334",
+    "workingTreeUncommitted": true,
+    "testedFileSha256": {
+      "code-audit-scanner/src/proxy/agent-messages.ts": "e4ddd26000c66988075f61bf51789f04f4c910d93687977531adfe799f1f8d3a",
+      "code-audit-scanner/src/proxy/reliable-upstream.ts": "56ca531cfbae5e9f1ad46d489749e5ad6ddf96c2e0abe306e68f5c41478d6298",
+      "code-audit-scanner/src/engine/codex-security-engine.ts": "62522debcd1af976f521396c47500a148e35f8dc5f352c6f25f94f169eedc054",
+      "code-audit-scanner/src/runtime/sdk-runtime.ts": "472490d50f9ab09f93beb5528d8d201b2a97f7f7f6b2093012ee91a93b895064"
+    }
+  },
+  "notCovered": [
+    "VPS deployment of this change",
+    "Full Security SDK 0.8.1 workflow integration or a project dependency upgrade",
+    "New native V2 Deep recovery and component workflows",
+    "Live send_message-only delivery; its message conversion is covered by isolated tests",
+    "Provider invoice reconciliation or fees without configured prices"
+  ],
+  "historicalEvidence": [
+    "deepseek-native-v2-probe-20261029.json",
+    "deepseek-runtime-isolation-20261029.json"
+  ]
+}

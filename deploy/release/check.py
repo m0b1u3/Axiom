@@ -79,15 +79,16 @@ def check(root=ROOT):
     acceptance = check_real_sdk_acceptance(root, release)
     if acceptance["status"] == "limited":
         reference = release.get("referenceDeployment", {})
+        candidate = release.get("sourceCandidate", reference)
         sdk = json.loads((root/"code-audit-scanner/package.json").read_text())["dependencies"]["@openai/codex-security"]
         description = re.search(r"SCANNER_DESCRIPTION_VERSION = (\d+)",
                                 (root/"code-audit-scanner/src/runtime/contract-baseline.gen.ts").read_text())
         latest = max(p.name for p in (root/"code-audit-server/internal/store/migrations").glob("*.sql"))
         if (reference.get("provider") != "deepseek" or reference.get("wireAPI") != "responses"
                 or reference.get("validationOutputMode") != "native_schema"
-                or reference.get("sdkVersion") != sdk or description is None
-                or reference.get("scannerDescriptionVersion") != int(description[1])
-                or reference.get("latestMigration") != latest):
+                or candidate.get("sdkVersion") != sdk or description is None
+                or candidate.get("scannerDescriptionVersion") != int(description[1])
+                or candidate.get("latestMigration") != latest):
             raise ValueError("Reference deployment metadata disagrees with the candidate SDK, protocol or migration")
     repo = release.get("repository", "")
     parsed = urlparse(repo)

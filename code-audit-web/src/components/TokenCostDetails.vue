@@ -2,14 +2,14 @@
 import {computed} from 'vue';
 import {absoluteTime} from '../utils/time';
 import {tokenEstimateView,pricingMoney,pricingReasons} from '../utils/model-pricing';
-const props=defineProps<{value:unknown;taskId:number;attempt:number}>();
+const props=withDefaults(defineProps<{value:unknown;taskId:number;attempt:number;scope?:'execution'|'matching'}>(),{scope:'execution'});
 const estimate=computed(()=>tokenEstimateView(props.value,props.taskId,props.attempt));
 const price=computed(()=>estimate.value?.pricingSnapshot.pricing);
 const modes={input_only:'全部输入同价',cache_read:'缓存读取单独计价',cache_read_write:'缓存读写分别计价'};
 </script>
 <template>
  <details v-if="estimate" class="token-cost">
-  <summary>第 {{attempt}} 次 · 按用量估算：{{pricingMoney(estimate.amountMicros,estimate.currency)}}<span v-if="estimate.status==='partial'"> · 已知下界，完整费用未知</span><span v-else-if="estimate.status==='estimated'"> · 估算</span></summary>
+  <summary>第 {{attempt}} 次 · {{scope==='matching'?'匹配用量估算':'按用量估算'}}：{{pricingMoney(estimate.amountMicros,estimate.currency)}}<span v-if="estimate.status==='partial'"> · 已知下界，完整费用未知</span><span v-else-if="estimate.status==='estimated'"> · 估算</span></summary>
   <p v-if="estimate.reason">{{pricingReasons[estimate.reason]??estimate.reason}}</p>
   <p v-if="estimate.currency&&estimate.currency!=='USD'">按 {{estimate.currency}} 单价估算，未换算为 USD；USD 预算记账单独保留。</p>
   <dl>
@@ -23,7 +23,8 @@ const modes={input_only:'全部输入同价',cache_read:'缓存读取单独计�
    <div v-if="estimate.usage"><dt>实际 Token</dt><dd>输入 {{estimate.usage.inputTokens??'未知'}} · 输出 {{estimate.usage.outputTokens??'未知'}} · 缓存读取 {{estimate.usage.cachedInputTokens??'未知'}} · 缓存写入 {{estimate.usage.cacheWriteInputTokens??'未知'}}</dd></div>
    <div v-if="estimate.usage"><dt>用量来源</dt><dd>{{estimate.usage.source==='sdk_on_usage'?'SDK 累计用量回调':'Responses 请求回执'}} · {{estimate.usage.complete?'完整用量已归档':'部分观察'}}<template v-if="estimate.usage.requestCount!==null"> · {{estimate.usage.requestCount}} 次请求</template></dd></div>
   </dl>
-  <p>按本次冻结单价与已上报用量计算；推理 Token 不重复计入输出费用。完整价格、用量和计算结果可在下方原始费用快照中查看。</p>
+  <p v-if="scope==='matching'">按本次冻结单价与匹配请求用量计算；推理 Token 不重复计入输出费用。整次任务的估算见任务费用，匹配原始依据可通过用量归档下载查看。</p>
+  <p v-else>按本次冻结单价与已上报用量计算；推理 Token 不重复计入输出费用。完整价格、用量和计算结果可在下方原始费用快照中查看。</p>
  </details>
  <p v-else class="token-cost-invalid" role="alert">用量估算的版本或执行身份不匹配，金额未知；原始费用快照仍可查看。</p>
 </template>

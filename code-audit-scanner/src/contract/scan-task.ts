@@ -15,6 +15,9 @@ export type ScanProvider = string;
 export type ScanMode = "standard" | "deep";
 
 export interface ScanTask {
+  /** Internal immutable runtime binding; never inferred from a model name. */
+  sdkRuntime?: import('../runtime/sdk-runtime.js').SDKRuntimeBinding;
+ tokenBudget?:import('@axiom/contracts').TokenBudgetAssignment;
  deepResumeContext?: import("@axiom/contracts").DeepResumeContext;
  deepResume?: import("@axiom/contracts").DeepResumeAssignment;
  sdkParameters?:import("@axiom/contracts").SDKParametersAssignment;

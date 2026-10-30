@@ -43,6 +43,27 @@
           "minLength": 1,
           "maxLength": 11184812,
           "pattern": "^[A-Za-z0-9+/]+={0,2}$"
+        },
+        "runtime": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "enum": [
+                "official-v2",
+                "legacy-v1"
+              ]
+            },
+            "fingerprint": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "id",
+            "fingerprint"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

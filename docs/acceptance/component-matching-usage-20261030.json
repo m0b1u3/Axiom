@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-30",
+  "status": "passed",
+  "scope": "Local isolated matching Token and configured-price accounting; all inference boundaries use explicit Fixtures / Mock",
+  "realModelRequests": 0,
+  "vpsDeployment": false,
+  "publications": 0,
+  "invariants": {
+    "SDK": "0.5.0",
+    "Codex": "0.163.0",
+    "runtime": "official-v2",
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "wireAPI": "responses",
+    "matchingSchema": "json_schema, strict=true",
+    "nativeSDKFilesModified": false,
+    "ChatFallback": false,
+    "JSONOutputModeFallback": false,
+    "sourceEvidenceValidationRelaxed": false,
+    "automaticProxyReplayAdded": false,
+    "databaseMigrationAdded": false
+  },
+  "implemented": {
+    "matchingArchive": "raw/codex-security/component-matching-token-usage.json",
+    "matchingProjection": "ScanResult/ProgressSnapshotV2 extensions.componentMatchingEstimate, standard TokenCostEstimate",
+    "combinedUsage": "extensions.executionUsage, summed from disjoint per-component and matching transports",
+    "executionPriceSource": "Existing task_token_costs frozen pricing_snapshot_json, never current model-config prices",
+    "API": "Optional matchingEstimate on each component-executions attempt, read from that attempt only",
+    "compatibility": "Existing componentScan matching costState marker retained; new platform estimate is separate and preferred by the current UI; old missing records are never backfilled",
+    "rounding": "Exact decimal arithmetic, upward once over combined execution Token counts; component and matching detail amounts each round independently",
+    "rawAccess": "Committed matching statistics registered as artifact and downloadable with verified SHA256 and byte size"
+  },
+  "sample": {
+    "fixtureOnly": true,
+    "priceUSDPerMillion": {
+      "input": "0.3",
+      "cacheRead": "0.006",
+      "output": "1.2"
+    },
+    "matching": {
+      "inputTokens": 200,
+      "cachedInputTokens": 120,
+      "cacheWriteInputTokens": null,
+      "outputTokens": 20,
+      "requestCount": 2,
+      "amountMicros": 49,
+      "status": "estimated"
+    },
+    "completeExecution": {
+      "inputTokens": 260,
+      "cachedInputTokens": 144,
+      "cacheWriteInputTokens": null,
+      "outputTokens": 35,
+      "totalTokens": 295,
+      "requestCount": 5,
+      "amountMicros": 78,
+      "status": "estimated"
+    },
+    "componentSDKCallbacksIncludedInTotal": false,
+    "notice": "Fixture amounts are test expectations, not new real-model charges."
+  },
+  "negativeCoverage": [
+    "No matching usage: complete fee remains unknown, never zero.",
+    "Only one matching receipt: preserve the known lower bound, full fee remains unknown.",
+    "HTTP 503 during matching: preserve all three component findings, result partial, fee unknown.",
+    "Invalid cached Token count: reject complete accounting.",
+    "Absent cache-write fields remain null; explicit reported zeros remain zero.",
+    "Price edited while matching: original revision and price remain frozen.",
+    "Forged matching amount, price revision or price rejected before settlement.",
+    "Foreign execution identities rejected in contract, API projection and UI; stale displayed estimates cleared.",
+    "Legacy matching records with no new field remain unknown without deriving new fees from old usage.",
+    "Single-component retry with no matching and complete usage has its own known estimate even when the parent remains partial; known estimates cannot be manually overwritten."
+  ],
+  "checks": {
+    "scanner-all.log": {
+      "passed": 348,
+      "failed": 0,
+      "skipped": 0,
+      "sha256": "f036a846f425a52ebaaa11af51834b223077ac73ca10d6b765d8194056aa17e5"
+    },
+    "contracts.log": {
+      "passed": 511,
+      "failed": 0,
+      "skipped": 0,
+      "sha256": "49f0cd88eef9047353fdc40503f0e52f78959e1ab7f20ec71f6eec93d5fa49c9"
+    },
+    "web-all.log": {
+      "passed": 102,
+      "failed": 0,
+      "skipped": 0,
+      "sha256": "2f0400b05fd20178dbe38072ad15d02a9f18344d0cd7c7f3ba1806fcaefcdafd"
+    },
+    "matching-browser-pipeline.log": {
+      "passed": true,
+      "sha256": "1bcc28dc69e747ec3f78e3bf5822d837e3cd94a1dd9f067e35b8dcdac3b132ab"
+    },
+    "related-api-pipelines.log": {
+      "passed": true,
+      "sha256": "7f42535463c5e90b6f6a4579554b83f74b4d00d0c960f5c50807b73056205e35"
+    },
+    "store-matching.log": {
+      "passed": true,
+      "sha256": "3791dd5a16747520f5c8a3b52cc14b007fc7b6890b831882e97d859c38972fba"
+    }
+  },
+  "browser": {
+    "checks": [
+      "matching-scope-actual-token-cache-and-frozen-estimate",
+      "combined-fees-do-not-double-count-component-callbacks",
+      "matching-raw-download",
+      "native-details-keyboard-toggle",
+      "missing-receipts-remain-unknown",
+      "partial-receipts-labelled-as-lower-bound",
+      "matching-failure-keeps-independent-findings",
+      "later-price-edit-does-not-reprice-execution",
+      "history-matching-estimate-binds-selected-attempt",
+      "legacy-record-does-not-invent-matching-usage-or-zero",
+      "foreign-matching-identity-clears-stale-price"
+    ],
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 1000
+      },
+      {
+        "width": 390,
+        "height": 844
+      }
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "screenshotSHA256": {
+      "known-desktop-light.png": "8a092c82217a6b33ee610e04e8387bfbbc0062680061bfed67ff58614c43669e",
+      "known-desktop-dark.png": "383f9c3d177243170df7c856df49199bbd21e146e8b79d33281c7c8d8766e471",
+      "known-mobile-light.png": "f9e4e57f88c5bdccc0c52569451935ba5b391bca08181ef86dc576244f6217c5",
+      "known-mobile-dark.png": "f8755479d58dba2a1046336a7c22dd876cc4c1f371cd306bfc97a68f5eef0328"
+    },
+    "manualVisualReview": "passed, one batched review; existing table scroll retained inside its pane, no page overflow or new visual pattern",
+    "keyboardDetailsToggle": true,
+    "externalRequests": 0
+  },
+  "historicalPreservation": {
+    "attempts": 32,
+    "artifacts": 652,
+    "modelConfigs": 4,
+    "tokenCostRows": 32,
+    "costLedgerRows": 32,
+    "priceCostExecutionAndArtifactSnapshotsUnchanged": true,
+    "beforeSHA256": "253069b7b44f6af1531ca744b42cd4eadaa17cf546ce2debc6c3bf30207e1f29",
+    "afterSHA256": "253069b7b44f6af1531ca744b42cd4eadaa17cf546ce2debc6c3bf30207e1f29",
+    "symlinkTargetsFollowed": false,
+    "historicalPricesRecomputed": false
+  },
+  "SDKOriginalCheck": {
+    "passed": true,
+    "version": "0.5.0",
+    "recoverySourceFilesVerified": 10
+  },
+  "workingTree": {
+    "baseGitCommit": "3379d4d43756d104478046f152cafcf2fbb11334",
+    "committedByThisTask": false,
+    "codeSHA256": {
+      "code-audit-scanner/src/runtime/component-usage.ts": "4d61dac04cb122b81e6db6519b617efa9463fdffe8b040194fcdb8d085ab6781",
+      "code-audit-scanner/src/runtime/execution-token-usage.ts": "3dfab8ea1d0f5083ecc0dde0313ba190efbcadaff8e731d4dc7b2e8e8d16e3b3",
+      "code-audit-scanner/src/engine/component-scan.ts": "2ad5f374626c2bbb272e016c6d2933a36969e165d3c153573d92610af57217ea",
+      "code-audit-scanner/src/runtime/contract-progress.ts": "519dfe38fd74eecffd18e00281183870339628bc7ed9eedd43ea83841a9e1821",
+      "code-audit-scanner/src/artifact/result-publisher.ts": "745dd99b9e883066849acd586120d07edddfbe62e2cae77db55dbf6ab474b881",
+      "code-audit-scanner/src/contract/scan-result.ts": "30fafa861b6dc36b9439d90086a40248168b079be75e427078a4bda0d323f6e7",
+      "code-audit-server/internal/store/component_matching.go": "21dd1cad46599fe44b664e05cc3c8c566b261c4d3e4e607fc8fa4e1613c66fb9",
+      "code-audit-server/internal/store/component_scans.go": "bd760693a409435c117a94b835495e838634b30aa7eb4d77406957bf6bc929c0",
+      "code-audit-server/internal/store/model_pricing.go": "82067d63cc47ea8f2868ebcd8d1d8ef747d1fdb9a0054a524aad6edfb8a51532",
+      "code-audit-server/internal/store/budget.go": "e4d9a7ba664a9cc8b2afe2c6a8b06271a756efc3c7a14f29b9d5a87da670be5c",
+      "contracts/ts/src/index.ts": "baa58e7e9c6f364a3b4f52055221f8f0e2905b5dc44220ffbac35e4e9672042a",
+      "contracts/go/validate.go": "b6c3df30358ddab92ebd8c7925b5a050ce26a00e56505a67409e87db0c10a397",
+      "code-audit-web/src/components/ComponentExecutions.vue": "a91de321ff2bea2148e6b6cf7a294c91c12ed232e6c86b916d87797eeaa8dcb4",
+      "code-audit-web/src/components/TokenCostDetails.vue": "1c27056fc6ac6ececa23e5c84d26c2deeaccd9f67de9b5c766a42af4b04db941",
+      "code-audit-web/src/utils/component-scans.ts": "71eb36bfd2bdbb27fa388ef6fc4359a632e5eefb85357f5e492b2e3c3b2dab36"
+    }
+  },
+  "limitations": [
+    "No real-model request was made for this change; previous real acceptances retain their original results and unknown fees.",
+    "Matching statistics do not add a hard matching-spend cap; matching remains outside the component grants.",
+    "Missing receipts or required cache data keep complete fees unknown.",
+    "No vendor invoice was reconciled.",
+    "Native SDK without an observable matching usage path still reports unknown matching fees.",
+    "This change is local source/build only; no VPS deployment."
+  ]
+}

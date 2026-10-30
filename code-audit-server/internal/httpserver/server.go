@@ -598,7 +598,11 @@ func (s *Server) listModelConfigs(w http.ResponseWriter, r *http.Request, _ *sto
 			items[i].ApiKeyHint = "（密钥无法解密）"
 		}
 	}
-	httputil.OK(w, items)
+	response := make([]modelConfigResponse, len(items))
+	for i := range items {
+		response[i] = modelResponse(items[i])
+	}
+	httputil.OK(w, response)
 }
 
 // maskAPIKey：前 3 + … + 尾 4（cc-switch 式掩码），过短则全掩。
@@ -642,7 +646,7 @@ func (s *Server) enableModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
 		return
 	}
-	httputil.OK(w, row)
+	httputil.OK(w, modelResponse(*row))
 }
 
 // normalizeModelBaseURL accepts a full Responses endpoint; Chat endpoints are rejected.
@@ -735,7 +739,7 @@ func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		httputil.Error(w, http.StatusBadRequest, 40006, "Chat 协议适配已移除；wireApi 仅支持 responses")
 		return
 	}
-	if body.SDKIdentityOnly && (body.ApiKey != "" || body.Provider != "openai" || (body.BaseURL != "" && normalizeModelBaseURL(body.BaseURL) != "https://api.openai.com/v1") || (body.WireAPI != "" && body.WireAPI != "responses")) {
+	if body.SDKIdentityOnly && (body.ApiKey != "" || !nativeOpenAIModel(body.Provider, body.BaseURL, body.WireAPI)) {
 		httputil.Error(w, 400, 40000, "仅原生 OpenAI Responses 模型可由 SDK 执行身份提供凭据")
 		return
 	}
@@ -770,7 +774,7 @@ func (s *Server) createModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		httputil.Error(w, http.StatusInternalServerError, 50000, err.Error())
 		return
 	}
-	httputil.OK(w, row)
+	httputil.OK(w, modelResponse(*row))
 }
 
 func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *store.User) {
@@ -854,7 +858,7 @@ func (s *Server) updateModelConfig(w http.ResponseWriter, r *http.Request, _ *st
 		httputil.Error(w, http.StatusNotFound, 40002, "model config not found")
 		return
 	}
-	httputil.OK(w, row)
+	httputil.OK(w, modelResponse(*row))
 }
 
 func (s *Server) deleteModelConfig(w http.ResponseWriter, r *http.Request, _ *store.User) {

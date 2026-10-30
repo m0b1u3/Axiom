@@ -15,8 +15,8 @@ test('process discrepancy compares the committed result, independently of execut
  assert.equal(module.processMismatch({process:{code:2,signal:null},result:{status:'partial'}}),false);
  assert.equal(module.processMismatch({process:{code:null,signal:'killed'},result:{status:'completed'}}),true);
 });
-test('all native cost and token fields are exposed, including observed zeros and future fields',()=>{
- const sections=module.nativeCostSections({extensions:{sdk:{cost:{cachedInputTokens:0,future:{retained:true}},turn:{usage:{reasoning_output_tokens:5,total_tokens:17}}}}});
- assert.equal(sections[0].rows[0].value,'0');assert.equal(sections[0].rows[1].value,'{"retained":true}');assert.equal(sections[1].rows[0].value,'5');
- assert.match(module.nativeCostSections({extensions:{lastObservedCost:{estimatedUsd:1}}})[0].title,/非最终账单/);
+test('native token evidence remains visible without a second SDK price display',()=>{
+ const sections=module.nativeUsageSections({extensions:{sdk:{cost:{cachedInputTokens:0,future:{retained:true}},turn:{usage:{reasoning_output_tokens:5,total_tokens:17}}}}});
+ assert.equal(sections.length,1);assert.equal(sections[0].title,'SDK 原生 Token 用量');assert.equal(sections[0].rows[0].value,'5');
+ assert.deepEqual(module.nativeUsageSections({extensions:{lastObservedCost:{estimatedUsd:1}}}),[]);
 });

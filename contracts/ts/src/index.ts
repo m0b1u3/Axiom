@@ -64,9 +64,11 @@ export function validate<K extends ContractKind>(kind: K,value: unknown,expected
   if(kind==='ExecutionHeartbeat' && isObject(object['progress']) && !sameExecution(object['progress']['execution'],execution as ExecutionRef))throw new ContractValidationError('identity_mismatch',kind);
   if(kind==='ExecutionCompletion' && (object['process'] as Record<string,unknown>)['resultCommitted']!==Object.hasOwn(object,'result'))throw new ContractValidationError('invalid_contract',kind);
   if(kind==='SDKNativeResult'){
-    validate('SDKCostEstimate',object['usageEstimate'],execution as ExecutionRef);
+    if(object['usageEstimate']!==null){
+      validate('SDKCostEstimate',object['usageEstimate'],execution as ExecutionRef);
+      if((object['usageEstimate'] as Record<string,unknown>)['sdkVersion']!==object['sdkVersion'])throw new ContractValidationError('identity_mismatch',kind);
+    }
     validate('SDKDiagnostics',object['diagnostics'],execution as ExecutionRef);
-    if((object['usageEstimate'] as Record<string,unknown>)['sdkVersion']!==object['sdkVersion'])throw new ContractValidationError('identity_mismatch',kind);
   }
   if(kind==='ExecutionTokenUsage'){
     const v=value as ContractTypes['ExecutionTokenUsage'];
@@ -74,12 +76,19 @@ export function validate<K extends ContractKind>(kind: K,value: unknown,expected
       if(!Number.isSafeInteger(v.inputTokens+v.outputTokens)||(v.totalTokens!==null&&v.totalTokens!==v.inputTokens+v.outputTokens)||(v.cachedInputTokens!==null&&v.cachedInputTokens>v.inputTokens)||(v.cacheWriteInputTokens!==null&&v.cacheWriteInputTokens>v.inputTokens-(v.cachedInputTokens??0))||(v.reasoningOutputTokens!==null&&v.reasoningOutputTokens>v.outputTokens))throw new ContractValidationError('invalid_contract',kind);
     }
   }
+  if(kind==='TokenBudgetAssignment'){
+    const v=value as ContractTypes['TokenBudgetAssignment'];validate('ModelPricingSnapshot',v.pricingSnapshot,v.execution);
+  }
   if(kind==='TokenCostEstimate'){
     const v=value as ContractTypes['TokenCostEstimate'];validate('ModelPricingSnapshot',v.pricingSnapshot,v.execution);
     if(v.usage!==null)validate('ExecutionTokenUsage',v.usage,v.execution);
     if(v.status!=='unknown'&&(v.amountMicros===null||v.pricingSnapshot.pricing===null||v.currency!==v.pricingSnapshot.pricing.currency||v.usage===null||(v.status==='estimated'&&!v.usage.complete)||(v.status==='partial'&&v.usage.complete)))throw new ContractValidationError('invalid_contract',kind);
   }
   if((kind==='ScanResult'||kind==='ProgressSnapshotV2')&&isObject(object['extensions'])&&object['extensions']['executionUsage']!==undefined)validate('ExecutionTokenUsage',object['extensions']['executionUsage'],execution as ExecutionRef);
+  if((kind==='ScanResult'||kind==='ProgressSnapshotV2')&&isObject(object['extensions'])&&object['extensions']['componentMatchingEstimate']!==undefined){
+    validate('TokenCostEstimate',object['extensions']['componentMatchingEstimate'],execution as ExecutionRef);
+    if(!isObject(object['extensions']['componentScan']))throw new ContractValidationError('invalid_contract',kind);
+  }
   if(kind==='ProgressSnapshotV2'&&isObject(object['extensions'])&&object['extensions']['sdkUsage']!==undefined){
     validate('SDKUsage',object['extensions']['sdkUsage'],execution as ExecutionRef);
   }

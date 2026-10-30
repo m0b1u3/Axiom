@@ -75,11 +75,11 @@
         "ScanOptions.subagents",
         "ScanOptions.maxDiscoveryRuns",
         "ScanOptions.stopAfterNoNew",
-        "ScanOptions.maxTimeHours"
+        "ScanOptions.maxTimeMinutes"
       ],
       "status": "integrated",
       "phase": 1,
-      "notes": "已接 workers、subagents（含显式 0）、发现轮次、停止条件及 maxTimeHours；仅 Deep 接受子代理参数。",
+      "notes": "已接 workers、subagents（含显式 0）、发现轮次、停止条件；Deep 时限改用公开 maxTimeMinutes，原生等价性测试确认与旧 maxTimeHours 相同。Standard 硬超时与平台终止宽限仍独立保留。",
       "evidence": [
         "code-audit-scanner/src/engine/codex-security-engine.ts",
         "code-audit-scanner/src/contract/sdk-scan-input.ts",
@@ -158,22 +158,19 @@
     },
     {
       "id": "scan.budget",
-      "label": "预算回调与费用",
+      "label": "平台单价与 Token 预算",
       "api": [
-        "ScanOptions.maxCostUsd",
-        "ScanOptions.onCost",
-        "ScanOptions.onBudgetApproaching",
-        "estimateScanCost"
+        "ScanOptions.onUsage"
       ],
       "status": "integrated",
       "phase": 1,
-      "notes": "预算与费用回调及 Web 用量估算已接入。estimateScanCost 使用 SDK 返回轮次的模型/用量和锁定定价，保留已知零与未知，不改变任务账本或额度，不作为开扫前报价。",
+      "notes": "平台按冻结单价与实际 Token 计价和控制新建扫描预算。已移除 SDK estimateScanCost 调用、SDK 费用回调展示和独立估算入口；历史费用及 SDK 原始归档继续可读。缺必要单价或用量时费用未知，不回填历史。",
       "evidence": [
-        "code-audit-scanner/src/engine/codex-security-engine.ts",
-        "code-audit-scanner/test/sdk-lifecycle.test.ts",
-        "code-audit-scanner/src/artifact/sdk-native-result.ts",
+        "code-audit-scanner/src/runtime/token-budget.ts",
+        "code-audit-scanner/src/runtime/execution-token-usage.ts",
+        "code-audit-server/internal/store/model_pricing.go",
         "code-audit-scanner/test/sdk-native-result.test.ts",
-        "code-audit-web/src/components/SDKNativeResult.vue"
+        "code-audit-web/src/components/TokenCostDetails.vue"
       ]
     },
     {
@@ -349,7 +346,7 @@
       ],
       "status": "partial",
       "phase": 4,
-      "notes": "loginChatGPTDeviceCode 已接入：Web 展示白名单授权网址、设备码、本地截止、取消与过期；刷新凭据通过公开 importAmbientAuth 不透明回存，父任务按身份互斥。验收无真实登录。loginChatGPT 的回调式浏览器登录仍待独立设计，本批不暴露宿主机回调。",
+      "notes": "loginChatGPTDeviceCode 已接入：Web 展示白名单授权网址、设备码、本地截止、取消与过期；刷新凭据通过公开 importAmbientAuth 不透明回存。2026-10-28 本地真实设备码登录及新进程账户查询通过，未调用模型；VPS 验收范围见 chatgpt-device-auth-20261028.json。loginChatGPT 的回调式浏览器登录仍待独立设计，不暴露宿主机回调。",
       "evidence": [
         "contracts/schemas/v1/sdk-identities.schema.json",
         "code-audit-server/internal/store/sdk_identities.go",
@@ -393,7 +390,7 @@
       ],
       "status": "integrated",
       "phase": 1,
-      "notes": "原生 Markdown/SARIF 按已封存引用核验、预览和下载；明确未生成/格式异常；保存 SDK 仓库历史与同源码执行关联，不改人工状态；旧归档保留原入口。",
+      "notes": "原生 Markdown/SARIF 按已封存引用核验、预览和下载；明确未生成/格式异常；保存 SDK 仓库历史与同源码执行关联，不改人工状态；旧归档保留原入口。 已完成/已封存结果的失败回收改用公开 loadContract，校验不通过不回退到宽松解析；未封存的中断草稿仅作为部分观察保留。",
       "evidence": [
         "code-audit-scanner/src/artifact/result-publisher.ts",
         "code-audit-web/src/components/ExecutionResult.vue",
@@ -401,7 +398,9 @@
         "code-audit-server/internal/store/native_result.go",
         "code-audit-server/internal/httpserver/sdk_native_pipeline_test.go",
         "code-audit-web/src/components/SDKNativeResult.vue",
-        "code-audit-web/tests/sdk-native-web-acceptance.mjs"
+        "code-audit-web/tests/sdk-native-web-acceptance.mjs",
+        "code-audit-scanner/src/artifact/load-raw-result.ts",
+        "code-audit-scanner/test/sdk-parent-state.test.ts"
       ]
     },
     {
@@ -525,7 +524,7 @@
         "code-audit-server/internal/store/deep_resume.go",
         "code-audit-web/src/components/DeepResumeControls.vue",
         "deploy/sdk/native-deep-resume-acceptance.mjs",
-        "docs/DEEP_SCAN_RESUME.md"
+        "docs/CURRENT_STATUS.md"
       ]
     },
     {
@@ -643,10 +642,9 @@
       "phase": 2,
       "api": [
         "ScanOptions.stopAfterConsecutiveErrors",
-        "ScanOptions.maxTimeMinutes",
         "ScanOptions.cyberAccessProgram"
       ],
-      "notes": "新增设置尚未提供独立 Web 配置；现有超时和 Deep maxTimeHours 保持历史语义，不替换为模型调查建议时长；实验访问计划需另行验收。",
+      "notes": "错误停止阈值和实验访问计划尚未提供独立 Web 配置。Deep 已用公开 maxTimeMinutes 映射现有发现时限；Standard 的同名设置是模型建议时长，不等价于平台硬超时，不能直接替换。",
       "evidence": []
     }
   ],
@@ -673,6 +671,7 @@
     "SandboxUnavailableError": "公开错误类型；用于兼容诊断，不作为 Web 操作。",
     "HostedScanPreparationError": "公开错误类型；用于兼容诊断，不作为 Web 操作。",
     "HostedScanInputSchema": "公开运行时 Schema；未作为任意输入执行的 Web 入口。",
-    "classifySeverityRecordsInputSchema": "公开运行时 Schema；未作为任意输入执行的 Web 入口。"
+    "classifySeverityRecordsInputSchema": "公开运行时 Schema；未作为任意输入执行的 Web 入口。",
+    "estimateScanCost": "已停用的 SDK 内置价格估算；项目不再调用或提供其 Web 入口。旧 SDKCostEstimate 仅作为历史归档读取，费用使用配置单价与实际 Token。"
   }
 }

@@ -11,6 +11,7 @@ import (
 // Lease is local execution state, not a database row. Modern tasks retain the
 // validated Assignment; the legacy wire DTO is used only by the old adapter.
 type Lease struct {
+	TokenBudget                *contracts.TokenBudgetAssignment
 	DeepResumeContext          *contracts.DeepResumeContext
 	DeepResume                 *contracts.DeepResumeAssignment
 	SDKParameters              *contracts.SDKParametersAssignment

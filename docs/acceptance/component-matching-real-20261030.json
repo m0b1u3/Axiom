@@ -1,0 +1,537 @@
+{
+  "schemaVersion": 1,
+  "kind": "scoped-local-real-model-acceptance",
+  "date": "2026-10-30",
+  "checkedAt": "2026-10-30T02:55:59.284247+00:00",
+  "status": "passed_with_documented_limits",
+  "scope": "Local positive cross-component grouping, actual matching usage and frozen-price estimation, native V2 running-agent message delivery, independent reviews, archive downloads and evidence graphs on a synthetic 3-file project.",
+  "invariants": {
+    "SDK": "0.5.0",
+    "Codex": "0.163.0",
+    "runtime": "official-v2",
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "wireAPI": "responses",
+    "standaloneReview": "json_schema, strict=true",
+    "nativeSDKFilesModified": false,
+    "sourceEvidenceValidationRelaxed": false,
+    "V1Fallback": false,
+    "ChatFallback": false,
+    "JSONModeFallback": false,
+    "nativeAutomaticRetries": "allowed; no new proxy replay",
+    "VPSDeployment": false
+  },
+  "implementationIdentity": {
+    "sha256": "a6a6cd713c7dce03cf5ba417445c7506cc297c7ea922cbe9330c5dd5ee140bb1",
+    "files": 559,
+    "method": "Sorted production source path and SHA256 entries; excluded Go test files. Build source was uncommitted at execution time.",
+    "serverBinarySha256": "f53a2f56a1b838a56f30c598e5a383ff19247e57f676db32fd80a6bcfacd8fb0",
+    "agentBinarySha256": "0cc1c097c4b06e71ca07e3d4220ecde7107a9825876ea09f0560d58f3afe4870",
+    "sdkRuntimeFingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+  },
+  "componentScan": {
+    "taskId": 30,
+    "attempt": 1,
+    "status": "completed",
+    "sourceHash": "1dca2e5980386f6f856a918836a4eedb98977896757b708151cf811c45128fbd",
+    "resultSha256": "6372fca1721b06ec1bba8f741790cfa89c66d841beff7bcf8044bc741dbc2600",
+    "sourceFindingCount": 2,
+    "sdkMergedFindingCount": 1,
+    "confirmedGroups": 1,
+    "uncertainPairs": 0,
+    "platformOriginalsRetained": 2,
+    "sourceQuotes": [
+      {
+        "path": "gateway.py",
+        "startLine": 8,
+        "endLine": 10,
+        "exact": true,
+        "sha256": "df7157898c49a07c8bc36e162051dd4292f5b883fed41f9c33492d51b4dbeda7"
+      },
+      {
+        "path": "gateway.py",
+        "startLine": 15,
+        "endLine": 27,
+        "exact": true,
+        "sha256": "74478ef85934ca24195f8300df274619f1c9aa2278712b930907e36df7ae2594"
+      },
+      {
+        "path": "storage.py",
+        "startLine": 11,
+        "endLine": 14,
+        "exact": true,
+        "sha256": "b53d9350f08f8d078a64c01725d50fb7b4790041a3c802b2c8262a3b443ecf98"
+      },
+      {
+        "path": "storage.py",
+        "startLine": 17,
+        "endLine": 19,
+        "exact": true,
+        "sha256": "70396c496667cdc28076b07d4a64b6397e37bbf78c9265ec2a6ef36e756e918b"
+      },
+      {
+        "path": "gateway.py",
+        "startLine": 28,
+        "endLine": 36,
+        "exact": true,
+        "sha256": "31c9c276dd25f052e6faf48eb193c94bfceba74d28e57e1f671b5766ee88b347"
+      },
+      {
+        "path": "README.md",
+        "startLine": 7,
+        "endLine": 7,
+        "exact": true,
+        "sha256": "7c28bc84993c16742bd6cb29cf0e60bbc701db259b46aab0338c9b69a34b8f63"
+      },
+      {
+        "path": "gateway.py",
+        "startLine": 16,
+        "endLine": 36,
+        "exact": true,
+        "sha256": "3c0c85c6fba88cbd1e44e8f33244a7a32dc9275f960ab0a42aaea79c62f52715"
+      },
+      {
+        "path": "storage.py",
+        "startLine": 11,
+        "endLine": 19,
+        "exact": true,
+        "sha256": "39f23f25f38adf1dee4ecb23d97c72f75533b89ce9c9dd8c47a1bb34baf1cc59"
+      },
+      {
+        "path": "README.md",
+        "startLine": 5,
+        "endLine": 7,
+        "exact": true,
+        "sha256": "2cfa5cbfc83fe1ea854555a6c7ece412092cad899e51bbb79259017af3192d29"
+      }
+    ],
+    "graphs": [
+      {
+        "fingerprint": "axiom/component/v1:baf9f8dde4a15367d38a1c0bacbbb5b47b9fe5e6cc12380f4ca911f0671aec61",
+        "completeness": "complete",
+        "nodes": 34,
+        "edges": 50,
+        "diagnostics": 0
+      },
+      {
+        "fingerprint": "axiom/component/v1:91f2936ff3d8e6cab4bfe7789a5749dea0f96bd06fa68bf66ba0e7a3fc000071",
+        "completeness": "complete",
+        "nodes": 36,
+        "edges": 60,
+        "diagnostics": 0
+      }
+    ],
+    "downloadArtifacts": [
+      {
+        "kind": "engine_raw",
+        "relativePath": "logs/sdk-runtime.json",
+        "sizeBytes": 1453,
+        "sha256": "c8f110cff9603ff181e7c0dea763c04f0f491fdf1ffe9cd42088a1ba01afba3b",
+        "downloadVerified": true
+      },
+      {
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/component-1-token-usage.json",
+        "sizeBytes": 1010,
+        "sha256": "fc039c5f9953f7045284ac4b02a68404a77b38985e162cd2fe6ad4b4fb878cbf",
+        "downloadVerified": true
+      },
+      {
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/component-1.json",
+        "sizeBytes": 35733,
+        "sha256": "144bdbd9f806b811dd3d392e8db76c21e0947fdd6c92f9867952883f9084b69d",
+        "downloadVerified": true
+      },
+      {
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/component-2-token-usage.json",
+        "sizeBytes": 1009,
+        "sha256": "dd8e10d865ff20cbc0a35d2caa2251edcca9f885acc3bd037627fc4a8189f086",
+        "downloadVerified": true
+      },
+      {
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/component-2.json",
+        "sizeBytes": 40508,
+        "sha256": "c07471a4eb59f71dc853ada1c240847de500d9c99ede20c55be45443fd2f5ce8",
+        "downloadVerified": true
+      },
+      {
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/component-matching-token-usage.json",
+        "sizeBytes": 1134,
+        "sha256": "a3cc1e10d972fbf660df2df213adf1d4a31065befad4b12e0485c708972b9f71",
+        "downloadVerified": true
+      },
+      {
+        "kind": "sarif",
+        "relativePath": "raw/codex-security/components/component-1/exports/results.sarif",
+        "sizeBytes": 7057,
+        "sha256": "a4a95f567ba555e251d9feec66d6a9e779fe2fb67f1c1e55db1ca0dbcda01f64",
+        "downloadVerified": true
+      },
+      {
+        "kind": "report",
+        "relativePath": "raw/codex-security/components/component-1/report.md",
+        "sizeBytes": 29642,
+        "sha256": "476adfe1e2c90c58e63995fdf40a5f9202b3f69c2534910d8910a1749d516d48",
+        "downloadVerified": true
+      },
+      {
+        "kind": "sarif",
+        "relativePath": "raw/codex-security/components/component-2/exports/results.sarif",
+        "sizeBytes": 7151,
+        "sha256": "f328aaf986c7c0310cc890bdfa8c4e9a54b4d2a78ea4c70dcbd37c8ed2591b3a",
+        "downloadVerified": true
+      },
+      {
+        "kind": "report",
+        "relativePath": "raw/codex-security/components/component-2/report.md",
+        "sizeBytes": 25103,
+        "sha256": "b51c20fb58e7ad2b81296fb4f275d0f54b14d194fbfe793fcd7cf444fb01a4e7",
+        "downloadVerified": true
+      },
+      {
+        "kind": "report",
+        "relativePath": "raw/codex-security/components/report.md",
+        "sizeBytes": 573,
+        "sha256": "fa5b54ffa1dc070682fc631d2492c6350b39fb0db6fb5d594c357b7cc00217a5",
+        "downloadVerified": true
+      }
+    ],
+    "requests": 146
+  },
+  "configuredPricing": {
+    "status": "passed_for_recorded_local_execution",
+    "currency": "USD",
+    "priceRevision": 1,
+    "frozenAt": "2026-10-30T02:44:38.310151Z",
+    "inputPerMillion": "0.3",
+    "cacheReadPerMillion": "0.006",
+    "outputPerMillion": "1.2",
+    "priceBasis": "Existing manually configured acceptance snapshot; not a live price fetch or supplier invoice.",
+    "componentMicros": [
+      197650,
+      200913
+    ],
+    "matchingMicros": 765,
+    "matchingUsage": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "30",
+        "attempt": 1
+      },
+      "source": "responses_usage",
+      "complete": true,
+      "inputTokens": 8170,
+      "cachedInputTokens": 6656,
+      "cacheWriteInputTokens": null,
+      "outputTokens": 225,
+      "reasoningOutputTokens": 89,
+      "totalTokens": 8395,
+      "requestCount": 1
+    },
+    "combinedMicros": 399327,
+    "combinedUsage": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "30",
+        "attempt": 1
+      },
+      "source": "responses_usage",
+      "complete": true,
+      "inputTokens": 12866791,
+      "cachedInputTokens": 12605696,
+      "cacheWriteInputTokens": null,
+      "outputTokens": 204470,
+      "reasoningOutputTokens": 53613,
+      "totalTokens": 13071261,
+      "requestCount": 146
+    },
+    "componentResponseIdsIndependentlyVerified": 145,
+    "calculation": "Python Decimal independent check against SDK per-response records, transport summaries, API projection, archived usage and settled estimate; round whole execution once.",
+    "cacheWriteTokens": null,
+    "providerInvoiceReconciled": false
+  },
+  "reviews": [
+    {
+      "taskId": 31,
+      "attempt": 1,
+      "status": "completed",
+      "disposition": "reportable",
+      "reportCharacters": 5189,
+      "bodyState": "body_present",
+      "reportSha256": "c8f828c6cfff22102ede39812f72d6a1da57f7b86af2438f7fd86a1095b40cd8",
+      "turnCount": 2,
+      "wireApi": "responses",
+      "format": "json_schema",
+      "strict": true,
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "31",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": true,
+        "inputTokens": 44655,
+        "cachedInputTokens": 33920,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 2794,
+        "reasoningOutputTokens": 635,
+        "totalTokens": 47449,
+        "requestCount": 2
+      },
+      "estimatedMicros": 6777,
+      "downloadArtifacts": [
+        {
+          "kind": "engine_raw",
+          "relativePath": "logs/sdk-runtime.json",
+          "sizeBytes": 1453,
+          "sha256": "c4eebf1a814821439818a95f568a02475447e1336ef6b90b635613fd4879f9f9",
+          "downloadVerified": true
+        },
+        {
+          "kind": "engine_raw",
+          "relativePath": "raw/codex-security/sdk-operation-native.json",
+          "sizeBytes": 5270,
+          "sha256": "2fbd46ef740262f2403729ef337274f6361b808e03c16b81ae158cb4c9f5c392",
+          "downloadVerified": true
+        },
+        {
+          "kind": "engine_raw",
+          "relativePath": "raw/codex-security/sdk-operation.json",
+          "sizeBytes": 5714,
+          "sha256": "b3aa4d68f08f9a50eb62b0d0e286948627bfebcbb9d664aba1b0db1022afd005",
+          "downloadVerified": true
+        }
+      ]
+    },
+    {
+      "taskId": 32,
+      "attempt": 1,
+      "status": "completed",
+      "disposition": "reportable",
+      "reportCharacters": 5238,
+      "bodyState": "body_present",
+      "reportSha256": "db9485a360e0c24d8afa72c75a9d953e04e1623e3e05eb0f3dbc2d9a904d5063",
+      "turnCount": 2,
+      "wireApi": "responses",
+      "format": "json_schema",
+      "strict": true,
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "32",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": true,
+        "inputTokens": 41164,
+        "cachedInputTokens": 32128,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 2658,
+        "reasoningOutputTokens": 653,
+        "totalTokens": 43822,
+        "requestCount": 2
+      },
+      "estimatedMicros": 6094,
+      "downloadArtifacts": [
+        {
+          "kind": "engine_raw",
+          "relativePath": "logs/sdk-runtime.json",
+          "sizeBytes": 1453,
+          "sha256": "41462076ae84d6d6d4f232331038b8849ba2fe4f82cf995a69fc97575d0a1f56",
+          "downloadVerified": true
+        },
+        {
+          "kind": "engine_raw",
+          "relativePath": "raw/codex-security/sdk-operation-native.json",
+          "sizeBytes": 5429,
+          "sha256": "800a5cb5442e3a1e1d9513dae56aac3fc2644bcb5635bcd079878cd7957db15e",
+          "downloadVerified": true
+        },
+        {
+          "kind": "engine_raw",
+          "relativePath": "raw/codex-security/sdk-operation.json",
+          "sizeBytes": 5771,
+          "sha256": "65b63827c1be0b44b9adcb59733b014bea8c228ec0bc181bcfe519cd72bbd89b",
+          "downloadVerified": true
+        }
+      ]
+    }
+  ],
+  "runningAgentMessage": {
+    "schemaVersion": 1,
+    "startedAt": "2026-10-30T02:45:39.772Z",
+    "finishedAt": "2026-10-30T02:45:56.994Z",
+    "sdkVersion": "0.5.0",
+    "codexVersion": "0.163.0",
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "wireApi": "responses",
+    "runtime": "official-v2",
+    "nativeV2": true,
+    "independentContext": true,
+    "childSessions": 1,
+    "completed": true,
+    "error": null,
+    "liveTokenInSpawn": false,
+    "liveTokenInChildFinal": true,
+    "sendBeforeFirstChildFinal": true,
+    "sendBeforeWait": true,
+    "followupUsed": false,
+    "strictSchemaRequests": 5,
+    "allSchemaStrict": true,
+    "requests": [
+      {
+        "protocol": "responses",
+        "format": "json_schema",
+        "httpStatus": 200,
+        "status": "completed",
+        "cancelled": false
+      },
+      {
+        "protocol": "responses",
+        "format": "json_schema",
+        "httpStatus": 200,
+        "status": "completed",
+        "cancelled": false
+      },
+      {
+        "protocol": "responses",
+        "format": "unspecified",
+        "httpStatus": 200,
+        "status": null,
+        "cancelled": true
+      },
+      {
+        "protocol": "responses",
+        "format": "json_schema",
+        "httpStatus": 200,
+        "status": "completed",
+        "cancelled": false
+      },
+      {
+        "protocol": "responses",
+        "format": "unspecified",
+        "httpStatus": 200,
+        "status": "completed",
+        "cancelled": false
+      },
+      {
+        "protocol": "responses",
+        "format": "json_schema",
+        "httpStatus": 200,
+        "status": "completed",
+        "cancelled": false
+      },
+      {
+        "protocol": "responses",
+        "format": "unspecified",
+        "httpStatus": 200,
+        "status": "completed",
+        "cancelled": false
+      },
+      {
+        "protocol": "responses",
+        "format": "json_schema",
+        "httpStatus": 200,
+        "status": "completed",
+        "cancelled": false
+      }
+    ],
+    "parentToolCalls": [
+      "spawn_agent",
+      "send_message",
+      "wait_agent",
+      "wait_agent"
+    ],
+    "usage": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "20261030",
+        "attempt": 1
+      },
+      "source": "responses_usage",
+      "complete": false,
+      "inputTokens": 52811,
+      "cachedInputTokens": 47360,
+      "cacheWriteInputTokens": null,
+      "outputTokens": 1099,
+      "reasoningOutputTokens": 280,
+      "totalTokens": 53910,
+      "requestCount": 8
+    },
+    "notices": [],
+    "childReplySha256": [
+      "c8bffa8002c122ef921683d301ac76d9e93833a2feb8017c2e2e87942cb10424"
+    ],
+    "status": "passed",
+    "schemaEvidenceSource": "Actual outbound capture text.format.strict; generic nonce schema is not the standalone vulnerability-validation contract.",
+    "harnessCorrection": "Initial offline assertion queried vulnerability-report contract metadata for a generic nonce schema. Rechecked original outbound requests; no additional model calls."
+  },
+  "requests": {
+    "componentIncludingMatching": 146,
+    "reviews": 4,
+    "runningAgentProbe": 8,
+    "total": 158,
+    "probeCancelledResponses": 1
+  },
+  "history": {
+    "unchanged": true,
+    "attempts": 32,
+    "archivedFiles": 652,
+    "sha256": "253069b7b44f6af1531ca744b42cd4eadaa17cf546ce2debc6c3bf30207e1f29",
+    "pricingAndCostsRetained": true,
+    "oldUnknownMatchingFeeNotBackfilled": true
+  },
+  "browser": {
+    "status": "passed",
+    "tool": "Playwright CLI, real browser against local live app",
+    "viewports": [
+      {
+        "width": 1440,
+        "height": 1000
+      },
+      {
+        "width": 390,
+        "height": 844
+      }
+    ],
+    "checks": [
+      "real matching and total fees visible",
+      "actual input/output/cache details and frozen price visible",
+      "browser raw download equals committed matching estimate",
+      "SDK grouping shown as model inference, originals traceable",
+      "mobile document width equals viewport width",
+      "console errors: 0"
+    ],
+    "matchingDownloadSha256": "a3cc1e10d972fbf660df2df213adf1d4a31065befad4b12e0485c708972b9f71"
+  },
+  "isolatedChecks": {
+    "targetedScannerTests": 15,
+    "releaseToolTests": 22,
+    "sdkOriginalFiles": "passed",
+    "recoverySourceFiles": 10,
+    "sourceEvidence": "9 exact full-line quotes"
+  },
+  "observedRecovery": {
+    "componentShellTempDenials": "Shell heredoc temporary writes were denied by native sandbox; model recovered during the same execution without source or permission changes.",
+    "probeUsage": "One response was cancelled by native message preemption. Probe complete fee remains unknown; missing cache writes remain null.",
+    "harnessOnlyCorrections": [
+      "Generic nonce strict Schema verified from original outbound text.format.strict, rather than vulnerability-report contract metadata.",
+      "Component API attempt identity read from request.execution; no model calls replayed for this correction."
+    ]
+  },
+  "limitations": [
+    "One small synthetic project; not all languages, project sizes or long-term stability.",
+    "Platform retains two component-bound originals and their graphs; native SDK merges them into one group without overwriting originals or human dispositions.",
+    "Frozen configured-price estimates are not provider invoices.",
+    "Probe incomplete usage prevents a complete charge estimate for all model requests in this acceptance.",
+    "Latest local changes have not been deployed to VPS.",
+    "Deep continuation still uses a pinned internal SDK bridge; finite component defer_mailbox_preemption remains under development in Codex 0.163.0.",
+    "This supplemental local evidence does not certify the entire release candidate or remote CI."
+  ]
+}

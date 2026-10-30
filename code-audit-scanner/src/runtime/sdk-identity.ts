@@ -1,5 +1,6 @@
 import {lstat,mkdir,readFile,realpath,writeFile,rm} from 'node:fs/promises';
 import {snapshotIdentitySession,commitIdentitySession} from './identity-session.js';
+import {identityErrorCode} from './identity-error.js';
 import path from 'node:path';
 import {decode,validate,type SDKIdentityClaim,type SDKIdentityReport,type SDKTaskIdentity,type SDKIdentityRef} from '@axiom/contracts';
 import type {ScanTask} from '../contract/scan-task.js';
@@ -55,9 +56,9 @@ export async function runIdentityOperation(file:string):Promise<void>{
   if((op.action==='login_api_key'||op.action==='login_device_code')&&!status.authenticated)throw new Error('SDK did not confirm authentication');
   if(status.authenticated)await writeFile(path.join(home,'session.json'),JSON.stringify(op.identity)+'\n',{mode:0o600});
   report('completed',status.authenticated);
- }catch{
+ }catch(error){
   if(op.action==='login_api_key'||op.action==='login_device_code'){await rm(path.join(home,'selected-api-key'),{force:true});await rm(path.join(home,'session.json'),{force:true});}
-  report(controller.signal.aborted?'canceled':'failed',null,null,'SDK 身份操作未完成；请在 Web 核对节点与登录状态');process.exitCode=10;
+  report(controller.signal.aborted?'canceled':'failed',null,null,controller.signal.aborted?'sdk_auth_canceled':identityErrorCode(error));process.exitCode=10;
  }finally{clearTimeout(timer);process.off('SIGTERM',abort);process.off('SIGINT',abort);await security.close();}
 }
 

@@ -84,7 +84,7 @@ func TestRecoveryPipeline(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture recovery model", Provider: "openai", Model: "fixture-recovery-model", ApiKeyEncrypted: encrypted})
+	cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixture recovery model", Provider: "openai", Model: "fixture-recovery-model", ApiKeyEncrypted: encrypted})
 	if e != nil {
 		t.Fatal(e)
 	}

@@ -67,7 +67,9 @@ watch(snapshotSearch,()=>{
 onUnmounted(()=>{snapshotGeneration++;clearTimeout(snapshotTimer)});
 const modelConfigs = ref<ModelConfig[]>([]);
 const selectedModelConfigId = ref("");
-const sdkIdentityId=ref("");
+const sdkIdentityId=ref(typeof route.query.sdkIdentityId==='string'?route.query.sdkIdentityId:'');
+const identityPicker=ref<InstanceType<typeof SDKIdentityPicker>|null>(null),identityValid=ref(false),modelSelectionError=ref('');
+let queryModelPending=true;
 const includeText = ref("");
 const selectedFocus = ref<string[]>([]);
 const validationMode = ref('default'), businessContext = ref('');
@@ -101,6 +103,8 @@ const lastSnapshot = ref<SnapshotInfo | null>(null);
 const selConfig = computed(() =>
   modelConfigs.value.find((c) => String(c.id) === selectedModelConfigId.value) ?? null,
 );
+const identityBlocked=computed(()=>(!!sdkIdentityId.value||selConfig.value?.sdkIdentityOnly===true)&&!identityValid.value);
+watch(selectedModelConfigId,()=>{modelSelectionError.value='';});
 
 const selProject = computed(() =>
   projects.value.find((p) => p.id === selectedProjectId.value) ?? null,
@@ -187,6 +191,7 @@ async function submit(operation?:"preflight"): Promise<void> {
     message.warning("请选择模型配置（没有则先到「模型与授权」添加模型）");
     return;
   }
+  if(!selConfig.value||modelSelectionError.value||identityBlocked.value)return;
   if (!selectedSnapshotId.value && !form.sourcePath.trim()) {
     message.warning("请上传快照或选择已有快照");
     return;
@@ -195,6 +200,10 @@ async function submit(operation?:"preflight"): Promise<void> {
   submitting.value = true;
   inputError.value="";
   try {
+    if((sdkIdentityId.value||selConfig.value.sdkIdentityOnly)&&!await identityPicker.value?.validate()){
+      inputError.value='授权账户当前不可用，请在扫描配置中核对账户状态。';
+      return;
+    }
     const payload=scanInput({snapshotId:Number(selectedSnapshotId.value),modelConfigId:Number(selectedModelConfigId.value),projectId:selectedProjectId.value,
       mode:form.scanMode,timeoutMinutes:form.timeoutMinutes,budget:form.maxCostUsd,totalBudget:form.maxTotalCostUsd,workers:form.workers,includeText:includeText.value,focus:selectedFocus.value,
       validationMode:validationMode.value as "default"|"exploitability",businessContext:businessContext.value,deepMaxDiscoveryRuns:form.deepMaxDiscoveryRuns,deepStopAfterNoNew:form.deepStopAfterNoNew});
@@ -235,13 +244,22 @@ async function loadOptions(): Promise<void> {
     if (snap) { form.sourcePath = snap.snapshotPath; lastSnapshot.value = snap; if (!selectedProjectId.value && snap.projectId > 0) selectedProjectId.value = snap.projectId; }
   }
   if (!snapshotError.value && snapshotResult.status === 'fulfilled') querySnapshotPending = false;
-  if (!selectedModelConfigId.value) {
+  if(queryModelPending&&modelResult.status==='fulfilled'){
+    const requested=route.query.modelConfigId;
+    queryModelPending=false;
+    if(requested!==undefined){
+      if(typeof requested==='string'&&modelConfigs.value.some(model=>String(model.id)===requested))selectedModelConfigId.value=requested;
+      else modelSelectionError.value='链接中的模型配置已不存在，请重新选择扫描模型。';
+    }
+  }
+  if (!selectedModelConfigId.value&&!modelSelectionError.value) {
     // 默认选中「已启用」的工作模型；无启用时仅在唯一配置下兜底
-    const enabled = modelConfigs.value.find((c) => c.enabled);
+    const candidates=sdkIdentityId.value?modelConfigs.value.filter(model=>model.supportsSdkIdentity===true):modelConfigs.value;
+    const enabled = candidates.find((c) => c.enabled);
     if (enabled) {
       selectedModelConfigId.value = String(enabled.id);
-    } else if (modelConfigs.value.length === 1) {
-      selectedModelConfigId.value = String(modelConfigs.value[0]!.id);
+    } else if (candidates.length === 1) {
+      selectedModelConfigId.value = String(candidates[0]!.id);
     }
   }
   lookupsLoading.value = false;
@@ -316,6 +334,7 @@ onMounted(() => void loadOptions());
       <Select aria-label="模型配置"
         v-if="modelConfigs.length"
         v-model="selectedModelConfigId"
+        :disabled="submitting"
         :options="modelOptions"
         placeholder="选择扫描使用的模型配置"
         class="wide-reset"
@@ -329,8 +348,9 @@ onMounted(() => void loadOptions());
         <span>{{ selConfig.provider }} / {{ selConfig.model }}</span><span v-if="selConfig.reasoningEffort">推理强度 · {{selConfig.reasoningEffort}}</span>
         <span class="muted">{{ selConfig.baseUrl || "（OpenAI 官方）" }}</span>
       </div>
+      <p v-if="modelSelectionError" role="alert" class="field-error">{{modelSelectionError}}</p>
 
-      <SDKIdentityPicker v-show="!!selConfig" v-model="sdkIdentityId" :native="!!selConfig&&selConfig.provider==='openai'&&(!selConfig.baseUrl||selConfig.baseUrl==='https://api.openai.com/v1')&&selConfig.wireApi!=='chat'" :disabled="submitting"/>
+      <SDKIdentityPicker ref="identityPicker" v-show="!!selConfig" v-model="sdkIdentityId" :native="selConfig?.supportsSdkIdentity===true" :required="selConfig?.sdkIdentityOnly===true" :disabled="submitting" @validity="identityValid=$event"/>
       <div class="params">
         <div>
           <div class="field-label">扫描模式</div>
@@ -358,8 +378,8 @@ onMounted(() => void loadOptions());
       <div class="budget-fields">
        <div class="budget-field">
         <label class="field-label" for="scan-budget">单次估算上限（USD，可选）</label>
-        <Input id="scan-budget" v-model="form.maxCostUsd" type="number" min="0" step="any" inputmode="decimal" placeholder="留空不设置费用预算" :aria-invalid="budgetError ? true : undefined" aria-describedby="budget-help budget-error" />
-        <p id="budget-help" class="upload-hint">依据引擎估算费用控制扫描；不是供应商账单的硬上限。第三方模型可能没有可用的费用估算。</p>
+        <Input id="scan-budget" v-model="form.maxCostUsd" type="number" min="0" step="0.000001" inputmode="decimal" placeholder="留空不设置费用预算" :aria-invalid="budgetError ? true : undefined" aria-describedby="budget-help budget-error" />
+        <p id="budget-help" class="upload-hint">按本次执行冻结的 USD 单价与实际 Token 用量控制；需配置完整单价。达到上限或必要用量缺失时停止继续请求，已发出的请求可能产生额外费用。</p>
        </div>
        <div class="budget-field">
         <label class="field-label" for="scan-total-budget">任务总预算（USD，可选）</label><Input id="scan-total-budget" v-model="form.maxTotalCostUsd" type="number" min="0" step="0.000001" inputmode="decimal" placeholder="覆盖本任务的全部重试" aria-describedby="total-budget-help" /><p id="total-budget-help" class="upload-hint">每次执行按剩余额度下发，最多六位小数；费用未知时阻止累计预算重试。留空保留单次上限语义。</p>
@@ -422,8 +442,8 @@ onMounted(() => void loadOptions());
       </details>
       <AdvancedScanConfiguration v-model="advanced" :mode="form.scanMode" :validation="validationMode" :source-snapshot-id="Number(selectedSnapshotId)"/>
       <div class="submit-row">
-        <Button :loading="submitting" :disabled="gitBusy || gitPreviewBusy || !!gitError || uploading || lookupsLoading || !!lookupErrors.length || snapshotLoading || !!snapshotError" @click="submit()">创建扫描</Button>
-        <Button variant="outline" :disabled="gitBusy || gitPreviewBusy || !!gitError || submitting || uploading || lookupsLoading || !!lookupErrors.length || snapshotLoading || !!snapshotError" @click="submit('preflight')">仅执行 SDK 预检</Button>
+        <Button :loading="submitting" :disabled="!selConfig || !!modelSelectionError || identityBlocked || gitBusy || gitPreviewBusy || !!gitError || uploading || lookupsLoading || !!lookupErrors.length || snapshotLoading || !!snapshotError" @click="submit()">创建扫描</Button>
+        <Button variant="outline" :disabled="!selConfig || !!modelSelectionError || identityBlocked || gitBusy || gitPreviewBusy || !!gitError || submitting || uploading || lookupsLoading || !!lookupErrors.length || snapshotLoading || !!snapshotError" @click="submit('preflight')">仅执行 SDK 预检</Button>
         <span class="submit-note">预检只检查本地输入和配置，不启动扫描，不验证模型访问权限。扫描将在后台执行，你可以在任务详情中查看进度、日志和分析结果。</span>
       </div>
       <p v-if="inputError" class="field-error" role="alert">{{inputError}}</p>

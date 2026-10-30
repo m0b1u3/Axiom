@@ -64,7 +64,7 @@ func (s *Store) deepAgentReady(ctx context.Context, agent string) bool {
 		return false
 	}
 	v, e := contracts.DecodeAgentRuntime([]byte(raw), nil)
-	return e == nil && v.State == contracts.AgentRuntimeStateReady && v.MatrixHash == control.MatrixHash && v.ControlAPI == 4 && v.ScannerDescriptionVersion != nil && *v.ScannerDescriptionVersion == 14
+	return e == nil && v.State == contracts.AgentRuntimeStateReady && v.MatrixHash == control.MatrixHash && v.ControlAPI == 4 && v.ScannerDescriptionVersion != nil && (*v.ScannerDescriptionVersion == 14 || *v.ScannerDescriptionVersion == 15)
 }
 func (s *Store) deepIdentityReady(ctx context.Context, t *Task) bool {
 	if t.SDKIdentity == nil {

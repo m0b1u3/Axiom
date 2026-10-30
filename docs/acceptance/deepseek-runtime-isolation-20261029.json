@@ -1,0 +1,327 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "scope": "Local genuine DeepSeek Standard scan and independent source review after SDK runtime isolation; synthetic two-file Python project; not a VPS deployment",
+  "status": "passed",
+  "versions": {
+    "sdk": "0.5.0",
+    "codex": "0.163.0",
+    "plugin": "0.1.95"
+  },
+  "connection": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "baseUrl": "https://api.deepseek.com",
+    "wireApi": "responses",
+    "sdkRuntime": "legacy-v1",
+    "validationOutputMode": "native_schema",
+    "validationFormat": "json_schema",
+    "validationStrict": true,
+    "automaticProtocolFallback": false
+  },
+  "source": {
+    "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+    "unchanged": true,
+    "quotes": [
+      {
+        "id": "request-route",
+        "path": "app.py",
+        "startLine": 27,
+        "endLine": 35,
+        "exact": true,
+        "sha256": "55a22276709035e6498fa5933a7bc3da8a84efb1781b9026fec3ccb6aeaece33"
+      },
+      {
+        "id": "tenant-data",
+        "path": "app.py",
+        "startLine": 7,
+        "endLine": 14,
+        "exact": true,
+        "sha256": "cb34ef06e52441b673283a4608101cce3157224c5f442b46258bb08740793384"
+      },
+      {
+        "id": "read-decision",
+        "path": "app.py",
+        "startLine": 17,
+        "endLine": 23,
+        "exact": true,
+        "sha256": "f32f8c81d5ce9ec141b3810ddd06eb08ed2a638dc927f5eb9b2b47dc00863023"
+      },
+      {
+        "id": "tenant-invariant",
+        "path": "README.md",
+        "startLine": 5,
+        "endLine": 5,
+        "exact": true,
+        "sha256": "2d76dbe8549af940e9abe80302cbd4695bd3034bb94bb72b4d2c8980339c6287"
+      }
+    ]
+  },
+  "executions": [
+    {
+      "kind": "scan",
+      "taskId": 4,
+      "attempt": 1,
+      "status": "completed",
+      "model": "deepseek-flash",
+      "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+      "runtime": {
+        "id": "legacy-v1",
+        "fingerprint": "f0105c77ece4f842b045931c1e3d8c60e3cdb0f8a57a8bbf0b763e2d5e2c7a7a"
+      },
+      "resultSha256": "a2a2b57822e72e4b27248691206e540f18d0b0a50b85eef0476a118e6d0a19a8",
+      "artifactCount": 17,
+      "findingCount": 1,
+      "startedAt": "2026-10-29T03:18:22.713Z",
+      "finishedAt": "2026-10-29T03:23:23.113Z",
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "4",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": true,
+        "inputTokens": 4041641,
+        "cachedInputTokens": 3912960,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 79561,
+        "reasoningOutputTokens": 25568,
+        "totalTokens": 4121202,
+        "requestCount": 51
+      }
+    },
+    {
+      "kind": "review",
+      "taskId": 5,
+      "attempt": 1,
+      "status": "completed",
+      "model": "deepseek-flash",
+      "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+      "runtime": {
+        "id": "legacy-v1",
+        "fingerprint": "f0105c77ece4f842b045931c1e3d8c60e3cdb0f8a57a8bbf0b763e2d5e2c7a7a"
+      },
+      "resultSha256": "f34cb2d5328efdf571340bceedd8d846f185565e87462aca2f907bb1ce0c5a5c",
+      "artifactCount": 3,
+      "disposition": "reportable",
+      "bodyState": "body_present",
+      "reportCharacters": 4652,
+      "reportSha256": "30447373e3bc1ba78d16d3c76c0121f126f10eecfef007d9b030f503645a5948",
+      "reportPreservedAfterPathRedaction": true,
+      "archivedReportSha256": "30447373e3bc1ba78d16d3c76c0121f126f10eecfef007d9b030f503645a5948",
+      "feeState": "unknown",
+      "protocol": "responses",
+      "format": "json_schema",
+      "transportTurns": 3,
+      "transportSummary": {
+        "schemaVersion": 1,
+        "received": 3,
+        "omitted": 0,
+        "state": "complete"
+      },
+      "startedAt": "2026-10-29T03:23:58.575Z",
+      "finishedAt": "2026-10-29T03:24:22.054Z",
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "5",
+          "attempt": 1
+        },
+        "source": "responses_usage",
+        "complete": true,
+        "inputTokens": 38475,
+        "cachedInputTokens": 29824,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 3733,
+        "reasoningOutputTokens": 1357,
+        "totalTokens": 42208,
+        "requestCount": 3
+      }
+    }
+  ],
+  "delegation": {
+    "actualVersion": "v1",
+    "childSessions": 3,
+    "childrenCompleted": 3,
+    "childrenReturnedAcceptanceMarker": 3,
+    "rootAndChildrenUsedSelectedModel": true,
+    "spawnCalls": 3,
+    "independentContextConfirmed": true,
+    "childFinals": [
+      {
+        "worker": 1,
+        "characters": 2928,
+        "sha256": "ff614c4b4013149941c119e9975af71a687280179b68774f4d0aee8cc5560fc3",
+        "returnedAcceptanceMarker": true
+      },
+      {
+        "worker": 2,
+        "characters": 14764,
+        "sha256": "08ea6d1c1b19bbac79a66f11eb24a88941aa209131226ffa22f5f5b74dbe1763",
+        "returnedAcceptanceMarker": true
+      },
+      {
+        "worker": 3,
+        "characters": 5381,
+        "sha256": "88e6ac54ff10a0ee4224b20ff7a533b0f61174de864a0b22096cc787bcd67f56",
+        "returnedAcceptanceMarker": true
+      }
+    ]
+  },
+  "graph": {
+    "completeness": "complete",
+    "nodes": 30,
+    "edges": 51,
+    "diagnostics": 0
+  },
+  "archive": {
+    "nativeContractValidatedWithSDKLoadContract": true,
+    "resultCommitsVerified": true,
+    "criticalDownloadsVerified": 8,
+    "artifacts": [
+      {
+        "taskId": 4,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "logs/sdk-runtime.json",
+        "sha256": "0c75eb4a5c186b3a5e7f33056eb382dcb613dc676abd1c8d257a589e22d09a03",
+        "sizeBytes": 1450
+      },
+      {
+        "taskId": 4,
+        "attempt": 1,
+        "kind": "sarif",
+        "relativePath": "raw/codex-security/exports/results.sarif",
+        "sha256": "0da0c9402f2e0b1276ca7e659a412ddb9951842ccccc0e2f1df38b0759ea7fcf",
+        "sizeBytes": 6835
+      },
+      {
+        "taskId": 4,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/findings.json",
+        "sha256": "a7e012eb357d89a26e17682b65d78709c0ce468f658e9c125f21d0948cb1b742",
+        "sizeBytes": 18876
+      },
+      {
+        "taskId": 4,
+        "attempt": 1,
+        "kind": "report",
+        "relativePath": "raw/codex-security/report.md",
+        "sha256": "d407bfbbee8417cb473a3ba546aa590222067fd3d28b2bf9200ff642be953d4e",
+        "sizeBytes": 21985
+      },
+      {
+        "taskId": 4,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/scan-manifest.json",
+        "sha256": "61c87e63c2adfbfad9c7212e046e4cf8928bea25c4c6a1d0fe9f33f52685ec1c",
+        "sizeBytes": 9667
+      },
+      {
+        "taskId": 5,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "logs/sdk-runtime.json",
+        "sha256": "dfd7b3adc099ac9756a0563dfdca9743b0156de772e6d32d57b8fb8d1be12c98",
+        "sizeBytes": 1450
+      },
+      {
+        "taskId": 5,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/sdk-operation-native.json",
+        "sha256": "d0cf3a28e16506c15e4b5f4550bf1e640f0fe8e15010f88c2d894d0b0e563ddc",
+        "sizeBytes": 4909
+      },
+      {
+        "taskId": 5,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/sdk-operation.json",
+        "sha256": "0f8baf9d4b3ad0c03ed948c26e63870e67b0ac24145d66304edec97ac8e96254",
+        "sizeBytes": 5250
+      }
+    ]
+  },
+  "requests": {
+    "scan": 51,
+    "review": 3,
+    "total": 54,
+    "usageReceiptSource": "responses_usage",
+    "allUsageReceiptsComplete": true,
+    "modelFailuresObserved": 0,
+    "sdkStreamErrorsObserved": 0,
+    "taskAttemptsPerExecution": 1,
+    "automaticRetryAllowed": true,
+    "transportRetryFailureInjectionPerformed": false,
+    "proxyRequestReplayAdded": false
+  },
+  "toolUse": {
+    "failedActivities": 4,
+    "workflowCompletedWithoutManualChanges": true,
+    "causes": [
+      "Model attempted a nonexistent local Node executable path",
+      "SDK rejected a draft identity.instance containing a colon; model resubmitted a valid identifier",
+      "Model jq query applied keys to a null coverage member",
+      "SDK rejected moving scan progress to an earlier phase"
+    ],
+    "strictValidationPreserved": true
+  },
+  "accounting": {
+    "inputTokens": 4080116,
+    "cachedInputTokens": 3942784,
+    "cacheWriteInputTokens": null,
+    "outputTokens": 83294,
+    "reasoningOutputTokens": 26925,
+    "totalTokens": 4163410,
+    "pricingConfigured": false,
+    "feeState": "unknown",
+    "estimatedUsd": null,
+    "historicalPricingAndFeesUnchanged": true,
+    "missingUsageFieldsNotInferredAsZero": true
+  },
+  "history": {
+    "taskIds": [
+      1,
+      2,
+      3
+    ],
+    "attemptsAndCostsUnchanged": true,
+    "archivedFilesUnchanged": 91
+  },
+  "remote": {
+    "modelConfigurationsAndPricesUnchanged": true
+  },
+  "browser": {
+    "scanResultReadable": true,
+    "independentReviewLinkedInHistory": true,
+    "interactiveGraphOpened": true,
+    "codeNodeSelected": true,
+    "exactFrozenSourceMatchDisplayed": true,
+    "consoleErrorsObserved": 0,
+    "screenshot": {
+      "path": "output/playwright/deepseek-runtime-graph-20261029.png",
+      "sha256": "5af0ead9548aa7c891e208a12656fa5802768d1239d75475cbaf186af46e9cb8"
+    }
+  },
+  "integrity": {
+    "officialAndCompatibilitySDKBaselinesVerifiedAfterRealExecution": true,
+    "applicationOrSDKCodeChangedDuringAcceptance": false,
+    "frozenSourceUnchanged": true
+  },
+  "notCovered": [
+    "Deployment of this SDK isolation build to VPS",
+    "Deep, component planning/execution, Git diff and other third-party connections",
+    "Model transport failure retry under injected faults",
+    "Actual provider invoice reconciliation or fees without configured prices",
+    "Dynamic exploit reproduction; this acceptance uses source review only"
+  ],
+  "displayNotes": [
+    "The SDK activity observation still displays its normalized cache-write zero; the final Responses usage receipt preserves the missing upstream field as null. Accounting and this summary use the final receipt.",
+    "Some existing UI copy still attributes unknown fees to SDK reporting; no model price is configured for this acceptance."
+  ]
+}

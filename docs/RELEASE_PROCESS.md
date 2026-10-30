@@ -8,6 +8,8 @@ Linux amd64、可信用户、自托管。Web 是用户操作入口；Go Server�
 
 ## 候选检查与源码交付
 
+2026-10-30 的[本地补充真实验收](acceptance/component-matching-real-20261030.json)已覆盖新增跨组件用量与配置价格、正例归并、独立复核和 V2 运行中消息。它绑定执行时生产源码摘要，随源码清单交付；不替代上段 release 元数据绑定的历史部署证据、完整候选认证或同一提交的远端 CI。元数据中的两个 `not-run` 仍指发布门禁的完整认证范围，不能据此否定已记录的小项目本地实测，也不能把小项目实测改写为整份候选或账单通过。
+
 ```bash
 python3 deploy/release/check.py
 python3 -m unittest discover -s deploy/release -p '*_test.py' -v

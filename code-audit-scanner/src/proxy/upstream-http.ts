@@ -14,6 +14,7 @@ export function upstreamDispatcher(upstreamBaseUrl: string): Agent | ProxyAgent 
 }
 
 export interface UpstreamProxy {
+  readonly budgetSignal?:AbortSignal;
   /** 给 Codex 用的 base_url（http://127.0.0.1:<port>） */
   readonly baseUrl: string;
   readonly upstreamBaseUrl: string;

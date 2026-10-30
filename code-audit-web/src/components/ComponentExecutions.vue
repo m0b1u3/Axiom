@@ -5,25 +5,41 @@ import type {ScanTask} from '../types';
 import type {TaskBudgetSnapshot} from '../contracts';
 import {checkedComponentExecutions,componentRows,componentStatus,componentMoney,type ComponentExecutionsView} from '../utils/component-scans';
 import Button from './ui/Button.vue';
+import TokenCostDetails from './TokenCostDetails.vue';
+import {pricingMoney,pricingReasons} from '../utils/model-pricing';
 const props=defineProps<{task:ScanTask;attempt?:number;canOperate:boolean;budget:TaskBudgetSnapshot|null}>();
 const emit=defineEmits<{changed:[];selectAttempt:[number]}>();
-const view=shallowRef<ComponentExecutionsView|null>(null),error=ref(''),busy=ref(false),action=ref(false),selected=ref(0),chosen=ref<number[]>([]),ack=ref(false),artifactError=ref('');let generation=0;
+const view=shallowRef<ComponentExecutionsView|null>(null),error=ref(''),busy=ref(false),action=ref(false),selected=ref(0),chosen=ref<number[]>([]),ack=ref(false),artifactError=ref(''),matchingArtifactError=ref('');let generation=0;
 const active=computed(()=>['pending','claimed','scanning','cancel_requested'].includes(props.task.status));
 const rows=computed(()=>view.value?componentRows(view.value,props.attempt):[]);
 const current=computed(()=>view.value?.attempts.find(a=>a.request.execution.attempt===(props.attempt??props.task.attempt)));
+const matchingEstimate=computed(()=>current.value?.matchingEstimate);
+const matchingCost=computed(()=>{
+ const value=matchingEstimate.value;
+ if(value?.status==='estimated')return pricingMoney(value.amountMicros,value.currency)+' · 估算';
+ if(value?.status==='partial')return '未知 · 已知下界 '+pricingMoney(value.amountMicros,value.currency);
+ return value||current.value?.snapshot?.matching.costState!=='known'?'未知':'尚未调用 · $0';
+});
+const matchingReason=computed(()=>{
+ const value=matchingEstimate.value;
+ if(!value||current.value?.snapshot?.matching.status==='incomplete')return current.value?.snapshot?.matching.reason;
+ if(value.status==='estimated')return '已按本次冻结单价和匹配请求用量估算；匹配费用不包含在组件扫描额度内，供应商账单需另行核对。';
+ return (pricingReasons[value.reason]??'匹配用量不完整')+'；完整匹配费用未知，已保存的统计可下载查看。';
+});
 const inspected=computed(()=>rows.value.find(r=>r.index===selected.value));
 const component=computed(()=>view.value?.request.planVersion.document.components[selected.value]);
 const eligible=computed(()=>rows.value.filter(r=>r.receipt?.status!=='completed').map(r=>r.index));
 const retryReady=computed(()=>!active.value&&props.attempt===undefined&&props.budget?.retryAllowed===true&&chosen.value.length>0&&ack.value);
 function label(index:number){const row=rows.value.find(r=>r.index===index);if(!active.value&&['pending','running'].includes(row?.receipt?.status??''))return '中断未完成';return componentStatus(row?.receipt?.status)}
-async function load(){const g=++generation;busy.value=true;error.value='';try{const next=checkedComponentExecutions(await api.componentExecutions(props.task.id),props.task.id);if(g===generation)view.value=next}catch(e){if(g===generation)error.value='组件执行读取失败：'+(e as Error).message}finally{if(g===generation)busy.value=false}}
+async function load(){const g=++generation;busy.value=true;error.value='';try{const next=checkedComponentExecutions(await api.componentExecutions(props.task.id),props.task.id);if(g===generation)view.value=next}catch(e){if(g===generation){view.value=null;error.value='组件执行读取失败：'+(e as Error).message}}finally{if(g===generation)busy.value=false}}
 watch(()=>[props.task.id,props.task.attempt,props.task.status,props.task.progress?.revision],()=>void load(),{immediate:true});
-watch(()=>props.attempt,()=>{chosen.value=[];ack.value=false});
+watch(()=>props.attempt,()=>{chosen.value=[];ack.value=false;matchingArtifactError.value=''});
 onUnmounted(()=>generation++);
 function inspect(index:number){selected.value=index;artifactError.value=''}
 function keyboard(event:KeyboardEvent,index:number){if(!['ArrowDown','ArrowUp','j','k'].includes(event.key))return;event.preventDefault();const i=Math.max(0,Math.min(rows.value.length-1,index+(['ArrowDown','j'].includes(event.key)?1:-1)));inspect(i);document.getElementById(`component-row-${props.task.id}-${i}`)?.focus()}
 async function retry(){if(!props.canOperate||!retryReady.value||action.value)return;action.value=true;error.value='';try{await api.retryComponents(props.task.id,{attempt:props.task.attempt,expectedStatus:props.task.status,indices:[...chosen.value].sort((a,b)=>a-b),acknowledgeReexecution:ack.value});chosen.value=[];ack.value=false;emit('changed');await load()}catch(e){error.value='组件重新执行未完成：'+(e as Error).message}finally{action.value=false}}
 async function artifact(){const row=inspected.value;if(!row?.receipt?.resultArtifact||!row.attempt)return;artifactError.value='';try{const blob=await api.resultArtifact(props.task.id,row.attempt,row.receipt.resultArtifact.relativePath);const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=`component-${row.index+1}-attempt-${row.attempt}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(e){artifactError.value='组件证据下载失败：'+(e as Error).message}}
+async function matchingArtifact(){const attempt=current.value?.request.execution.attempt;if(!attempt)return;matchingArtifactError.value='';try{const blob=await api.resultArtifact(props.task.id,attempt,'raw/codex-security/component-matching-token-usage.json');const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=`matching-usage-attempt-${attempt}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch(e){matchingArtifactError.value='匹配用量归档下载失败：'+(e as Error).message}}
 </script>
 <template>
  <section class="component-executions" aria-label="组件执行">
@@ -31,8 +47,11 @@ async function artifact(){const row=inspected.value;if(!row?.receipt?.resultArti
   <p v-if="error" role="alert" class="request-error">{{error}}</p>
   <template v-if="view">
    <p class="note">{{attempt===undefined?'父任务综合各组件最近执行；已完成结果保留在原执行中。':'当前选定执行的组件；未选择的组件显示为尚未执行。'}} 漏洞列表和报告按选定执行展示，不能据某一轮完成推定整份计划已完成。</p>
-   <dl v-if="current?.snapshot" class="budget-line"><div><dt>本轮阶段</dt><dd>{{({preparing:'准备源码',scanning:'组件扫描',matching:'跨组件匹配',finished:'本轮结束'})[current.snapshot.phase]}}</dd></div><div><dt>预留中 · USD</dt><dd>{{componentMoney(current.snapshot.reservedMicros)}}</dd></div><div><dt>已知费用下界 · USD</dt><dd>{{componentMoney(current.snapshot.observedMicros)}}</dd></div><div><dt>匹配费用</dt><dd>{{current.snapshot.matching.costState==='unknown'?'未知':'尚未调用 · $0'}}</dd></div></dl>
-   <p v-if="current?.snapshot" class="note" role="status">{{current.snapshot.matching.reason}}</p>
+   <dl v-if="current?.snapshot" class="budget-line"><div><dt>本轮阶段</dt><dd>{{({preparing:'准备源码',scanning:'组件扫描',matching:'跨组件匹配',finished:'本轮结束'})[current.snapshot.phase]}}</dd></div><div><dt>预留中 · USD</dt><dd>{{componentMoney(current.snapshot.reservedMicros)}}</dd></div><div><dt>组件费用下界 · USD</dt><dd>{{componentMoney(current.snapshot.observedMicros)}}</dd></div><div><dt>匹配费用</dt><dd>{{matchingCost}}</dd></div></dl>
+   <p v-if="current?.snapshot" class="note" role="status">{{matchingReason}}</p>
+   <TokenCostDetails v-if="matchingEstimate&&current" :value="matchingEstimate" :task-id="task.id" :attempt="current.request.execution.attempt" scope="matching"/>
+   <Button v-if="matchingEstimate&&current&&['completed','partial'].includes(current.status)" variant="ghost" size="sm" @click="matchingArtifact">下载匹配用量与费用</Button>
+   <p v-if="matchingArtifactError" role="alert" class="request-error">{{matchingArtifactError}}</p>
    <div class="component-panes">
     <div class="component-grid" tabindex="0" aria-label="组件执行列表，可横向滚动">
      <table><thead><tr><th v-if="canOperate&&!active&&attempt===undefined">重试</th><th>组件</th><th>状态 / 阶段</th><th>预留 / 已知费用 · USD</th><th>执行 / 发现</th></tr></thead><tbody>

@@ -22,15 +22,15 @@ type TaskCompatibility struct {
 }
 
 func evaluateTaskCompatibility(t QueueTask, agents []AgentPresence) *TaskCompatibility {
-	v := &TaskCompatibility{Required: control.Requirements{SDKConcurrency: t.sdkConcurrency, SDKParameters: t.sdkParameters, SDKOperation: t.sdkOperation, ScanInput: t.scanInput, Input: t.inputVersion, Result: t.resultVersion, Observation: t.observationVersion, Budget: t.budget}, Candidates: []CompatibilityCandidate{}}
+	v := &TaskCompatibility{Required: control.Requirements{TokenBudget: t.budget, SDKConcurrency: t.sdkConcurrency, SDKParameters: t.sdkParameters, SDKOperation: t.sdkOperation, ScanInput: t.scanInput, Input: t.inputVersion, Result: t.resultVersion, Observation: t.observationVersion, Budget: t.budget}, Candidates: []CompatibilityCandidate{}}
 	p, ok := control.RequiredProfile(v.Required)
 	v.Profile = p.ID
 	if !ok {
 		v.Reason = "task_contract_unsupported"
 	}
-	inputOK, resultOK, observationOK, online, blocked, matrixBlocked, ready := false, false, false, false, false, false, false
+	inputOK, resultOK, observationOK, online, blocked, matrixBlocked, ready, tokenBudgetOK := false, false, false, false, false, false, false, false
 	for _, a := range agents {
-		caps := control.Capabilities{SDKConcurrency: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKConcurrency(*a.Runtime.ScannerDescriptionVersion), SDKParameters: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKParameters(*a.Runtime.ScannerDescriptionVersion), Input: a.InputCapabilities, Result: a.ResultCapabilities, Observation: a.ObservationCapabilities}
+		caps := control.Capabilities{TokenBudget: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsTokenBudget(*a.Runtime.ScannerDescriptionVersion), SDKConcurrency: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKConcurrency(*a.Runtime.ScannerDescriptionVersion), SDKParameters: a.Runtime != nil && a.Runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKParameters(*a.Runtime.ScannerDescriptionVersion), Input: a.InputCapabilities, Result: a.ResultCapabilities, Observation: a.ObservationCapabilities}
 		missing := control.Missing(v.Required, caps)
 		n := CompatibilityCandidate{AgentID: a.AgentID, Online: a.Online, Missing: missing, Ready: a.Online && len(missing) == 0}
 		if a.Runtime != nil && a.Runtime.MatrixHash != control.MatrixHash {
@@ -62,6 +62,7 @@ func evaluateTaskCompatibility(t QueueTask, agents []AgentPresence) *TaskCompati
 		if n.Ready {
 			ready = true
 		}
+		tokenBudgetOK = tokenBudgetOK || caps.TokenBudget
 		if v.Required.Input == 0 || caps.Input.SupportsInput(1, v.Required.Budget) {
 			inputOK = true
 			if v.Required.Result == 0 || caps.Result.SupportsResult(1) {
@@ -90,6 +91,8 @@ func evaluateTaskCompatibility(t QueueTask, agents []AgentPresence) *TaskCompati
 		v.Reason = "sdk_concurrency_incompatible"
 	case t.sdkParameters:
 		v.Reason = "sdk_parameters_incompatible"
+	case t.budget && !tokenBudgetOK && inputOK && resultOK && observationOK:
+		v.Reason = "token_budget_incompatible"
 	case t.inputVersion == contracts.ComponentScanInputVersion:
 		v.Reason = "component_scan_incompatible"
 	case t.inputVersion == contracts.ComponentPlanningInputVersion:

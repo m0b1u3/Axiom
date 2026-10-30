@@ -36,3 +36,8 @@ test('SDK native safe integers replace platform Worker and discovery ceilings',(
  }
  for(const value of ['0','-1','1.5','9007199254740992','Infinity','NaN'])for(const key of ['deepMaxDiscoveryRuns','deepStopAfterNoNew'])assert.throws(()=>scanInput({...form,mode:'deep',validationMode:'default',[key]:value}));
 });
+
+test('configured single-run budgets reject sub-micro precision before task creation',()=>{
+ for(const value of ['0.0000001','9007199255','1.1234567'])assert.throws(()=>optionalBudget(value),/单次上限预算/);
+ assert.equal(optionalBudget('0.000001'),0.000001);
+});

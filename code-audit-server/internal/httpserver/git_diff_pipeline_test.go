@@ -323,7 +323,7 @@ func TestGitDiffPipeline(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	model, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Git diff fixture model", Provider: "openai", Model: "fixture-git-model", ApiKeyEncrypted: encrypted})
+	model, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Git diff fixture model", Provider: "openai", Model: "fixture-git-model", ApiKeyEncrypted: encrypted})
 	if e != nil {
 		t.Fatal(e)
 	}

@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "scope": "Local SDK runtime isolation and genuine GPT acceptance on a synthetic source fixture; not a VPS deployment",
+  "versions": {
+    "sdk": "0.5.0",
+    "codex": "0.163.0",
+    "plugin": "0.1.95"
+  },
+  "runtimes": {
+    "official-v2": {
+      "id": "official-v2",
+      "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f",
+      "sdkPackageModifiedFiles": 0
+    },
+    "legacy-v1": {
+      "id": "legacy-v1",
+      "fingerprint": "f0105c77ece4f842b045931c1e3d8c60e3cdb0f8a57a8bbf0b763e2d5e2c7a7a",
+      "sdkPackageModifiedFiles": 7
+    }
+  },
+  "selection": {
+    "nativeOpenAIAlwaysV2": true,
+    "modelNameDoesNotSelectRuntime": true,
+    "legacyDirectEndpoint": {
+      "provider": "deepseek",
+      "baseUrl": "https://api.deepseek.com"
+    },
+    "otherLegacyConnections": "explicit provider/baseUrl[/model] allowlist; AXIOM_SDK_LEGACY_CONNECTIONS",
+    "unverifiedConnections": "default upstream V2; compatibility not inferred from connectivity"
+  },
+  "isolatedTests": {
+    "scannerPassed": 316,
+    "contractCasesPassed": 506,
+    "installerPassed": 9,
+    "goServerAllPackages": "passed",
+    "goAgentAllPackages": "passed",
+    "typecheck": "passed",
+    "build": "passed",
+    "sdkDeclarationGroups": 35,
+    "goTsSchemas": 125,
+    "realModelCalls": 0,
+    "sourcePackageGuardsPassed": 8,
+    "upstreamRestoreFilesIncludedInSource": 7
+  },
+  "realAcceptance": {
+    "source": {
+      "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+      "unchanged": true,
+      "quotes": [
+        {
+          "id": "request",
+          "path": "app.py",
+          "startLine": 27,
+          "endLine": 35,
+          "exact": true,
+          "sha256": "55a22276709035e6498fa5933a7bc3da8a84efb1781b9026fec3ccb6aeaece33"
+        },
+        {
+          "id": "decision",
+          "path": "app.py",
+          "startLine": 17,
+          "endLine": 23,
+          "exact": true,
+          "sha256": "f32f8c81d5ce9ec141b3810ddd06eb08ed2a638dc927f5eb9b2b47dc00863023"
+        },
+        {
+          "id": "fixtures",
+          "path": "app.py",
+          "startLine": 6,
+          "endLine": 14,
+          "exact": true,
+          "sha256": "83146c775558a2279ec0d1d071726448960105b089f8f7ee6405b0b6660eed9f"
+        }
+      ]
+    },
+    "scan": {
+      "taskId": 2,
+      "attempt": 2,
+      "status": "completed",
+      "model": "gpt-6.1-terra",
+      "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+      "runtime": {
+        "id": "official-v2",
+        "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+      },
+      "resultSha256": "71adc441c8f36b56ebf2cb6fde28e12e5ff4accc726695edc508cc869ddfc57e",
+      "artifactCount": 21,
+      "findingCount": 1,
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "2",
+          "attempt": 2
+        },
+        "source": "sdk_on_usage",
+        "complete": true,
+        "inputTokens": 1127499,
+        "cachedInputTokens": 1059840,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 9813,
+        "reasoningOutputTokens": 366,
+        "totalTokens": 1137312,
+        "requestCount": null
+      }
+    },
+    "review": {
+      "taskId": 3,
+      "attempt": 1,
+      "status": "completed",
+      "model": "gpt-6.1-terra",
+      "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+      "runtime": {
+        "id": "official-v2",
+        "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+      },
+      "resultSha256": "e02b49e5a0a83c5ca342b802308a752a13917503c35c5015262cb424ab503d6c",
+      "artifactCount": 3,
+      "disposition": "reportable",
+      "bodyState": "body_present",
+      "reportCharacters": 2311,
+      "reportSha256": "eb2b6b69206f22d98777f4bb7e80fc52b59d61185443d95828a7b37ae218329a",
+      "reportPreservedAfterPathRedaction": true,
+      "archivedReportSha256": "75ce207d0ff2d3c896b5d00d4791e548731b630c02516b7070136257f1cc75b5",
+      "feeState": "unknown"
+    },
+    "graph": {
+      "completeness": "complete",
+      "nodes": 17,
+      "edges": 25,
+      "diagnostics": 0
+    },
+    "history": {
+      "taskId": 1,
+      "attemptsAndCostsUnchanged": true,
+      "archivedFilesUnchanged": 53
+    },
+    "downloadedArtifacts": [
+      {
+        "taskId": 2,
+        "attempt": 2,
+        "kind": "engine_raw",
+        "relativePath": "logs/sdk-runtime.json",
+        "sizeBytes": 1452,
+        "sha256": "577d12b9619bdb1c56a7a15af0200e8638b9f30c7305b5581ddd4d5067a7cb49",
+        "verified": true
+      },
+      {
+        "taskId": 2,
+        "attempt": 2,
+        "kind": "sarif",
+        "relativePath": "raw/codex-security/exports/results.sarif",
+        "sizeBytes": 4824,
+        "sha256": "ee8dde8fa0ed174c957468940eb4d71d4252d0b0325b7e5164edfdb70fbfe9e2",
+        "verified": true
+      },
+      {
+        "taskId": 2,
+        "attempt": 2,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/findings.json",
+        "sizeBytes": 9454,
+        "sha256": "235a0cb3de64e35fd19d168278a252289591d01dd7c3090796cf93e8da481984",
+        "verified": true
+      },
+      {
+        "taskId": 2,
+        "attempt": 2,
+        "kind": "report",
+        "relativePath": "raw/codex-security/report.md",
+        "sizeBytes": 9873,
+        "sha256": "9592b5b5f946699f6ab237a293264017dedd38c1e7c75e20c40fcde209f6eb99",
+        "verified": true
+      },
+      {
+        "taskId": 2,
+        "attempt": 2,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/scan-manifest.json",
+        "sizeBytes": 4317,
+        "sha256": "c35e7d81c8b20bf767e675d822bd2c760ad46a29836504c8f869f32e890f7fc5",
+        "verified": true
+      },
+      {
+        "taskId": 3,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "logs/sdk-runtime.json",
+        "sizeBytes": 1452,
+        "sha256": "646135449d52f6b700efe76933e9c8f0cd3b5b3c1f6dd249a80578243fe3f80c",
+        "verified": true
+      },
+      {
+        "taskId": 3,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/sdk-operation-native.json",
+        "sizeBytes": 1879,
+        "sha256": "95429b0142c2523892fefb58ccf980e843908bd473a4d782da315feabc1f4f46",
+        "verified": true
+      },
+      {
+        "taskId": 3,
+        "attempt": 1,
+        "kind": "engine_raw",
+        "relativePath": "raw/codex-security/sdk-operation.json",
+        "sizeBytes": 2832,
+        "sha256": "dbb936c43a793109bbcdc41a7ea0a2fc56e794c96bba564d626fbaef7079b074",
+        "verified": true
+      }
+    ],
+    "delegation": {
+      "actualVersion": "v2",
+      "childSessions": 3,
+      "childrenCompleted": 3,
+      "childrenReturnedAcceptanceMarker": 3,
+      "rootAndChildrenUsedSelectedModel": true,
+      "spawnCalls": 3
+    }
+  },
+  "realAttemptHistory": {
+    "scanTaskId": 2,
+    "failedAttempt": {
+      "attempt": 1,
+      "codexErrorInfo": "server_overloaded",
+      "message": "Selected model is at capacity. Please try a different model.",
+      "usagePreserved": true,
+      "fee": "unknown"
+    },
+    "successfulScanAttempt": 2,
+    "independentReviewTaskId": 3,
+    "reviewAttempt": 1,
+    "retry": "one recorded reexecution through the existing task retry API; native SDK request/stream retry defaults retained",
+    "preModelRejectedCreation": "Deep-only subagents field was rejected on Standard and removed before any task or inference was created",
+    "httpRequestCount": null,
+    "noProtocolFallback": true
+  },
+  "validation": {
+    "mode": "native_schema",
+    "automaticFallback": false,
+    "sourceValidatorUnchanged": true,
+    "sourceHelperUnchanged": true,
+    "reportBodyChecked": true,
+    "wireRequestCaptured": false
+  },
+  "preservation": {
+    "historicalTaskId": 1,
+    "historicalAttemptsAndCostFieldsUnchanged": true,
+    "historicalArchivedFilesUnchanged": 53,
+    "historicalPricesRecalculated": false,
+    "newFees": "unknown when price or usage is absent"
+  },
+  "notCovered": [
+    "No VPS deployment",
+    "No SDK upgrade to 0.8.0",
+    "No new DeepSeek or other third-party real inference",
+    "No real Deep scan or component scan in this round",
+    "Linux production image smoke not repeated"
+  ]
+}

@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "scope": "Local ChatGPT device authorization to selected-model Standard scan; not a VPS release.",
+  "implementation": [
+    "Authenticated SDK account inspector can select a compatible configured OpenAI model or create an account-only model configuration.",
+    "The chosen model and identity carry into New Scan; saving a configuration does not change the default model.",
+    "Required, revoked, missing, incompatible and unreadable identities block submission before queueing; no automatic API-key fallback.",
+    "SDK 0.5.0 has no public account model-list API; model ID is entered explicitly and availability is established by actual execution."
+  ],
+  "isolation": {
+    "status": "passed",
+    "webUnitTests": 13,
+    "goPipelineSubtests": 12,
+    "identityBrowserChecks": 16,
+    "settingsBrowserChecks": 18,
+    "buildAndTypecheck": "passed",
+    "realModelCalls": 0,
+    "realLoginCalls": 0,
+    "externalRequests": 0,
+    "evidenceRoot": "output/playwright/chatgpt-scan-setup-20261028"
+  },
+  "retryPolicy": {
+    "userAllowsAutomaticRetries": true,
+    "nativeCodexRetryConfiguration": "unchanged SDK defaults",
+    "localWorkerLeaseRecoveries": 2,
+    "sdkReconnectCallbacksObserved": 0,
+    "note": "Native request retries are permitted. No reconnect callback was observed in the successful scan; this is not a forced-disconnection retry test."
+  },
+  "realAcceptance": {
+    "taskId": 1,
+    "attempt": 2,
+    "model": "gpt-6.1-terra",
+    "provider": "openai",
+    "credentialKind": "chatgpt",
+    "wireApi": "responses",
+    "outputMode": "native_schema",
+    "sdkVersion": "0.5.0",
+    "pluginVersion": "0.1.95",
+    "status": "completed",
+    "startedAt": "2026-10-28T06:15:39Z",
+    "finishedAt": "2026-10-28T06:16:57Z",
+    "durationSeconds": 78,
+    "modelInvocationConfirmed": true,
+    "httpRequestCount": null,
+    "findingCount": 1,
+    "findingTitle": "通过联系人 ID 跨租户读取记录",
+    "resultCommitted": true,
+    "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+    "sourceUnchanged": true,
+    "reports": [
+      {
+        "kind": "markdown",
+        "sha256": "479c8338a8a955da8b8ca2feee0ee1e2ee57b87c8b19b6b393c10153fb9d016b",
+        "sizeBytes": 6239,
+        "verified": true
+      },
+      {
+        "kind": "sarif",
+        "sha256": "0167ddc4b5e8d669e61dfc359e29b635135145f5b983ff641db526dfee6fc1ef",
+        "sizeBytes": 5329,
+        "verified": true
+      }
+    ],
+    "sessionEvents": {
+      "received": 196,
+      "persisted": 196,
+      "omitted": 0
+    },
+    "usage": {
+      "cacheWriteInputTokens": 0,
+      "cachedInputTokens": 739712,
+      "complete": true,
+      "execution": {
+        "attempt": 2,
+        "taskId": "1"
+      },
+      "inputTokens": 836335,
+      "outputTokens": 5946,
+      "reasoningOutputTokens": 56,
+      "requestCount": null,
+      "schemaVersion": 1,
+      "source": "sdk_on_usage",
+      "totalTokens": 842281
+    },
+    "estimatedCost": null,
+    "costReason": "No unit prices configured for this ChatGPT account model; token use is recorded but subscription usage is not converted into an API bill.",
+    "newDeviceAuthorizationRequests": 0,
+    "independentValidationOperationPerformed": false,
+    "graph": {
+      "status": "available_with_diagnostics",
+      "completeness": "partial",
+      "nodes": 8,
+      "edges": 12,
+      "matchedCodeNodes": 1,
+      "mismatchedCodeNodes": 2,
+      "diagnostics": [
+        {
+          "code": "unmapped_claim",
+          "message": "SDK 分析对象没有可映射的结论文字；保留引用但未将它附到其他结论。",
+          "sourcePointer": "/raw/attackPath"
+        },
+        {
+          "code": "code_mismatch",
+          "message": "SDK 代码片段与冻结源码指定行不匹配；未确认该片段。",
+          "sourcePointer": "/raw/codeEvidence/0"
+        },
+        {
+          "code": "code_mismatch",
+          "message": "SDK 代码片段与冻结源码指定行不匹配；未确认该片段。",
+          "sourcePointer": "/raw/codeEvidence/2"
+        }
+      ],
+      "reviewedReasons": [
+        "Entry snippet omitted its original leading indentation.",
+        "README evidence excerpt contained only the first sentence of its original line.",
+        "The attackPath container supplied child analyses without a top-level mapped claim."
+      ],
+      "strictSourceMatchingUnchanged": true
+    },
+    "priorAttempt": {
+      "attempt": 1,
+      "status": "failed_before_model_invocation",
+      "cause": "Local test snapshots and runtime outputs were inside the enclosing Axiom Git worktree; SDK rejected the output root.",
+      "remedy": "Move local runtime data outside the application repository; preserve paths and retry the frozen task. SDK path protection remains enabled."
+    },
+    "postRestartCheck": "passed",
+    "evidenceRoot": "output/chatgpt-live-scan-20261028",
+    "screenshots": [
+      "output/playwright/chatgpt-scan-setup-20261028/local-gpt-completed.png",
+      "output/playwright/chatgpt-scan-setup-20261028/local-gpt-evidence.png"
+    ]
+  },
+  "localState": {
+    "runtime": "Persistent local application directory outside the Git worktree; credential files remain 0600.",
+    "modelId": 1,
+    "identityId": 1,
+    "identityGeneration": 2,
+    "defaultModelChanged": false,
+    "credentialsUploadedToVPS": false
+  },
+  "deployedToVPS": false,
+  "limitations": [
+    "This verifies one local ChatGPT account and model on a two-file synthetic project.",
+    "Evidence graph is intentionally partial for exact-source mismatches; not all model evidence is marked verified.",
+    "No separate independent-validation task or token-expiry refresh was tested in this acceptance.",
+    "VPS ChatGPT authorization 403 diagnosis remains separate and unresolved."
+  ]
+}

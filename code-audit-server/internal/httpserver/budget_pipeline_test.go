@@ -47,7 +47,7 @@ func TestBudgetPipelineSDKAndWeb(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	model, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture budget SDK (no model calls)", Provider: "openai", Model: "fixture-budget-model", ApiKeyEncrypted: encrypted})
+	model, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixture budget SDK (no model calls)", Provider: "openai", Model: "fixture-budget-model", ApiKeyEncrypted: encrypted})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -141,12 +141,20 @@ func TestBudgetPipelineSDKAndWeb(t *testing.T) {
 			Leaked      bool           `json:"leakedServerCredentials"`
 		}
 		json.Unmarshal(raw, &sdk)
-		if !sdk.FixtureOnly || sdk.Leaked || sdk.Options["maxCostUsd"] != want {
-			t.Fatalf("SDK allowance %v, want %v", sdk.Options, want)
+		if _, present := sdk.Options["maxCostUsd"]; !sdk.FixtureOnly || sdk.Leaked || present {
+			t.Fatalf("configured allowance must not reach the SDK price list: %v", sdk.Options)
 		}
 		task, e := s.Get(t.Context(), id)
 		if e != nil || task.Status != "completed" || task.Attempt != index+1 || *task.MaxCostUSD != 4.25 {
 			t.Fatal(task, e)
+		}
+		priceBudget, e := os.ReadFile(filepath.Join(task.OutputPath, "runtime/token-budget.json"))
+		if e != nil {
+			t.Fatal(e)
+		}
+		assigned, e := contracts.DecodeTokenBudgetAssignment(priceBudget, &contracts.ExecutionRef{TaskID: contracts.TaskID(fmt.Sprint(task.ID)), Attempt: int64(task.Attempt)})
+		if e != nil || float64(assigned.LimitMicros)/1e6 != want {
+			t.Fatal("configured attempt allowance changed", e, assigned)
 		}
 	}
 	budget, e := s.BudgetSnapshot(t.Context(), id)
@@ -172,7 +180,7 @@ func TestBudgetPipelineSDKAndWeb(t *testing.T) {
 	partialCost := create(5)
 	runInputAgent(t, agent, root, web.URL, agentToken, filepath.Join(scratch, "budget-partial-cost"))
 	budget, e = s.BudgetSnapshot(t.Context(), partialCost)
-	if e != nil || budget.State != "unknown" || budget.RemainingMicros != nil || *budget.EstimatedMicros != 1125000 || budget.Attempts[0].FinalMicros != nil || budget.Attempts[0].Source != "sdk_progress" {
+	if e != nil || budget.State != "unknown" || budget.RemainingMicros != nil || *budget.EstimatedMicros != 1125000 || budget.Attempts[0].FinalMicros != nil || budget.Attempts[0].Source != "configured_pricing" {
 		t.Fatal("callback cost became a final settlement", budget, e)
 	}
 	runBudgetProcessFault(t, s, server, agent, root, web.URL, agentToken, scratch, create)

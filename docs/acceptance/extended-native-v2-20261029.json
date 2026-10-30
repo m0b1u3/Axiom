@@ -1,0 +1,1382 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-10-29T09:11:57.860817+00:00",
+  "state": "passed_with_documented_limits",
+  "scope": "Four local live-model workflows on small synthetic Fixtures / Mock repositories; no VPS deployment",
+  "invariants": {
+    "SDK": "0.5.0",
+    "Codex": "0.163.0",
+    "model": "deepseek-flash",
+    "runtime": "official-v2",
+    "wireAPI": "responses",
+    "standaloneReview": "json_schema, strict=true",
+    "nativeSDKPackageModified": false,
+    "V1Fallback": false,
+    "ChatFallback": false,
+    "JSONModeFallback": false,
+    "sourceEvidenceValidationRelaxed": false,
+    "nativeSDKAutomaticRetries": "allowed, native defaults; no new proxy replay",
+    "VPSDeployment": false
+  },
+  "cases": {
+    "deep": {
+      "instance": "main-local",
+      "scan": {
+        "taskId": 24,
+        "attempt": 1,
+        "status": "completed",
+        "sourceHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+        "resultSha256": "3e8d78706b14997448443857c2c08c89f06d60035b50f3b28bf0f07737d23149",
+        "scanId": "db9af594-f620-48d5-9b4d-eeebe0e14e81",
+        "runtime": {
+          "id": "official-v2",
+          "sdkVersion": "0.5.0",
+          "codexVersion": "0.163.0",
+          "pluginVersion": "0.1.95",
+          "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+        },
+        "usage": {
+          "schemaVersion": 1,
+          "execution": {
+            "taskId": "24",
+            "attempt": 1
+          },
+          "source": "responses_usage",
+          "complete": false,
+          "inputTokens": 9844781,
+          "cachedInputTokens": 9593728,
+          "cacheWriteInputTokens": null,
+          "outputTokens": 190480,
+          "reasoningOutputTokens": 58738,
+          "totalTokens": 10035261,
+          "requestCount": 157
+        },
+        "findingCount": 1,
+        "sourceQuotes": [
+          {
+            "path": "app.py",
+            "startLine": 7,
+            "endLine": 14,
+            "exact": true,
+            "sha256": "cb34ef06e52441b673283a4608101cce3157224c5f442b46258bb08740793384"
+          },
+          {
+            "path": "app.py",
+            "startLine": 17,
+            "endLine": 23,
+            "exact": true,
+            "sha256": "f32f8c81d5ce9ec141b3810ddd06eb08ed2a638dc927f5eb9b2b47dc00863023"
+          },
+          {
+            "path": "app.py",
+            "startLine": 27,
+            "endLine": 35,
+            "exact": true,
+            "sha256": "55a22276709035e6498fa5933a7bc3da8a84efb1781b9026fec3ccb6aeaece33"
+          },
+          {
+            "path": "README.md",
+            "startLine": 5,
+            "endLine": 5,
+            "exact": true,
+            "sha256": "2d76dbe8549af940e9abe80302cbd4695bd3034bb94bb72b4d2c8980339c6287"
+          }
+        ],
+        "graphs": [
+          {
+            "fingerprint": "codex-security/v1:sha256:fad75d432bdce3a5b7aa07253d833f8bd89ce40a2183b90899119e38c738c5a5",
+            "completeness": "complete",
+            "nodes": 24,
+            "edges": 40,
+            "diagnostics": 0
+          }
+        ],
+        "review": null,
+        "verifiedDownloads": [
+          {
+            "kind": "engine_raw",
+            "relativePath": "logs/sdk-runtime.json",
+            "sizeBytes": 1453,
+            "sha256": "1a6e1f23e5850e8e3022e12adabcbb38d7c4beefbaf5aab66997bba1fffee44a",
+            "downloadVerified": true
+          },
+          {
+            "kind": "sarif",
+            "relativePath": "raw/codex-security/exports/results.sarif",
+            "sizeBytes": 7364,
+            "sha256": "d0691e32fc4edb8d210aa3f924756817dcf8598d92c15a40bcbf818b5bf9ac05",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/findings.json",
+            "sizeBytes": 108238,
+            "sha256": "e9b5d9d765d0d85e46e1a48f00ec95b8e08d6b73c97a6e19a3d113619e189698",
+            "downloadVerified": true
+          },
+          {
+            "kind": "report",
+            "relativePath": "raw/codex-security/report.md",
+            "sizeBytes": 22435,
+            "sha256": "56ca03fe22d7d072afdb864c35d68ad4d27170d480baa9420a048d2ff1484bc6",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/scan-manifest.json",
+            "sizeBytes": 6533,
+            "sha256": "3f43ef0405d905f07832192add4ad9a42b1682d4b02dc68182527f18b14c58a5",
+            "downloadVerified": true
+          }
+        ]
+      },
+      "independentReview": {
+        "taskId": 25,
+        "attempt": 1,
+        "status": "completed",
+        "sourceHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+        "resultSha256": "a7ee8f830880ce1a469a7ecec8db1f4a8ef849ea221e05d09d2849bed52579cf",
+        "scanId": null,
+        "runtime": {
+          "id": "official-v2",
+          "sdkVersion": "0.5.0",
+          "codexVersion": "0.163.0",
+          "pluginVersion": "0.1.95",
+          "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+        },
+        "usage": {
+          "schemaVersion": 1,
+          "execution": {
+            "taskId": "25",
+            "attempt": 1
+          },
+          "source": "responses_usage",
+          "complete": true,
+          "inputTokens": 98311,
+          "cachedInputTokens": 77184,
+          "cacheWriteInputTokens": null,
+          "outputTokens": 5579,
+          "reasoningOutputTokens": 2974,
+          "totalTokens": 103890,
+          "requestCount": 3
+        },
+        "findingCount": null,
+        "sourceQuotes": [],
+        "graphs": [],
+        "review": {
+          "disposition": "reportable",
+          "reportCharacters": 5217,
+          "bodyState": "body_present",
+          "reportSha256": "756eb8df62da650a691ae31eca056b8910645e5c52f8a2dcd626c1aaf4395820",
+          "turnCount": 3,
+          "wireApi": "responses",
+          "format": "json_schema",
+          "strict": true
+        },
+        "verifiedDownloads": [
+          {
+            "kind": "engine_raw",
+            "relativePath": "logs/sdk-runtime.json",
+            "sizeBytes": 1453,
+            "sha256": "db444c574883c566c179431b5dfe379d2f496b9bdd9c5f340bb236a99e7e6565",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/sdk-operation-native.json",
+            "sizeBytes": 5407,
+            "sha256": "53a6952d4c48e2bfc4d5d8f199e7add3e8b80215bb0fb5203bd8689c16c01d8b",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/sdk-operation.json",
+            "sizeBytes": 5749,
+            "sha256": "e8db1f7f9980e1f67262a9f0561f259c7414cde401d41c9b000db3caa8c48d8a",
+            "downloadVerified": true
+          }
+        ]
+      },
+      "nativeWorkers": {
+        "taskId": 24,
+        "scanId": "db9af594-f620-48d5-9b4d-eeebe0e14e81",
+        "runs": [
+          {
+            "status": "succeeded",
+            "phase": "terminal",
+            "discovery_runs_dispatched": 2,
+            "completion_sequence": 2,
+            "error_message": null
+          }
+        ],
+        "workers": [
+          {
+            "id": "4981296d-77a5-46fe-859d-afac89166a8b",
+            "kind": "dedup",
+            "status": "succeeded",
+            "merge_state": "none",
+            "attempt": 1,
+            "sdk_thread_id": "01a186c5-71f1-7f71-b16e-2c52fe928af0",
+            "error_message": null
+          },
+          {
+            "id": "9e5ebbdd-4f73-4f97-adb0-c70da7b37c92",
+            "kind": "discovery",
+            "status": "succeeded",
+            "merge_state": "merged",
+            "attempt": 1,
+            "sdk_thread_id": "01a186bf-abd1-77e0-bde7-ea5f44bc3062",
+            "error_message": null
+          },
+          {
+            "id": "d74e3533-2b3e-418a-ad16-af0635c5fe15",
+            "kind": "discovery",
+            "status": "succeeded",
+            "merge_state": "merged",
+            "attempt": 1,
+            "sdk_thread_id": "01a186bf-ac9a-7a91-b8b9-ae643cf9bfef",
+            "error_message": null
+          }
+        ],
+        "durableCheckpoints": 3,
+        "nativeSDK": "0.5.0",
+        "codex": "0.163.0",
+        "runtime": "official-v2",
+        "model": "deepseek-flash",
+        "completeIndependentDiscoveries": 2
+      },
+      "actualV2Tools": {
+        "taskId": 24,
+        "nativeJournalEvents": 1563,
+        "nativeToolCalls": {
+          "spawn_agent": 2,
+          "wait_agent": 2,
+          "list_agents": 2,
+          "followup_task": 1
+        },
+        "nativeCollaborationEvents": {
+          "CollabAgentToolCall": 2
+        },
+        "observedModels": [
+          "deepseek-flash"
+        ],
+        "nativeSessionCount": 6,
+        "runtime": "official-v2",
+        "SDKModified": false,
+        "structuredFeatureFlagPresentInJournal": true,
+        "runtimeBindingEvidence": "sealed logs/sdk-runtime.json and original SDK 0.5.0 config; actual V2 followup_task tool observed"
+      }
+    },
+    "interruptionResume": {
+      "instance": "isolated-resume-local",
+      "scan": {
+        "taskId": 1,
+        "attempt": 3,
+        "status": "completed",
+        "sourceHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+        "resultSha256": "6c062ab7c6dc39658e996bbc88bf3ccfe3db644fc7eb92885781852dba83d142",
+        "scanId": "89e6f209-3815-4e4d-8fde-6e0152feea2a",
+        "runtime": {
+          "id": "official-v2",
+          "sdkVersion": "0.5.0",
+          "codexVersion": "0.163.0",
+          "pluginVersion": "0.1.95",
+          "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+        },
+        "usage": {
+          "schemaVersion": 1,
+          "execution": {
+            "taskId": "1",
+            "attempt": 3
+          },
+          "source": "responses_usage",
+          "complete": false,
+          "inputTokens": 2750534,
+          "cachedInputTokens": 2636800,
+          "cacheWriteInputTokens": null,
+          "outputTokens": 94264,
+          "reasoningOutputTokens": 21539,
+          "totalTokens": 2844798,
+          "requestCount": 66
+        },
+        "findingCount": 1,
+        "sourceQuotes": [
+          {
+            "path": "app.py",
+            "startLine": 26,
+            "endLine": 35,
+            "exact": true,
+            "sha256": "b62fdd2ae917965b367eb31f3a1147e56bd825eb511fb0635123a158961367d2"
+          },
+          {
+            "path": "app.py",
+            "startLine": 6,
+            "endLine": 14,
+            "exact": true,
+            "sha256": "83146c775558a2279ec0d1d071726448960105b089f8f7ee6405b0b6660eed9f"
+          },
+          {
+            "path": "app.py",
+            "startLine": 17,
+            "endLine": 23,
+            "exact": true,
+            "sha256": "f32f8c81d5ce9ec141b3810ddd06eb08ed2a638dc927f5eb9b2b47dc00863023"
+          }
+        ],
+        "graphs": [
+          {
+            "completeness": "complete",
+            "nodes": 24,
+            "edges": 35,
+            "diagnostics": 0
+          }
+        ],
+        "review": null,
+        "verifiedDownloads": [
+          {
+            "kind": "engine_raw",
+            "relativePath": "logs/sdk-runtime.json",
+            "sizeBytes": 1452,
+            "sha256": "a1d94ea3aa4a5221bf7350fede9c7920bac37824bedfea30b69982e770549937",
+            "downloadVerified": true
+          },
+          {
+            "kind": "sarif",
+            "relativePath": "raw/codex-security/exports/results.sarif",
+            "sizeBytes": 6591,
+            "sha256": "0b4bd661a2ebfd5b585730a9c6ff6befe0dd5bfb1dac33836b4d7415361403e6",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/findings.json",
+            "sizeBytes": 42021,
+            "sha256": "32b71be272aa75de2c01d18d69f18bc7b495986036fc6185c89a22fa343b3f9c",
+            "downloadVerified": true
+          },
+          {
+            "kind": "report",
+            "relativePath": "raw/codex-security/report.md",
+            "sizeBytes": 15355,
+            "sha256": "f670e913619ce068a1796b07e12746072b247a23fe2e2a6027899811bc32c4fa",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/scan-manifest.json",
+            "sizeBytes": 5172,
+            "sha256": "973ef7e4018f0a58b273e6f688f2fdfc47dd3c49d56211ac40e743b0287776aa",
+            "downloadVerified": true
+          }
+        ]
+      },
+      "independentReview": {
+        "taskId": 2,
+        "attempt": 1,
+        "status": "completed",
+        "sourceHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+        "resultSha256": "63b001ddc1a4189b2923ead16fd1d04275940e38ad7c12e9f709bf120751eac0",
+        "scanId": null,
+        "runtime": {
+          "id": "official-v2",
+          "sdkVersion": "0.5.0",
+          "codexVersion": "0.163.0",
+          "pluginVersion": "0.1.95",
+          "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+        },
+        "usage": {
+          "schemaVersion": 1,
+          "execution": {
+            "taskId": "2",
+            "attempt": 1
+          },
+          "source": "responses_usage",
+          "complete": true,
+          "inputTokens": 48003,
+          "cachedInputTokens": 35584,
+          "cacheWriteInputTokens": null,
+          "outputTokens": 3201,
+          "reasoningOutputTokens": 604,
+          "totalTokens": 51204,
+          "requestCount": 2
+        },
+        "findingCount": null,
+        "sourceQuotes": [],
+        "graphs": [],
+        "review": {
+          "disposition": "reportable",
+          "reportCharacters": 7464,
+          "bodyState": "body_present",
+          "reportSha256": "1e7d626122e990035e9ee9640885bb2a4ef16e43dd07b7418cddd492a30f832d",
+          "turnCount": 2,
+          "wireApi": "responses",
+          "format": "json_schema",
+          "strict": true
+        },
+        "verifiedDownloads": [
+          {
+            "kind": "engine_raw",
+            "relativePath": "logs/sdk-runtime.json",
+            "sizeBytes": 1452,
+            "sha256": "9dda8ab101e6979eb1d611e84f82ca31a00073c4f75b5b5275e63cf2f670729a",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/sdk-operation-native.json",
+            "sizeBytes": 7749,
+            "sha256": "65c16a972c9c8005358ac2116a510667104072cc8e3933f5efe7568b3b93cce5",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/sdk-operation.json",
+            "sizeBytes": 8090,
+            "sha256": "c67386859d72defb708845a3273f58979b3cff28816b770b163a7bb18f14daa7",
+            "downloadVerified": true
+          }
+        ]
+      },
+      "continuation": {
+        "genuineProcessInterruption": true,
+        "sameScanId": "89e6f209-3815-4e4d-8fde-6e0152feea2a",
+        "sameParentThreadId": "01a18662-afae-7163-829d-b41f9245f405",
+        "originExecution": {
+          "taskId": "1",
+          "attempt": 1
+        },
+        "finishedExecution": {
+          "taskId": "1",
+          "attempt": 3
+        },
+        "originCheckpointsRetained": {
+          "artifacts/deep_discovery/workers/discovery-0001/output/checkpoint-head.json": {
+            "exists": true,
+            "sameSha256": true
+          }
+        },
+        "sourceHashUnchanged": true,
+        "rootJournalEvents": 145,
+        "sdkDeepState": {
+          "scan_id": "89e6f209-3815-4e4d-8fde-6e0152feea2a",
+          "status": "succeeded",
+          "coordinator_generation": 3,
+          "discovery_runs_dispatched": 2,
+          "completion_sequence": 1
+        },
+        "originStoppedWorkerRetained": true,
+        "vpsDeployment": false
+      },
+      "publicSDKResumeAPI": false,
+      "bridge": "exact SDK 0.5.0 internal CLI continuation path, original scan/session/checkpoint/source bound"
+    },
+    "gitDiff": {
+      "instance": "main-local",
+      "scan": {
+        "taskId": 11,
+        "attempt": 1,
+        "status": "completed",
+        "sourceHash": "652c270c61ab94deaa734fa1dcdd2dc8d6ce745ab2fcba8b39ef790cf783dd95",
+        "resultSha256": "194b4260db293c79f2ee696d035885699ff6a6b7d69bff34a8c90f25d9b28722",
+        "scanId": "b6ee83cc-b547-4d95-a3c7-a9d67f314615",
+        "runtime": {
+          "id": "official-v2",
+          "sdkVersion": "0.5.0",
+          "codexVersion": "0.163.0",
+          "pluginVersion": "0.1.95",
+          "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+        },
+        "usage": {
+          "schemaVersion": 1,
+          "execution": {
+            "taskId": "11",
+            "attempt": 1
+          },
+          "source": "responses_usage",
+          "complete": true,
+          "inputTokens": 3676968,
+          "cachedInputTokens": 3549952,
+          "cacheWriteInputTokens": null,
+          "outputTokens": 46131,
+          "reasoningOutputTokens": 10317,
+          "totalTokens": 3723099,
+          "requestCount": 42
+        },
+        "findingCount": 1,
+        "sourceQuotes": [
+          {
+            "path": "app.py",
+            "startLine": 27,
+            "endLine": 35,
+            "exact": true,
+            "sha256": "55a22276709035e6498fa5933a7bc3da8a84efb1781b9026fec3ccb6aeaece33"
+          },
+          {
+            "path": "app.py",
+            "startLine": 7,
+            "endLine": 14,
+            "exact": true,
+            "sha256": "cb34ef06e52441b673283a4608101cce3157224c5f442b46258bb08740793384"
+          },
+          {
+            "path": "app.py",
+            "startLine": 17,
+            "endLine": 23,
+            "exact": true,
+            "sha256": "f32f8c81d5ce9ec141b3810ddd06eb08ed2a638dc927f5eb9b2b47dc00863023"
+          }
+        ],
+        "graphs": [
+          {
+            "completeness": "complete",
+            "nodes": 28,
+            "edges": 40,
+            "diagnostics": 0
+          }
+        ],
+        "review": null,
+        "verifiedDownloads": [
+          {
+            "kind": "engine_raw",
+            "relativePath": "logs/sdk-runtime.json",
+            "sizeBytes": 1453,
+            "sha256": "4d863493584674eea6d0719110b447c25924b49707c4ec0748d6b8a5e91287b4",
+            "downloadVerified": true
+          },
+          {
+            "kind": "sarif",
+            "relativePath": "raw/codex-security/exports/results.sarif",
+            "sizeBytes": 7482,
+            "sha256": "6fc98c89ffcac76ae4bf9c874637da079e3dd226052ec3cf793f4a9f0c6e4fc4",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/findings.json",
+            "sizeBytes": 15423,
+            "sha256": "6f632fb7226efd8ae37b46028333f0f576c7899bc3e728916203435f56fa9d16",
+            "downloadVerified": true
+          },
+          {
+            "kind": "report",
+            "relativePath": "raw/codex-security/report.md",
+            "sizeBytes": 16232,
+            "sha256": "46b201054f389e03bd6776d111ad48cb3606834e9f8eccd42787992d03c060e1",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/scan-manifest.json",
+            "sizeBytes": 8161,
+            "sha256": "d2db1dc5a6b510ade521e3dc6fded7218806eeecc1b3e5398dc32b74adab8554",
+            "downloadVerified": true
+          }
+        ]
+      },
+      "independentReview": {
+        "taskId": 15,
+        "attempt": 1,
+        "status": "completed",
+        "sourceHash": "652c270c61ab94deaa734fa1dcdd2dc8d6ce745ab2fcba8b39ef790cf783dd95",
+        "resultSha256": "bcfa88588ee3c40a805e3a1e8ce9297e30d0f58759123fa5fd5d57e8564c3929",
+        "scanId": null,
+        "runtime": {
+          "id": "official-v2",
+          "sdkVersion": "0.5.0",
+          "codexVersion": "0.163.0",
+          "pluginVersion": "0.1.95",
+          "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+        },
+        "usage": {
+          "schemaVersion": 1,
+          "execution": {
+            "taskId": "15",
+            "attempt": 1
+          },
+          "source": "responses_usage",
+          "complete": true,
+          "inputTokens": 87871,
+          "cachedInputTokens": 76672,
+          "cacheWriteInputTokens": null,
+          "outputTokens": 5420,
+          "reasoningOutputTokens": 2153,
+          "totalTokens": 93291,
+          "requestCount": 4
+        },
+        "findingCount": null,
+        "sourceQuotes": [],
+        "graphs": [],
+        "review": {
+          "disposition": "reportable",
+          "reportCharacters": 6148,
+          "bodyState": "body_present",
+          "reportSha256": "899a83c9df126297a02458eb6f207ca1f529a1ed8ca736ca4c2e7a7e9b26877f",
+          "turnCount": 4,
+          "wireApi": "responses",
+          "format": "json_schema",
+          "strict": true
+        },
+        "verifiedDownloads": [
+          {
+            "kind": "engine_raw",
+            "relativePath": "logs/sdk-runtime.json",
+            "sizeBytes": 1453,
+            "sha256": "3d137246b3b300359a0baacc0dd3cc1e0d8dca28430fa222fa7de67285a9e712",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/sdk-operation-native.json",
+            "sizeBytes": 6368,
+            "sha256": "0d8f795c82c661c25a63c2523b8784f8f70b3435287e954fa767ed1544154973",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/sdk-operation.json",
+            "sizeBytes": 6710,
+            "sha256": "7e70288ebce947a312c1390f62f78d9d392946b56ea1b779f5c5eea710cd035d",
+            "downloadVerified": true
+          }
+        ]
+      },
+      "frozenTarget": {
+        "taskId": 11,
+        "frozenTarget": {
+          "schemaVersion": 1,
+          "kind": "refs",
+          "objectFormat": "sha1",
+          "baseCommit": "9e60951c2f1d3b763bcf5203a258072364a19b6a",
+          "headCommit": "914f3ecb9d095b3474c212e96a2ee2a8a2b270a0",
+          "baseTree": "bd34642622be8242338bbe9fd82b99a60bf31061",
+          "headTree": "b0562fe73e7a4fee2185e7b715d284c9680b8674",
+          "diffSha256": "bdca39912cfda082ab10d493967e7014d954fa33dd461df63a3fb245f6340229",
+          "headContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f"
+        },
+        "SDKTarget": {
+          "baseRevision": "9e60951c2f1d3b763bcf5203a258072364a19b6a",
+          "displayName": "git-source-2407075119",
+          "headRevision": "914f3ecb9d095b3474c212e96a2ee2a8a2b270a0",
+          "kind": "git_diff",
+          "snapshotDigest": "codex-security-snapshot/v1:sha256:f2a5df4649f513d650fa9bd053ac42b3c9d473725fb963a395654a3e91ad15ce",
+          "targetId": "target_sha256_5ff75a03cd9ce9c909bb32469a896050dce8d44d29b8fdc532e85ced28a7ef58"
+        },
+        "baseTreeExact": true,
+        "headTreeExact": true,
+        "diffSHA256Exact": true,
+        "changedFiles": [
+          "app.py"
+        ],
+        "expectedRemovedGuardFound": true
+      }
+    },
+    "components": {
+      "instance": "main-local",
+      "scan": {
+        "taskId": 26,
+        "attempt": 1,
+        "status": "completed",
+        "sourceHash": "3781e2a478c40fd4e6522d7dedd843a1bb790a5e737f793a2e5108a7f3709fee",
+        "resultSha256": "aab8012a70ded39f5198313bfd775f0d0961e8550257bf9b3287a1ee9ede654f",
+        "scanId": null,
+        "runtime": {
+          "id": "official-v2",
+          "sdkVersion": "0.5.0",
+          "codexVersion": "0.163.0",
+          "pluginVersion": "0.1.95",
+          "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+        },
+        "usage": null,
+        "findingCount": 2,
+        "sourceQuotes": [
+          {
+            "path": "README.md",
+            "startLine": 5,
+            "endLine": 5,
+            "exact": true,
+            "sha256": "39b9c7efb5cc46fdec46761b0067aba4fc2e905a1f47833af6253f998d402ab7"
+          },
+          {
+            "path": "contacts.py",
+            "startLine": 7,
+            "endLine": 14,
+            "exact": true,
+            "sha256": "cb34ef06e52441b673283a4608101cce3157224c5f442b46258bb08740793384"
+          },
+          {
+            "path": "contacts.py",
+            "startLine": 17,
+            "endLine": 23,
+            "exact": true,
+            "sha256": "f32f8c81d5ce9ec141b3810ddd06eb08ed2a638dc927f5eb9b2b47dc00863023"
+          },
+          {
+            "path": "contacts.py",
+            "startLine": 27,
+            "endLine": 35,
+            "exact": true,
+            "sha256": "55a22276709035e6498fa5933a7bc3da8a84efb1781b9026fec3ccb6aeaece33"
+          },
+          {
+            "path": "exports.py",
+            "startLine": 6,
+            "endLine": 6,
+            "exact": true,
+            "sha256": "e1f1b38b83eadfff78c4a5f1a57ea4a8c3a9c563a45754e07b28900f6b80c100"
+          },
+          {
+            "path": "exports.py",
+            "startLine": 23,
+            "endLine": 27,
+            "exact": true,
+            "sha256": "bbb73acb7b7a0bd4de1cf228812969f590adc1a0812b53bf4b7859300f260a79"
+          },
+          {
+            "path": "exports.py",
+            "startLine": 8,
+            "endLine": 11,
+            "exact": true,
+            "sha256": "cfdd0587188ec20e89ade15995cab44a70c795392dcac9a285ac0ee3ff815584"
+          },
+          {
+            "path": "exports.py",
+            "startLine": 14,
+            "endLine": 21,
+            "exact": true,
+            "sha256": "19b3d32049702c36f7ce23b6e8165debe3e885df857356c2e21a530ad222f6f5"
+          },
+          {
+            "path": "exports.py",
+            "startLine": 29,
+            "endLine": 32,
+            "exact": true,
+            "sha256": "e2f5fa9654904a45b2d98bb851542db892a0d1428bdbd3e36546231e8fcdef32"
+          }
+        ],
+        "graphs": [
+          {
+            "fingerprint": "axiom/component/v1:f2c46ccee47d5515160c8f93a00300fd2a5f8fdbc306872805abc35f8dd5dcce",
+            "completeness": "complete",
+            "nodes": 37,
+            "edges": 59,
+            "diagnostics": 0
+          },
+          {
+            "fingerprint": "axiom/component/v1:747b0a368ade0327ed2ef2e28a1c8f73976ab1f0a39885a39ae0ba0697ee4051",
+            "completeness": "complete",
+            "nodes": 37,
+            "edges": 59,
+            "diagnostics": 0
+          }
+        ],
+        "review": null,
+        "verifiedDownloads": [
+          {
+            "kind": "engine_raw",
+            "relativePath": "logs/sdk-runtime.json",
+            "sizeBytes": 1453,
+            "sha256": "1a714c64342522ff023595191548dbfad54e9ab34d69c186b8c7fb50143d5e8a",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/component-1-token-usage.json",
+            "sizeBytes": 1009,
+            "sha256": "a6dc691ad2ee534ca33aeccc52a63365824ff00aa583281fc5a64098e24be166",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/component-1.json",
+            "sizeBytes": 25633,
+            "sha256": "4374a22eb3eb5d5256e1ce940c1f2cfd8c92e3b9ac285e5f97f474ddd530af8d",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/component-2-token-usage.json",
+            "sizeBytes": 1010,
+            "sha256": "c54f2defca580f388d13415e9bdffe5682386bfd95216d37c4bedbdd6c30699f",
+            "downloadVerified": true
+          },
+          {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/component-2.json",
+            "sizeBytes": 167272,
+            "sha256": "f62eed190562dfe11ff6f7ba0ad66a28d80a1c4e5b0323eb72d3482a852b759f",
+            "downloadVerified": true
+          },
+          {
+            "kind": "sarif",
+            "relativePath": "raw/codex-security/components/component-1/exports/results.sarif",
+            "sizeBytes": 6286,
+            "sha256": "9dba094af75506d6b3ac159ce8ea951f45e168e7387aebb7f1945d8f1fbee6b6",
+            "downloadVerified": true
+          },
+          {
+            "kind": "report",
+            "relativePath": "raw/codex-security/components/component-1/report.md",
+            "sizeBytes": 20587,
+            "sha256": "600f877ffa020f849c48a913ca48542ca26d584cb44131f4ef49836e9a45c404",
+            "downloadVerified": true
+          },
+          {
+            "kind": "sarif",
+            "relativePath": "raw/codex-security/components/component-2/exports/results.sarif",
+            "sizeBytes": 7591,
+            "sha256": "9899ed13b7750c190723394226583eeb548f26941cb177328d41b67f10fb9c41",
+            "downloadVerified": true
+          },
+          {
+            "kind": "report",
+            "relativePath": "raw/codex-security/components/component-2/report.md",
+            "sizeBytes": 23035,
+            "sha256": "9f9cf422cfd20679a6f3bfb0ed6e4722461fdedad16df5aea8f93dde5ded651c",
+            "downloadVerified": true
+          },
+          {
+            "kind": "report",
+            "relativePath": "raw/codex-security/components/report.md",
+            "sizeBytes": 635,
+            "sha256": "6514ca814ab4ba4f1187aba89fe14f26b2af5fb31fbf3f6c3119602425ffe6f8",
+            "downloadVerified": true
+          }
+        ]
+      },
+      "independentReviews": [
+        {
+          "taskId": 27,
+          "attempt": 1,
+          "status": "completed",
+          "sourceHash": "3781e2a478c40fd4e6522d7dedd843a1bb790a5e737f793a2e5108a7f3709fee",
+          "resultSha256": "e21b9e3b55b49dea224e35108f9de59fb3a52b5d2268dee7462e39fccc52f683",
+          "scanId": null,
+          "runtime": {
+            "id": "official-v2",
+            "sdkVersion": "0.5.0",
+            "codexVersion": "0.163.0",
+            "pluginVersion": "0.1.95",
+            "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+          },
+          "usage": {
+            "schemaVersion": 1,
+            "execution": {
+              "taskId": "27",
+              "attempt": 1
+            },
+            "source": "responses_usage",
+            "complete": true,
+            "inputTokens": 40539,
+            "cachedInputTokens": 31872,
+            "cacheWriteInputTokens": null,
+            "outputTokens": 2386,
+            "reasoningOutputTokens": 572,
+            "totalTokens": 42925,
+            "requestCount": 2
+          },
+          "findingCount": null,
+          "sourceQuotes": [],
+          "graphs": [],
+          "review": {
+            "disposition": "reportable",
+            "reportCharacters": 4196,
+            "bodyState": "body_present",
+            "reportSha256": "7c31b07a922cdacdc0051739674f09ccf4e98ecc68ec7d09ee545b95f4162646",
+            "turnCount": 2,
+            "wireApi": "responses",
+            "format": "json_schema",
+            "strict": true
+          },
+          "verifiedDownloads": [
+            {
+              "kind": "engine_raw",
+              "relativePath": "logs/sdk-runtime.json",
+              "sizeBytes": 1453,
+              "sha256": "03ee280a44a3da9cfbb8f54edef2dda96538e6cc91b48f42121d08c03149c2c9",
+              "downloadVerified": true
+            },
+            {
+              "kind": "engine_raw",
+              "relativePath": "raw/codex-security/sdk-operation-native.json",
+              "sizeBytes": 4395,
+              "sha256": "0dcbc448e6f9d25703e6f1beb4b9540fc48c883acdb80825251e2eaa3f6b156c",
+              "downloadVerified": true
+            },
+            {
+              "kind": "engine_raw",
+              "relativePath": "raw/codex-security/sdk-operation.json",
+              "sizeBytes": 4737,
+              "sha256": "0cac65947e6bb4dbf8b45811e91c70d0d4448da8193864c8749bfab20ba8ad4f",
+              "downloadVerified": true
+            }
+          ]
+        },
+        {
+          "taskId": 28,
+          "attempt": 1,
+          "status": "completed",
+          "sourceHash": "3781e2a478c40fd4e6522d7dedd843a1bb790a5e737f793a2e5108a7f3709fee",
+          "resultSha256": "c18f8ff1f36114a05f26ad082b912d1e2d9fbfa55eadbc76373017dd59ef4f93",
+          "scanId": null,
+          "runtime": {
+            "id": "official-v2",
+            "sdkVersion": "0.5.0",
+            "codexVersion": "0.163.0",
+            "pluginVersion": "0.1.95",
+            "fingerprint": "2a51bfa68b1138f7be9982ee6d9dbc35747802cf4f4196131b9b92a4de921c2f"
+          },
+          "usage": {
+            "schemaVersion": 1,
+            "execution": {
+              "taskId": "28",
+              "attempt": 1
+            },
+            "source": "responses_usage",
+            "complete": true,
+            "inputTokens": 152098,
+            "cachedInputTokens": 113024,
+            "cacheWriteInputTokens": null,
+            "outputTokens": 4898,
+            "reasoningOutputTokens": 2080,
+            "totalTokens": 156996,
+            "requestCount": 3
+          },
+          "findingCount": null,
+          "sourceQuotes": [],
+          "graphs": [],
+          "review": {
+            "disposition": "reportable",
+            "reportCharacters": 5484,
+            "bodyState": "body_present",
+            "reportSha256": "b27a28cce4ffeb253e462cb793a98cf2ac187f16b0364b21d0a49cfb4eac5a93",
+            "turnCount": 3,
+            "wireApi": "responses",
+            "format": "json_schema",
+            "strict": true
+          },
+          "verifiedDownloads": [
+            {
+              "kind": "engine_raw",
+              "relativePath": "logs/sdk-runtime.json",
+              "sizeBytes": 1453,
+              "sha256": "920ad8aa4bd9a44fc38d88dc5b0f6dd3486196a9814a830ad422216000563e57",
+              "downloadVerified": true
+            },
+            {
+              "kind": "engine_raw",
+              "relativePath": "raw/codex-security/sdk-operation-native.json",
+              "sizeBytes": 5678,
+              "sha256": "bbb583aaa2a358b5343f7e7a21eb0c4d314b97ebdea179bd64641765d9586387",
+              "downloadVerified": true
+            },
+            {
+              "kind": "engine_raw",
+              "relativePath": "raw/codex-security/sdk-operation.json",
+              "sizeBytes": 6020,
+              "sha256": "c232cd9bb734e3dfbc04caa0f5a64218325e1982a2e67a12b68f89677a58ea02",
+              "downloadVerified": true
+            }
+          ]
+        }
+      ],
+      "nativeResult": {
+        "planId": "2",
+        "version": 1,
+        "versionSha256": "3c891d4a2c355d7f340c1d59e9303b12d641c6b5bd28fba076ffcb6fa64b67a1",
+        "matching": {
+          "status": "completed",
+          "costState": "unknown",
+          "reason": "SDK 原生跨组件匹配可能调用模型；0.5.0 无费用回调或上限，费用未知。",
+          "native": {
+            "status": "completed",
+            "confirmedGroups": 0,
+            "uncertainPairs": 0
+          }
+        },
+        "rows": [
+          {
+            "index": 0,
+            "status": "completed",
+            "allocatedMicros": 3000000,
+            "observedMicros": 150812,
+            "finalMicros": 150812,
+            "findingCount": 1,
+            "scanId": "7241bb06-9e34-4884-904e-82903041a2b4",
+            "resultArtifact": {
+              "kind": "engine_raw",
+              "relativePath": "raw/codex-security/component-1.json",
+              "sizeBytes": 25633,
+              "sha256": "4374a22eb3eb5d5256e1ce940c1f2cfd8c92e3b9ac285e5f97f474ddd530af8d"
+            },
+            "error": null,
+            "phase": "reporting",
+            "activity": "Standard security scan analysis is complete. ### Finding - Medium — CWE-639: Broken object-level authorization - Location: `contacts.py:17-23`, reachable from `contacts.py:27-35` - Impact: An authenticated tenant-a fixture user can request `GET /contacts/202` and read the tenant-b contact because `get_contact()` validates authentication and existence but not `tenant_id` ownership. - Remediation: Require `contact[\"tenant_id\"] == user[\"tenant_id\"]` before returning a contact and add cross-tenant regression te"
+          },
+          {
+            "index": 1,
+            "status": "completed",
+            "allocatedMicros": 3000000,
+            "observedMicros": 232734,
+            "finalMicros": 232734,
+            "findingCount": 1,
+            "scanId": "24f1b920-5b85-4865-bbf7-8a6e82a417db",
+            "resultArtifact": {
+              "kind": "engine_raw",
+              "relativePath": "raw/codex-security/component-2.json",
+              "sizeBytes": 167272,
+              "sha256": "f62eed190562dfe11ff6f7ba0ad66a28d80a1c4e5b0323eb72d3482a852b759f"
+            },
+            "error": null,
+            "phase": "reporting",
+            "activity": "## Codex Security scan Scan ID: `24f1b920-5b85-4865-bbf7-8a6e82a417db` Scope: `exports.py` — 1/1 file reviewed Result: 1 reportable finding ### Medium — CWE-22 path traversal The authenticated `/exports/download` handler passes the untrusted `file` query value directly to `(EXPORT_ROOT / filename).read_bytes()`. Absolute paths and `../` components can escape `/srv/fixture-tenant-exports`; successful reads are returned in the HTTP response. Final severity is medium because the service binds only to loopback "
+          }
+        ],
+        "usage": [
+          {
+            "schemaVersion": 1,
+            "componentIndex": 0,
+            "usage": {
+              "schemaVersion": 1,
+              "execution": {
+                "taskId": "26",
+                "attempt": 1
+              },
+              "source": "responses_usage",
+              "complete": true,
+              "inputTokens": 4177187,
+              "cachedInputTokens": 4080128,
+              "cacheWriteInputTokens": null,
+              "outputTokens": 81011,
+              "reasoningOutputTokens": 22026,
+              "totalTokens": 4258198,
+              "requestCount": 56
+            },
+            "pricingSnapshot": {
+              "schemaVersion": 1,
+              "execution": {
+                "taskId": "26",
+                "attempt": 1
+              },
+              "modelConfigId": 4,
+              "revision": 1,
+              "capturedAt": "2026-10-29T08:52:44.486323Z",
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "pricing": {
+                "schemaVersion": 1,
+                "currency": "USD",
+                "unit": "per_million_tokens",
+                "cacheMode": "cache_read",
+                "inputPerMillion": "0.3",
+                "cacheReadPerMillion": "0.006",
+                "cacheWritePerMillion": null,
+                "outputPerMillion": "1.2",
+                "note": "2026-10-29真实验收专用；DeepSeek官方美元高峰价快照（UTC工作日06:00–10:00），非账单。缓存写入未报告保持未知。来源 https://api-docs.deepseek.com/quick_start/pricing/ 。跨时段须分段核对。"
+              },
+              "reason": ""
+            },
+            "estimatedMicros": 150812
+          },
+          {
+            "schemaVersion": 1,
+            "componentIndex": 1,
+            "usage": {
+              "schemaVersion": 1,
+              "execution": {
+                "taskId": "26",
+                "attempt": 1
+              },
+              "source": "responses_usage",
+              "complete": true,
+              "inputTokens": 8120299,
+              "cachedInputTokens": 7994752,
+              "cacheWriteInputTokens": null,
+              "outputTokens": 122584,
+              "reasoningOutputTokens": 42030,
+              "totalTokens": 8242883,
+              "requestCount": 79
+            },
+            "pricingSnapshot": {
+              "schemaVersion": 1,
+              "execution": {
+                "taskId": "26",
+                "attempt": 1
+              },
+              "modelConfigId": 4,
+              "revision": 1,
+              "capturedAt": "2026-10-29T08:52:44.486323Z",
+              "provider": "deepseek",
+              "model": "deepseek-flash",
+              "pricing": {
+                "schemaVersion": 1,
+                "currency": "USD",
+                "unit": "per_million_tokens",
+                "cacheMode": "cache_read",
+                "inputPerMillion": "0.3",
+                "cacheReadPerMillion": "0.006",
+                "cacheWritePerMillion": null,
+                "outputPerMillion": "1.2",
+                "note": "2026-10-29真实验收专用；DeepSeek官方美元高峰价快照（UTC工作日06:00–10:00），非账单。缓存写入未报告保持未知。来源 https://api-docs.deepseek.com/quick_start/pricing/ 。跨时段须分段核对。"
+              },
+              "reason": ""
+            },
+            "estimatedMicros": 232734
+          }
+        ]
+      },
+      "pricingCheck": {
+        "taskId": 26,
+        "currency": "USD",
+        "rounding": "ceil once to one micro USD per component",
+        "formula": "((input-cached)*inputPrice + cached*cacheReadPrice + output*outputPrice)/1000000",
+        "components": [
+          {
+            "componentIndex": 0,
+            "requestCount": 56,
+            "calculatedMicros": 150812,
+            "recordedMicros": 150812,
+            "estimatedUSD": "0.150812",
+            "exactBeforeRoundingUSD": "0.150811668",
+            "source": "actual Responses usage + frozen configured price",
+            "cacheWriteInputTokens": null
+          },
+          {
+            "componentIndex": 1,
+            "requestCount": 79,
+            "calculatedMicros": 232734,
+            "recordedMicros": 232734,
+            "estimatedUSD": "0.232734",
+            "exactBeforeRoundingUSD": "0.232733412",
+            "source": "actual Responses usage + frozen configured price",
+            "cacheWriteInputTokens": null
+          }
+        ],
+        "componentOnlySumMicros": 383546,
+        "matchingCost": "unknown",
+        "completeTaskCost": "unknown",
+        "supplierBillReconciled": false
+      }
+    }
+  },
+  "totals": {
+    "workflowCases": 4,
+    "archivedFindings": 5,
+    "independentReviews": 5,
+    "exactSourceQuotes": 19,
+    "verifiedArtifactDownloads": 40,
+    "graphDiagnostics": 0
+  },
+  "pricing": {
+    "sourceCN": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+    "sourceUSD": "https://api-docs.deepseek.com/quick_start/pricing/",
+    "frozenAcceptancePrice": {
+      "schemaVersion": 1,
+      "currency": "USD",
+      "unit": "per_million_tokens",
+      "cacheMode": "cache_read",
+      "inputPerMillion": "0.3",
+      "cacheReadPerMillion": "0.006",
+      "cacheWritePerMillion": null,
+      "outputPerMillion": "1.2",
+      "note": "2026-10-29真实验收专用；DeepSeek官方美元高峰价快照（UTC工作日06:00–10:00），非账单。缓存写入未报告保持未知。来源 https://api-docs.deepseek.com/quick_start/pricing/ 。跨时段须分段核对。"
+    },
+    "automaticWebsitePriceFetching": false,
+    "historicalPricesRecalculated": false,
+    "componentScansOnlyMicros": 383546,
+    "completeComponentTaskFee": "unknown; matching not included in finite component grants",
+    "supplierBillReconciled": false,
+    "independentReviews": [
+      {
+        "taskId": 27,
+        "amountMicros": 5655,
+        "currency": "USD",
+        "independentDecimalCheck": true,
+        "actualUsageComplete": true,
+        "pricingRevision": 1,
+        "modelConfigId": 4,
+        "state": "estimated",
+        "hardInvoiceCap": false
+      },
+      {
+        "taskId": 28,
+        "amountMicros": 18278,
+        "currency": "USD",
+        "independentDecimalCheck": true,
+        "actualUsageComplete": true,
+        "pricingRevision": 1,
+        "modelConfigId": 4,
+        "state": "estimated",
+        "hardInvoiceCap": false
+      }
+    ]
+  },
+  "history": {
+    "existingTasks": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "existingArchivedFileCount": 159,
+    "executionAndFeeSnapshotsUnchanged": true,
+    "existingModelConfigurationsUnchanged": true,
+    "oldModelConfigIds": [
+      1,
+      2,
+      3
+    ],
+    "dedicatedPricedModelConfigId": 4,
+    "historicalPricesRecalculated": false,
+    "vpsDeployment": false
+  },
+  "fixedCauses": [
+    "Native Deep MCP child did not receive the selected provider credential environment variable.",
+    "Deep continuation reused the origin workspace path with the new execution receipt identity, and early setup failure could leave the transport open.",
+    "Component maxCostUsd still reached the SDK built-in price table instead of the frozen platform Token accounting.",
+    "Component final evidence did not invoke the exact-line guard; an aliased CLI entry could exit without checking.",
+    "Native V2 mailbox preemption canceled Responses before terminal usage; finite component runs now defer mail with the pinned native feature.",
+    "DeepSeek rejected Zod bare nested anyOf in native matching; equivalent OR association is normalized for this connection only.",
+    "The artifact publisher correctly rejected proof-created scratch symlinks; scratch links are privately quarantined without following targets, while the publisher remains strict."
+  ],
+  "schemaSingleVariableLiveComparison": {
+    "originalHTTP": 400,
+    "equivalentFlattenedHTTP": 200,
+    "changedOnly": "nested bare anyOf association in text.format.schema",
+    "protocol": "responses",
+    "format": "json_schema",
+    "strict": true,
+    "localOriginalSDKValidationUnchanged": true,
+    "forwarderReplayAdded": false
+  },
+  "scratchLinkRealFailureReplay": {
+    "originalTaskId": 23,
+    "originalHistoryUntouched": true,
+    "nativeContractValidBeforeAndAfter": true,
+    "findingsUnchanged": true,
+    "temporaryLinksPrivatelyPreserved": 1,
+    "targetDereferenced": false,
+    "publisherGuardUnchanged": true
+  },
+  "preservedNonPassingTrials": [
+    {
+      "id": 12,
+      "attempt": 1,
+      "status": "partial",
+      "acceptancePassed": false,
+      "historyPreserved": true,
+      "commitPresent": true,
+      "reason": null
+    },
+    {
+      "id": 13,
+      "attempt": 1,
+      "status": "partial",
+      "acceptancePassed": false,
+      "historyPreserved": true,
+      "commitPresent": true,
+      "reason": null
+    },
+    {
+      "id": 16,
+      "attempt": 1,
+      "status": "completed",
+      "acceptancePassed": false,
+      "historyPreserved": true,
+      "commitPresent": true,
+      "reason": "SDK/应用显示 completed，但独立整行校验发现 codeEvidence 声明的结束行与正文长度不一致；不计为验收通过。"
+    },
+    {
+      "id": 19,
+      "attempt": 1,
+      "status": "partial",
+      "acceptancePassed": false,
+      "historyPreserved": true,
+      "commitPresent": true,
+      "reason": null
+    },
+    {
+      "id": 21,
+      "attempt": 1,
+      "status": "partial",
+      "acceptancePassed": false,
+      "historyPreserved": true,
+      "commitPresent": true,
+      "reason": null
+    },
+    {
+      "id": 22,
+      "attempt": 1,
+      "status": "partial",
+      "acceptancePassed": false,
+      "historyPreserved": true,
+      "commitPresent": true,
+      "reason": null
+    },
+    {
+      "id": 20,
+      "attempt": 1,
+      "status": "canceled",
+      "acceptancePassed": false,
+      "historyPreserved": true,
+      "commitPresent": false,
+      "reason": "验收中发现源码辅助程序入口的路径别名可导致空执行，主动取消后修复；不计为成功。"
+    },
+    {
+      "id": 23,
+      "attempt": 1,
+      "status": "failed",
+      "acceptancePassed": false,
+      "historyPreserved": true,
+      "commitPresent": false,
+      "reason": "两组件和原生匹配均完成；发布器拒绝 SDK 临时验证目录的符号链接。保留 failed 状态及原始结果，没有伪造提交或从未封存 JSON 强制恢复。"
+    }
+  ],
+  "checks": {
+    "scanner": {
+      "passed": 337,
+      "failed": 0,
+      "skipped": 0
+    },
+    "crossLanguageContracts": {
+      "passed": 506,
+      "failed": 0,
+      "skipped": 0
+    },
+    "isolatedAPIAgentScannerPipelines": [
+      "TestComponentScansPipeline",
+      "TestDeepResumePipeline",
+      "TestGitDiffPipeline",
+      "TestConfiguredBudgetOfflinePipeline"
+    ],
+    "SDKOriginalFilesCheck": "passed",
+    "exactVersionRecoverySourceFiles": 10,
+    "diffWhitespaceCheck": "passed"
+  },
+  "workingTree": {
+    "baseGitCommit": "3379d4d43756d104478046f152cafcf2fbb11334",
+    "changesCommitted": false,
+    "codeSHA256": {
+      "code-audit-scanner/src/runtime/provider-mcp.ts": "062ce8373f51abde64f8116c9806d7f4c7e2f7873bbc08a46a237047caead9cf",
+      "code-audit-scanner/src/runtime/audit-bootstrap.ts": "c0dc179eb24025c220c20c14e3c6301c5a94c7f2bc9ce5011fed10d725b6259e",
+      "code-audit-scanner/src/engine/codex-security-engine.ts": "7dd4c5bd1d0883148a846bc061312a21332bbc76e7627e1e23ec124e0d000077",
+      "code-audit-scanner/src/engine/component-scan.ts": "d9ad4c6ef0dd8378da9fef5a7ea7922bc949cb67cbf64fdfdfa6748caed7c4c8",
+      "code-audit-scanner/src/proxy/schema-unions.ts": "2b4b4e14057c28225df8e9dac39dda4c895393ff9953f77ee73adcaac30aaee1",
+      "code-audit-scanner/src/proxy/reliable-upstream.ts": "0835eed19fcb2fe9806825f461051b25a67adc6a775c9a3c9c758034ef66fbe0",
+      "code-audit-scanner/runtime/source-evidence.mjs": "6814ce3a8629edaf1b1fbf6597ce327f83b51ad0826a6ccb1c7f83fab78ed59a",
+      "code-audit-scanner/src/runtime/scratch-links.ts": "4d2034d457e674b6efe536ecb6749ba7aa2df946bd9902a937d625dbac764320"
+    }
+  },
+  "limitations": [
+    "Small synthetic projects do not establish all languages, repository sizes or long-term provider stability.",
+    "The native defer_mailbox_preemption feature is under development in pinned Codex 0.163.0 and is limited to finite component runs.",
+    "SDK 0.5.0 has no public resume API; the continuation bridge remains exact-version and original-state bound.",
+    "Two component findings were distinct: matching executed with zero confirmed groups and zero uncertain pairs; a positive duplicate merge was not tested.",
+    "The final successful component run did not create a scratch symlink; that branch was tested by copying the actual failed task 23 bundle and with isolated full publication.",
+    "Deep and resumed scans retained incomplete usage after response interruptions; their complete fees remain unknown.",
+    "Matching fees remain unknown, cache writes absent from the actual API remain null, and no supplier invoice was reconciled.",
+    "This task did not test UI changes or deploy VPS."
+  ]
+}

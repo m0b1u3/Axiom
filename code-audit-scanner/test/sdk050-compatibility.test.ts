@@ -11,7 +11,6 @@ import {ContractProgressSink} from '../src/runtime/contract-progress.js';
 import {restoreSdkParentState} from '../src/runtime/sdk-parent-state.js';
 import {sdkLifecycleCallbacks} from '../src/runtime/sdk-lifecycle.js';
 import {settledSDKCost} from '../src/runtime/sdk-cost.js';
-import {sdkUsageEstimate} from '../src/artifact/sdk-native-result.js';
 import type {ScanTask} from '../src/contract/scan-task.js';
 const execution={taskId:'42',attempt:2};
 const task={taskId:'42',executionAttempt:2,resultSchemaVersion:1,provider:'openai',model:'fixture-only',sourceContentHash:'2'.repeat(64)} as ScanTask;
@@ -61,8 +60,8 @@ test('old private parent state remains readable but cannot be imported into 0.5'
 test('host callbacks cannot masquerade as verified local authentication',()=>{
  let observed:any;const cb=sdkLifecycleCallbacks((value,_message,warning)=>{observed={value,warning}});cb.onAuthentication!({method:'host'});assert.equal(observed.value.authentication,null);assert.equal(observed.warning,true);
 });
-test('0.5 pricing bounds are archived and a baseline cannot settle an uncertain total',()=>{
- const estimate=sdkUsageEstimate(execution,{turn:{model:'gpt-5.6',usage:{input_tokens:0,output_tokens:17,cached_input_tokens:0,cache_write_input_tokens:0}}});
+test('historical 0.5 pricing bounds stay readable without recalculating SDK prices',async()=>{
+ const estimate=JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/sdk050-estimate-range.json',import.meta.url),'utf8'));
  const native=estimate.nativeEstimate!;assert.deepEqual(native.estimatedUsdRange,{min:0.00034,max:0.00051,context:'unknown'});assert.ok(native.pricing);
  assert.equal(settledSDKCost(native),null);assert.equal(settledSDKCost({estimatedUsd:0}),0);
  assert.equal(settledSDKCost({estimatedUsd:0,estimatedUsdRange:{min:0,max:0}}),0);

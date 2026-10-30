@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "kind": "isolated-acceptance",
+  "status": "passed",
+  "capturedAt": "2026-10-27T11:21:54.830173+00:00",
+  "baseCommit": "3379d4d43756d104478046f152cafcf2fbb11334",
+  "workingTreeChanges": true,
+  "profile": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "wireAPI": "responses",
+    "reviewOutputMode": "native_schema",
+    "sdkVersion": "0.5.0",
+    "scannerDescriptionVersion": 15
+  },
+  "modelBoundary": "synthetic SDK and loopback Responses HTTP only",
+  "realModelRequests": 0,
+  "automaticModelRetries": 0,
+  "productionDeploymentPerformed": false,
+  "productionDataModified": false,
+  "databaseMigrationsAdded": false,
+  "checks": {
+    "contracts": 502,
+    "scanner": 299,
+    "web": 98,
+    "focusedSubset": 13,
+    "serverRegression": "passed",
+    "agentRegression": "passed",
+    "postgresStoreRegression": "passed",
+    "offlinePipelines": [
+      "TestBudgetPipelineSDKAndWeb",
+      "TestInputPipelineToSDK",
+      "TestModelPricingOfflinePipeline",
+      "TestConfiguredBudgetOfflinePipeline"
+    ],
+    "sdkPatchVerification": "7 pinned patches verified",
+    "sdkIntegrationVerification": "passed",
+    "scannerBuild": "passed",
+    "webBuild": "passed",
+    "releaseTests": 21,
+    "localReleaseChecks": "passed"
+  },
+  "verifiedBehaviors": [
+    "Configured USD prices are frozen per attempt; editing current prices does not change running estimates or historical fees.",
+    "Finite budgets require complete USD rates; unbudgeted scans retain unknown-price behavior.",
+    "Limit exhaustion and missing or inconsistent required usage stop further upstream requests without replay.",
+    "Original provider rejections remain visible; cancellation and strict result validation keep their own causes.",
+    "Interrupted runs retain candidate evidence; a completed valid SDK result is retained when the last turn reaches the limit.",
+    "Queued model/endpoint changes that invalidate price binding fail before inference and retain a structured error result.",
+    "Native OpenAI identity support is computed by the same backend rule used to resolve its connection.",
+    "Native SDK preflight and real scan share Worker, subagent, stopping, target and advanced option assembly.",
+    "DeepSeek preflight remains local and does not need the SDK built-in model price list."
+  ],
+  "implementationSha256": {
+    "code-audit-scanner/src/runtime/token-budget.ts": "8c3c9f081021736b8b666bfed54b9aeb31daae1c16d5341f10215c51e013777e",
+    "code-audit-scanner/src/contract/sdk-scan-options.ts": "05b2299e4df5b60acc8bd2c52b5c8d4e2a5f70392682750f34f5d5a427e0447e",
+    "code-audit-server/internal/httpserver/model_capabilities.go": "3fca061b5326b97357ee1aa5c7979c4f102e0a93b51d73c2613120c6e51a3845"
+  },
+  "limitations": [
+    "No real model/provider compatibility or supplier invoice reconciliation is claimed.",
+    "Budgets are estimates; already dispatched concurrent requests can add cost.",
+    "SDK preflight does not certify model access."
+  ]
+}

@@ -30,6 +30,7 @@ export interface SnapshotQuery extends CatalogQuery { usage?: string; id?: numbe
 export interface FindingQuery extends CatalogQuery { severity?: string; status?: string; sourceSnapshotId?: string | number; sourcePath?: string }
 
 export interface ModelConfig {
+  supportsSdkIdentity?: boolean;
  pricing?:import("./contracts").ModelPricing|null;
  pricingRevision?:number;
  reasoningEffort?:import("./contracts").ReasoningEffort;
@@ -279,7 +280,6 @@ export const api = {
   async sdkOperations(id:number,page=1):Promise<{items:ScanTask[];total:number;page:number;pageSize:number}>{return http.get(`/scans/${id}/sdk-operations`,{params:{page}}) as never;},
   async uncommittedSDKSessions(id:number,attempt:number):Promise<Blob>{return http.get(`/scans/${id}/attempts/${attempt}/sdk-sessions`,{params:{download:1},responseType:'blob'}) as Promise<Blob>;},
   async sdkSessions(id:number,attempt:number,after=0):Promise<{execution?:import('./contracts').ExecutionRef;uncommitted?:boolean;capturedCount?:number;reason?:string;summary:import('./contracts').SDKSessionSummary|null;items:import('./contracts').SDKSessionEvent[];next:number;hasMore:boolean}>{return http.get(`/scans/${id}/attempts/${attempt}/sdk-sessions`,{params:{after}}) as never;},
-  async sdkCostEstimate(id:number,attempt:number):Promise<import('./contracts').SDKCostEstimate>{return http.get(`/scans/${id}/attempts/${attempt}/sdk-cost-estimate`) as Promise<import('./contracts').SDKCostEstimate>;},
   async sdkHistoryLinks(id:number,attempt:number,scanId:string,page=1):Promise<CatalogPage<{execution:import('./contracts').ExecutionRef;scanNo:string;status:string}>>{return http.get(`/scans/${id}/attempts/${attempt}/sdk-history-links`,{params:{scanId,page}}) as Promise<CatalogPage<{execution:import('./contracts').ExecutionRef;scanNo:string;status:string}>>;},
   async attemptResult(id: number, attempt: number): Promise<AttemptResult> { return http.get(`/scans/${id}/attempts/${attempt}/result`) as Promise<AttemptResult>; },
   async scanAttempts(scanId: number): Promise<ScanAttempt[]> { return http.get(`/scans/${scanId}/attempts`) as Promise<ScanAttempt[]>; },

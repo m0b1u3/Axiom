@@ -150,6 +150,16 @@ func ValidateJSON(kind Kind, data []byte, expected *ExecutionRef) error {
 			}
 		}
 	}
+	if kind == KindTokenBudgetAssignment {
+		var v TokenBudgetAssignment
+		if e := json.Unmarshal(data, &v); e != nil {
+			return invalid("invalid_contract", kind)
+		}
+		raw, _ := EncodeJSON(v.PricingSnapshot)
+		if e := ValidateJSON(KindModelPricingSnapshot, raw, &v.Execution); e != nil {
+			return e
+		}
+	}
 	if kind == KindTokenCostEstimate {
 		var v TokenCostEstimate
 		if e := json.Unmarshal(data, &v); e != nil {
@@ -171,6 +181,16 @@ func ValidateJSON(kind Kind, data []byte, expected *ExecutionRef) error {
 	}
 	if kind == KindScanResult || kind == KindProgressSnapshotV2 {
 		if ext, ok := object["extensions"].(map[string]any); ok {
+			if estimate, exists := ext["componentMatchingEstimate"]; exists {
+				raw, _ := json.Marshal(estimate)
+				ref := &ExecutionRef{TaskID: TaskID(execution["taskId"].(string)), Attempt: int64(execution["attempt"].(float64))}
+				if e := ValidateJSON(KindTokenCostEstimate, raw, ref); e != nil {
+					return e
+				}
+				if _, ok := ext["componentScan"].(map[string]any); !ok {
+					return invalid("invalid_contract", kind)
+				}
+			}
 			if usage, exists := ext["executionUsage"]; exists {
 				raw, _ := json.Marshal(usage)
 				ref := &ExecutionRef{TaskID: TaskID(execution["taskId"].(string)), Attempt: int64(execution["attempt"].(float64))}
@@ -243,10 +263,13 @@ func ValidateJSON(kind Kind, data []byte, expected *ExecutionRef) error {
 	if kind == KindSDKNativeResult || kind == KindSDKDiagnostics {
 		expectedNested := &ExecutionRef{TaskID: TaskID(execution["taskId"].(string)), Attempt: int64(execution["attempt"].(float64))}
 		if kind == KindSDKNativeResult {
-			if object["usageEstimate"].(map[string]any)["sdkVersion"] != object["sdkVersion"] {
+			if estimate, ok := object["usageEstimate"].(map[string]any); ok && estimate["sdkVersion"] != object["sdkVersion"] {
 				return invalid("identity_mismatch", kind)
 			}
 			for key, nestedKind := range map[string]Kind{"usageEstimate": KindSDKCostEstimate, "diagnostics": KindSDKDiagnostics} {
+				if key == "usageEstimate" && object[key] == nil {
+					continue
+				}
 				raw, _ := json.Marshal(object[key])
 				if err := ValidateJSON(nestedKind, raw, expectedNested); err != nil {
 					return err

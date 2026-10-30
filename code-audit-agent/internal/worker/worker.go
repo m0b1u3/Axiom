@@ -37,6 +37,7 @@ func (w *Worker) Run(ctx context.Context) error {
 	}
 	client.SDKDeepResumeVersion = capabilities.DeepResumeVersion
 	client.SDKConcurrencyVersion = capabilities.ConcurrencyVersion
+	client.TokenBudgetVersion = capabilities.TokenBudgetVersion
 	client.SDKParametersVersion = capabilities.ParametersVersion
 	client.SDKIdentityVersion = capabilities.IdentityVersion
 	client.InputCapabilities = &capabilities.Input
@@ -250,7 +251,7 @@ func (w *Worker) execute(ctx context.Context, c *execution.Client, lease *execut
 				if a.Credential.Present {
 					overrides[a.Credential.Value.EnvName] = a.Credential.Value.Value
 				}
-				result, err = scanner.Run(runCtx, scanner.Request{DeepResumeContext: lease.DeepResumeContext, DeepResume: lease.DeepResume, SDKParameters: lease.SDKParameters, SDKIdentity: lease.SDKIdentity, DataDir: w.Cfg.DataDir, AgentID: w.Cfg.AgentID, ComponentScan: lease.ComponentScan, ComponentPlanning: lease.ComponentPlanning, GitTarget: gitTargetFromLease(lease), SDKOperation: lease.SDKOperation, ParentState: parentStateFromLease(lease), ScanInput: scanInputFromLease(lease), ObservationContractVersion: task.ObservationContractVersion, ResultContractVersion: task.ResultContractVersion, Job: job, TaskID: task.NumericTaskID(), Attempt: int(task.Execution.Attempt), OutputPath: task.OutputPath, Provider: string(a.Model.ProviderID), ScannerDir: w.Cfg.ScannerDir, NodePath: w.Cfg.NodePath, EnvOverrides: overrides, Mock: os.Getenv("AXIOM_SCAN_MOCK") == "1"})
+				result, err = scanner.Run(runCtx, scanner.Request{TokenBudget: lease.TokenBudget, DeepResumeContext: lease.DeepResumeContext, DeepResume: lease.DeepResume, SDKParameters: lease.SDKParameters, SDKIdentity: lease.SDKIdentity, DataDir: w.Cfg.DataDir, AgentID: w.Cfg.AgentID, ComponentScan: lease.ComponentScan, ComponentPlanning: lease.ComponentPlanning, GitTarget: gitTargetFromLease(lease), SDKOperation: lease.SDKOperation, ParentState: parentStateFromLease(lease), ScanInput: scanInputFromLease(lease), ObservationContractVersion: task.ObservationContractVersion, ResultContractVersion: task.ResultContractVersion, Job: job, TaskID: task.NumericTaskID(), Attempt: int(task.Execution.Attempt), OutputPath: task.OutputPath, Provider: string(a.Model.ProviderID), ScannerDir: w.Cfg.ScannerDir, NodePath: w.Cfg.NodePath, EnvOverrides: overrides, Mock: os.Getenv("AXIOM_SCAN_MOCK") == "1"})
 			}
 		} else {
 			result, err = w.runLegacy(runCtx, task.Legacy)

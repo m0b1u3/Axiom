@@ -32,7 +32,7 @@ async function main(): Promise<void> {
   if(args['identity-operation']!==undefined){if(Object.keys(args).length!==1)throw new Error('Identity operation cannot be mixed with scans');await (await import('./runtime/sdk-identity.js')).runIdentityOperation(args['identity-operation']);return;}
  let task: ScanTask;
   if(args.job!==undefined) {
-    const extra=Object.keys(args).filter(key=>!['job','mock','describe','identity','sdk-parameters','deep-resume-context','deep-resume'].includes(key));
+    const extra=Object.keys(args).filter(key=>!['job','mock','describe','token-budget','identity','sdk-parameters','deep-resume-context','deep-resume'].includes(key));
     if(extra.length)throw new Error("Scanner job cannot be mixed with legacy scan flags");
     const {loadScannerJob,scanTaskFromJob}=await import("./contract/scanner-job.js");
     task=scanTaskFromJob(await loadScannerJob(args.job));
@@ -94,12 +94,14 @@ async function main(): Promise<void> {
   }
 
   }
+  if(args['token-budget']!==undefined){if(args.job===undefined)throw new Error('Token budgets require a versioned job');await (await import('./runtime/token-budget.js')).loadTokenBudget(args['token-budget'],task);}
   if(args['sdk-parameters']!==undefined){if(args.job===undefined)throw new Error('SDK parameters require a versioned job');await (await import('./runtime/sdk-parameters.js')).loadSDKParameters(args['sdk-parameters'],task);}
  await (await import('./runtime/deep-resume.js')).loadDeepSidecars(args['deep-resume-context'],args['deep-resume'],task);
  if(args['identity']!==undefined){if(args.job===undefined)throw new Error('SDK identity requires a versioned job');await (await import('./runtime/sdk-identity.js')).loadTaskIdentity(args['identity'],task);}
  // Resolve and validate input before loading the SDK or creating its state.
   const {validateScanTask}=await import("./contract/validate-task.js");
   validateScanTask(task);
+  await (await import('./runtime/sdk-runtime.js')).bindSDKRuntime(task);
   const entryDirectory = process.cwd();
   const restoreWorkingDirectory = await enterSDKWorkingDirectory(task.deepResume?(await import('./runtime/deep-resume.js')).originOutput(task.outputPath,task.deepResume.inspection.origin.attempt):task.outputPath);
   const { CodexSecurityEngine, SCAN_EXIT_CODES } = await import("./engine/codex-security-engine.js");

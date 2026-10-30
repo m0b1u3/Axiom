@@ -62,6 +62,18 @@ class SourceDeliveryGuards(unittest.TestCase):
         self.assertEqual({item["path"] for item in data["files"]}, {"VERSION", "README.md", retained})
         verify(self.base/"export")
 
+    def test_upstream_sdk_restoration_bytes_survive_without_private_or_generated_files(self):
+        retained = "deploy/sdk/upstream/@openai/codex-security/dist/config.js"
+        self.put(retained, "// original upstream bytes\n")
+        for name in ("deploy/sdk/upstream/unreviewed/dist/config.js",
+                     "deploy/sdk/upstream/@openai/codex-security/auth.json",
+                     "deploy/sdk/upstream/@openai/codex-security/dist/private.key",
+                     "code-audit-scanner/node_modules/@axiom/codex-security-compat-v1/dist/config.js"):
+            self.put(name, "private or generated fixture")
+        data = export(self.root, self.base/"export")
+        self.assertEqual({entry["path"] for entry in data["files"]}, {"VERSION", "README.md", retained})
+        verify(self.base/"export")
+
     def test_identity_credentials_browser_state_and_database_sidecars_are_excluded(self):
         for name in [".sdk-identities/agent/identity/credential", "state/.sdk-identities/private.json",
                      ".playwright-cli/page.yml", "auth.json", ".npmrc", ".netrc", "id_rsa", "id_ed25519",

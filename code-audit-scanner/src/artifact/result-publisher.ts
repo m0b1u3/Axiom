@@ -32,6 +32,7 @@ export function contractResult(task:ScanTask,legacy:LegacyResult,artifacts:Artif
   else if(['failed','canceled','timeout'].includes(result.status))result.error=contractError(result.status==='failed'?'unknown':result.status,'SDK returned '+result.status);
   // Enrichment is optional even before the first core-contract validation.
   if(task.deepResume)result.extensions={...result.extensions,deepResume:jsonObject(task.deepResume)};
+  if(task.sdkRuntime)result.extensions={...result.extensions,sdkRuntime:jsonObject(task.sdkRuntime)};
   if(task.sdkIdentity)result.extensions={...result.extensions,sdkIdentity:jsonObject(task.sdkIdentity)};
  const git=gitEvidenceBinding(task);if(git){if(!task.sdkOperation&&(["completed","partial"].includes(result.status)||result.findings.length>0))assertGitSDKResult(task,legacy.sdkRaw);result.extensions={...result.extensions,gitDiff:jsonObject(git)};}
   if(Buffer.byteLength(JSON.stringify(result))>COMPATIBILITY.limits.documentBytes-65536){for(const f of result.findings){if(f.extensions?.axiomEvidence){delete f.extensions.axiomEvidence;f.extensions.axiomEvidenceUnavailable='图谱投影超过结果容量；完整原始证据仍可读取。';}}}
@@ -67,8 +68,9 @@ function contractFinding(f:LegacyFinding,task:ScanTask):Finding {
 }
 
 export async function publishResult(task:ScanTask,legacy:LegacyResult):Promise<ScanResult> {
-  const result=contractResult(task,legacy,await artifactReferences(task.outputPath,legacy.rawArtifactDir),await installedPatchRevision());
+  const result=contractResult(task,legacy,await artifactReferences(task.outputPath,legacy.rawArtifactDir),await installedPatchRevision(task));
   if(legacy.executionUsage){validate('ExecutionTokenUsage',legacy.executionUsage,result.execution);result.extensions={...result.extensions,executionUsage:jsonObject(legacy.executionUsage)};}
+  if(legacy.componentMatchingEstimate){validate('TokenCostEstimate',legacy.componentMatchingEstimate,result.execution);result.extensions={...result.extensions,componentMatchingEstimate:jsonObject(legacy.componentMatchingEstimate)};}
   if(legacy.sdkSession){const summary={...legacy.sdkSession,journal:result.artifacts.find(a=>a.relativePath==='logs/sdk-session-events.jsonl')??null};if(summary.persistedCount&&!summary.journal){summary.state='incomplete';summary.reason='已记录的会话日志未随本次结果归档，完整性无法确认。';}validate('SDKSessionSummary',summary,result.execution);result.extensions={...result.extensions,sdkSession:jsonObject(summary)};}
   if(legacy.interimReviewOutcome){validate('InterimReviewOutcome',legacy.interimReviewOutcome,result.execution);result.extensions={...result.extensions,interimReviewOutcome:legacy.interimReviewOutcome};}
   if(legacy.sdkOperation){validate('SDKOperationResult',legacy.sdkOperation,result.execution);result.extensions={...result.extensions,sdkOperation:jsonObject(legacy.sdkOperation)};}
@@ -85,9 +87,6 @@ export async function publishResult(task:ScanTask,legacy:LegacyResult):Promise<S
   // not turn an otherwise valid full result into an oversized failed scan.
   if(bytes.length>budget&&native.repositoryHistory.records.length){
     native.repositoryHistory={state:'invalid',records:[],reason:'结构化历史超过结果展示容量；完整原生历史仍保留在 SDK JSON。'};bytes=serialize();
-  }
-  if(bytes.length>budget&&native.usageEstimate.usage!==null){
-    native.usageEstimate.usage=null;native.usageEstimate.reason='补充用量依据超过展示容量；完整原始用量仍保留在 SDK JSON。';bytes=serialize();
   }
   while(bytes.length>budget&&native.diagnostics.entries.length){native.diagnostics.entries.shift();native.diagnostics.omittedCount++;bytes=serialize();}
   if(bytes.length>budget&&baseBytes<=budget){
@@ -135,7 +134,7 @@ async function artifactReferences(output:string,rawRelative:string):Promise<Arti
     }
   }
   await visit(rawRelative);
-  for(const journal of ['logs/sdk-diagnostics.jsonl','logs/sdk-session-events.jsonl']){
+  for(const journal of ['logs/sdk-diagnostics.jsonl','logs/sdk-session-events.jsonl','logs/sdk-runtime.json']){
   const info=await lstat(path.join(output,journal)).catch(()=>null);
   if(info){
     if(!info.isFile()||info.isSymbolicLink()){if(journal==='logs/sdk-session-events.jsonl'){process.stderr.write('scan-warning session journal not archived: not a regular file\n');continue;}throw new Error('SDK diagnostic journal must be a regular file');}
@@ -148,13 +147,14 @@ async function artifactReferences(output:string,rawRelative:string):Promise<Arti
 }
 
 let patchRevision:Promise<string|null>|undefined;
-function installedPatchRevision():Promise<string|null>{
+function installedPatchRevision(task:ScanTask):Promise<string|null>{
+  if(task.sdkRuntime?.id!=='legacy-v1')return Promise.resolve(null);
   return patchRevision??= (async()=>{
     try{
       const raw=await readFile(new URL('../../../deploy/sdk/manifest.json',import.meta.url));
       const manifest=JSON.parse(raw.toString()) as {patches:Array<{path:string;after:string}>};
       for(const patch of manifest.patches){
-        const bytes=await readFile(new URL('../../node_modules/'+patch.path,import.meta.url));
+        const bytes=await readFile(new URL('../../node_modules/@axiom/codex-security-compat-v1/'+patch.path.slice('@openai/codex-security/'.length),import.meta.url));
         if(createHash('sha256').update(bytes).digest('hex')!==patch.after)return null;
       }
       return 'sha256:'+createHash('sha256').update(raw).digest('hex');

@@ -2,7 +2,8 @@
 import {computed,onMounted,onUnmounted,ref,watch} from 'vue';
 import {useRoute,useRouter} from 'vue-router';
 import {api} from '../api';import type {SDKIdentitySnapshot,SDKIdentityOperation} from '../contracts';
-import {checkedIdentities,checkedIdentityOperations,identityState,identityOperationState} from '../utils/sdk-identities';
+import {checkedIdentities,checkedIdentityOperations,identityState,identityOperationState,usableIdentity} from '../utils/sdk-identities';
+import SDKAccountScanSetup from './SDKAccountScanSetup.vue';
 import {useAuth} from '../composables/auth';import {absoluteTime} from '../utils/time';
 import type {AgentPresence} from '../types';
 import Button from './ui/Button.vue';import Input from './ui/Input.vue';import Select from './ui/Select.vue';import {confirm} from './ui/confirm';
@@ -10,7 +11,7 @@ import '../styles/security.css';
 const props=defineProps<{identityId?:string;agentId?:string}>();const route=useRoute(),router=useRouter();
 const identityAction:Record<SDKIdentityOperation['action'],string>={login_api_key:'API Key 登录',login_device_code:'ChatGPT 设备码登录',account:'查询账户',logout:'退出授权账户'};
 const operationState=(status:SDKIdentityOperation['status'])=>status==='queued'?'等待执行位置':identityOperationState[status];
-const {canAdmin}=useAuth();const items=ref<SDKIdentitySnapshot[]>([]),operations=ref<SDKIdentityOperation[]>([]),selected=ref(''),name=ref(''),agent=ref(/^[A-Za-z0-9_-]{1,128}$/.test(props.agentId??'')?props.agentId!:''),kind=ref('chatgpt'),key=ref(''),loading=ref(false),busy=ref(false),error=ref(''),operationError=ref('');
+const {canAdmin,canOperate}=useAuth();const items=ref<SDKIdentitySnapshot[]>([]),operations=ref<SDKIdentityOperation[]>([]),selected=ref(''),name=ref(''),agent=ref(/^[A-Za-z0-9_-]{1,128}$/.test(props.agentId??'')?props.agentId!:''),kind=ref('chatgpt'),key=ref(''),loading=ref(false),busy=ref(false),error=ref(''),operationError=ref('');
 const locations=ref<AgentPresence[]>([]),locationsLoading=ref(false),locationError=ref('');
 const locationOptions=computed(()=>{const options=locations.value.slice().sort((a,b)=>a.agentId.localeCompare(b.agentId)).map(item=>({value:item.agentId,label:item.agentId+' · '+(item.online?'在线':'离线')}));if(agent.value&&!options.some(item=>item.value===agent.value))options.unshift({value:agent.value,label:agent.value+' · 未上报'});return options});
 async function loadLocations(){if(locationsLoading.value)return;locationsLoading.value=true;locationError.value='';try{locations.value=(await api.queueOverview()).agents;if(!agent.value&&locations.value.length===1)agent.value=locations.value[0]!.agentId}catch(e){locationError.value='执行位置读取失败：'+(e as Error).message}finally{locationsLoading.value=false}}
@@ -50,6 +51,7 @@ async function tick(){await load();if(!disposed)timer=setTimeout(tick,2500)}onMo
     <h3>{{current.identity.name}}</h3><p>{{identityState[current.state]}}</p>
     <dl><dt>最近核对</dt><dd>{{current.checkedAt?absoluteTime(current.checkedAt):'尚未核对'}}</dd><dt>退出清理</dt><dd>{{current.cleanupPending?'等待执行位置确认；已禁止新任务使用':'无待完成清理'}}</dd></dl>
     <RouterLink :to="{path:'/settings',query:{section:'diagnostics',identity:current.identity.id}}">查看此账户的高级诊断</RouterLink>
+    <SDKAccountScanSetup v-if="canOperate&&usableIdentity(current)" :key="current.identity.id" :identity="current" :disabled="busy||!!active||!!error"/>
     <template v-if="canAdmin">
      <form v-if="current.identity.kind==='api_key'&&current.state!=='revoked'" @submit.prevent="action('login_api_key')"><label for="sdk-key">此账户的 API Key<Input id="sdk-key" v-model="key" type="password" autocomplete="new-password" :disabled="busy||!!active" maxlength="8192"/></label><Button type="submit" :disabled="busy||!!active||!key">保存并登录 API Key</Button></form>
      <div class="identity-actions"><Button v-if="current.identity.kind==='chatgpt'&&current.state!=='revoked'" :disabled="busy||!!active" @click="action('login_device_code')">开始 ChatGPT 设备码登录</Button><Button variant="outline" :disabled="busy||!!active||current.state==='revoked'" @click="action('account')">查询账户状态</Button><Button variant="outline" :disabled="busy||(active?.action==='logout')||(current.state==='revoked'&&!current.cleanupPending)" @click="action('logout')">{{current.state==='revoked'?'重试退出清理':'撤销并退出'}}</Button></div>

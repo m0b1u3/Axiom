@@ -20,6 +20,7 @@ var ErrCompletionConflict = errors.New("completion content conflicts with the ar
 var ErrInvalidResult = errors.New("invalid execution result")
 
 type ClaimLimits struct {
+	TokenBudgetCapable    bool
 	SDKDeepResumeCapable  bool
 	SDKConcurrencyCapable bool
 	SDKParametersCapable  bool
@@ -169,7 +170,8 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 		runtimeAPI = int(runtime.ControlAPI)
 		limits.SDKConcurrencyCapable = limits.SDKConcurrencyCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKConcurrency(*runtime.ScannerDescriptionVersion)
 		limits.SDKParametersCapable = limits.SDKParametersCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKParameters(*runtime.ScannerDescriptionVersion)
-		limits.SDKDeepResumeCapable = limits.SDKDeepResumeCapable && runtime.ScannerDescriptionVersion != nil && *runtime.ScannerDescriptionVersion == 14
+		limits.TokenBudgetCapable = limits.TokenBudgetCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsTokenBudget(*runtime.ScannerDescriptionVersion)
+		limits.SDKDeepResumeCapable = limits.SDKDeepResumeCapable && runtime.ScannerDescriptionVersion != nil && (*runtime.ScannerDescriptionVersion == 14 || *runtime.ScannerDescriptionVersion == 15)
 		limits.SDKIdentityCapable = limits.SDKIdentityCapable && runtime.ScannerDescriptionVersion != nil && contracts.DescriptionSupportsSDKIdentity(*runtime.ScannerDescriptionVersion)
 	}
 	if runtimeSeen == nil || now.Sub(*runtimeSeen) >= 30*time.Second {
@@ -177,6 +179,7 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
 		limits.SDKIdentityCapable = false
 		limits.SDKParametersCapable = false
 		limits.SDKConcurrencyCapable = false
+		limits.TokenBudgetCapable = false
 	}
 	caps := control.Capabilities{SDKConcurrency: limits.SDKConcurrencyCapable, SDKParameters: limits.SDKParametersCapable, Input: capabilities, Result: results, Observation: observations}
 	filters := []string{}
@@ -199,6 +202,7 @@ func (s *Store) ClaimExecutionWithObservations(ctx context.Context, agent string
  AND (NOT EXISTS(SELECT 1 FROM task_scan_inputs si WHERE si.task_id=t.id) OR ?)
  AND ((t.max_cost_usd IS NULL AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL)) OR (t.input_contract_version IN (1,2,3,4,5,6) AND ?))
  AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL AND (EXISTS(SELECT 1 FROM task_cost_attempts c WHERE c.task_id=t.id AND c.state='unknown') OR COALESCE((SELECT SUM(c.booked_micros) FROM task_cost_attempts c WHERE c.task_id=t.id),0)>=b.total_micros))
+ AND ((t.max_cost_usd IS NULL AND NOT EXISTS(SELECT 1 FROM task_budgets b WHERE b.task_id=t.id AND b.total_micros IS NOT NULL)) OR `+fmt.Sprint(limits.TokenBudgetCapable)+`)
  ORDER BY t.queued_at,t.id LIMIT 1 FOR UPDATE OF t SKIP LOCKED`, stamp, limits.SDKIdentityCapable, agent, stamp, agent, containsJob4(observations), capabilities.MaxCostUSD).Scan(&id, &attempt, &previous)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, tx.Commit()

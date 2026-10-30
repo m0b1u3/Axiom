@@ -49,7 +49,7 @@ func TestDeepResumePipeline(t *testing.T) {
 	if _, e = s.EnsureAdministrator(t.Context(), "input-fixture-admin", auth.HashPassword(secret, "fixture-password")); e != nil {
 		t.Fatal(e)
 	}
-	limits := store.ClaimLimits{Lease: time.Minute, OutputRoot: filepath.Join(scratch, "scans"), MaxRecoveries: 0, SDKDeepResumeCapable: true, SDKConcurrencyCapable: true}
+	limits := store.ClaimLimits{Lease: time.Minute, OutputRoot: filepath.Join(scratch, "scans"), MaxRecoveries: 0, SDKDeepResumeCapable: true, SDKConcurrencyCapable: true, TokenBudgetCapable: true}
 	srv := &httpserver.Server{Store: s, Secret: secret, AgentToken: agentToken, SnapshotDir: filepath.Join(scratch, "uploads"), QueueLimits: limits}
 	api := srv.Routes()
 	dist := filepath.Join(root, "code-audit-web/dist")
@@ -85,7 +85,7 @@ func TestDeepResumePipeline(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	model, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixtures / Mock Deep", Provider: "openai", Model: "gpt-6-sol", ApiKeyEncrypted: encrypted})
+	model, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixtures / Mock Deep", Provider: "openai", Model: "gpt-6-sol", ApiKeyEncrypted: encrypted})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -93,7 +93,7 @@ func TestDeepResumePipeline(t *testing.T) {
 	results := contracts.ResultCapabilities{JobVersions: []int64{2}, ResultVersions: []int64{1}, CompletionVersions: []int64{1}, CommitVersions: []int64{1}}
 	observations := contracts.ObservationCapabilities{JobVersions: []int64{3}, ProgressVersions: []int64{2}, EventVersions: []int64{2}, HeartbeatVersions: []int64{1}}
 	node := "fixture-input-agent"
-	version := int64(14)
+	version := int64(15)
 	build := "fixture-deep-scanner"
 	report := func() {
 		t.Helper()

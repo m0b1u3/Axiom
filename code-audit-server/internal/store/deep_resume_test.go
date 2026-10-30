@@ -235,6 +235,8 @@ func TestDeepResumeRemainingBudgetAndProbeFailure(t *testing.T) {
 	if e := s.ResumeDeepScan(t.Context(), task.ID, deepAction(v)); e != nil {
 		t.Fatal(e)
 	}
+	limits.TokenBudgetCapable = true
+	deepRuntime(t, s, task.AgentID, 15)
 	input, result := modernCaps()
 	next, e := s.ClaimExecutionWithObservations(t.Context(), task.AgentID, limits, input, result, observationCaps())
 	if e != nil || next == nil || next.ExecutionMaxCostUSD == nil || *next.ExecutionMaxCostUSD != 1.5 || *next.MaxCostUSD != 2 {

@@ -23,7 +23,7 @@ func TestPostgresNativeConcurrencyDispatch(t *testing.T) {
 	input := contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{1}, JobVersions: []contracts.SchemaVersion{1}, MaxCostUSD: true}
 	result := contracts.ResultCapabilities{JobVersions: []int64{2}, ResultVersions: []int64{1}, CompletionVersions: []int64{1}, CommitVersions: []int64{1}}
 	observation := contracts.ObservationCapabilities{JobVersions: []int64{3, 4, 8}, ProgressVersions: []int64{2}, EventVersions: []int64{2}, HeartbeatVersions: []int64{1}}
-	limits := ClaimLimits{Lease: time.Minute, OutputRoot: t.TempDir(), MaxRecoveries: 2, SDKConcurrencyCapable: true}
+	limits := ClaimLimits{Lease: time.Minute, OutputRoot: t.TempDir(), MaxRecoveries: 2, SDKConcurrencyCapable: true, TokenBudgetCapable: true}
 	node := "fixture-native-node"
 	if e = s.ReportAgentWithObservations(ctx, node, 129, input, result, observation); e != nil {
 		t.Fatal(e)
@@ -88,7 +88,7 @@ func TestPostgresNativeConcurrencyDispatch(t *testing.T) {
 		if e != nil || len(overview.Tasks) != 1 || overview.Tasks[0].Reason != "sdk_concurrency_incompatible" {
 			t.Fatal("missing compatibility diagnosis", e, overview.Tasks)
 		}
-		report(12, false)
+		report(15, false)
 		claimed, e := s.ClaimExecutionWithObservations(ctx, node, limits, input, result, observation)
 		if e != nil || claimed == nil || claimed.ID != id || claimed.TimeoutMinutes != 47 || *claimed.MaxCostUSD != 3 || claimed.IncludePaths != task.IncludePaths || claimed.PolicySnapshotJSON != task.PolicySnapshotJSON {
 			t.Fatal("native values or operator boundaries changed", kind, claimed, e)

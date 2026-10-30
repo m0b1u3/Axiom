@@ -103,6 +103,8 @@ export class InterimFindings {
   try{this.save('sessions/'+input.threadId+'/conclusion.txt',Buffer.from(p.last_agent_message),'worker_message',null,input.threadId);this.flush();}catch{this.warningOnce();}
  }
  importSavedConclusions(){
+  // Read-only compatibility for the retired second session journal. New runs
+  // consume native checkpoints and SDKSessionJournal callbacks instead.
   const rel='checkpoints/evidence.jsonl',file=path.join(this.output,rel);
   if(!existsSync(file))return;
   if(!regular(this.output,rel)||lstatSync(file).size>10*1024*1024){this.issue('历史会话证据超过读取边界或身份不明；原始会话仍保留。');this.flush();return;}

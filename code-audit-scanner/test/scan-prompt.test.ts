@@ -11,12 +11,19 @@ test("always requires Simplified Chinese output", () => {
   assert.match(prompt, /漏洞标题必须是中文/);
 });
 
+test('audit orchestration and checkpoint policy belong to the SDK workflow',()=>{
+ const prompt=buildScanPrompt();
+ assert.match(prompt,/子任务编排、检查点与完成判定遵循当前 SDK 原生工作流/);
+ assert.doesNotMatch(prompt,/wait_agent|artifacts\/checkpoints|最多请求该子任务补交一次/);
+});
+
 test("uses the 0.5 guidance helper without requesting removed Python helpers", () => {
   const prompt = buildScanPrompt();
   assert.match(prompt, /launch_codex_security_mcp --helper resolve-security-md/);
   assert.doesNotMatch(prompt, /config_preflight\.py|resolve_security_md\.py/);
   assert.match(prompt, /优先复用宿主/);
-  assert.match(prompt, /不要逐行切片阅读/);
+  assert.match(prompt, /按指定行范围精确提取/);
+  assert.match(prompt, /不得去缩进、截句、省略或改写/);
 });
 
 test("stacks selected focus segments and ignores duplicates", () => {

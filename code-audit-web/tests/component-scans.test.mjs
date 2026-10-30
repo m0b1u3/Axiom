@@ -18,3 +18,13 @@ test('unknown costs and invalid finding/version bindings never become zero or ev
  assert.equal(componentMoney(null),'未知');assert.equal(componentMoney(0),'0');assert.equal(componentMoney(125000),'0.125');const b=await fixture('component-finding-binding');assert.ok(componentBinding(b));assert.equal(componentBinding({...b,versionSha256:'not-a-digest'}),null);
  const result=await fixture('component-scan-result');assert.ok(componentResult(result));result.snapshot.matching.costState='known';assert.equal(componentResult(result),null);
 });
+
+test('matching estimates are optional for history and strictly bound to the displayed execution',async()=>{
+ const result=await fixture('component-scan-result');result.request.execution.taskId='42';result.snapshot.execution.taskId='42';
+ const ref=result.request.execution,estimate=await fixture('token-cost-estimated');estimate.execution={...ref};estimate.pricingSnapshot.execution={...ref};estimate.usage.execution={...ref};
+ const value={request:result.request,attempts:[{request:result.request,snapshot:result.snapshot,status:'completed',matchingEstimate:estimate}]};
+ assert.equal(checkedComponentExecutions(value,42).attempts[0].matchingEstimate.status,'estimated');
+ const partial=structuredClone(value);partial.attempts[0].matchingEstimate.status='partial';partial.attempts[0].matchingEstimate.usage.complete=false;partial.attempts[0].matchingEstimate.reason='usage_incomplete';assert.equal(checkedComponentExecutions(partial,42).attempts[0].matchingEstimate.status,'partial');
+ for(const mutate of [v=>v.attempts[0].matchingEstimate.execution.attempt++,v=>v.attempts[0].matchingEstimate.pricingSnapshot.execution.taskId='99',v=>v.attempts[0].matchingEstimate.usage.execution.attempt++,v=>v.attempts[0].matchingEstimate.status='unknown']){const bad=structuredClone(value);mutate(bad);assert.throws(()=>checkedComponentExecutions(bad,42));}
+ const history=structuredClone(value);delete history.attempts[0].matchingEstimate;assert.equal(checkedComponentExecutions(history,42).attempts[0].matchingEstimate,undefined,'old unknown fees are never backfilled');
+});

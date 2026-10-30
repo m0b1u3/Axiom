@@ -11,6 +11,7 @@
 
 import type { JsonObject } from "@openai/codex-security";
 import {fileURLToPath} from "node:url";
+import {sdkRuntimeId} from '../runtime/sdk-runtime.js';
 import type { ScanProvider, ScanTask } from "../contract/scan-task.js";
 
 export type ProviderId = ScanProvider;
@@ -217,10 +218,9 @@ export function buildModelCatalog(task: ScanTask): JsonObject {
       support_verbosity: false,
       supports_image_detail_original: false,
       supports_search_tool: false,
-      // 第三方 Responses provider（DeepSeek 等）会丢弃 MultiAgentV2 的
-      // encrypted_content 子代理载荷 → 空 fork。强制 V1：子代理任务以明文
-      // 投递、fork_context:false 等价 V2 的 fork_turns:"none"（issue #36586）。
-      multi_agent_version: "v1",
+      // V1 is scoped to an explicitly selected compatibility connection. Native
+      // GPT and other connections retain the SDK's V2 tool surface.
+      multi_agent_version: sdkRuntimeId(task)==='legacy-v1'?'v1':'v2',
     })),
   };
 }

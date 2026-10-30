@@ -19,7 +19,7 @@ func runNativeSDKAcceptance(t *testing.T, s *store.Store, agent, root, url, toke
 	}
 	ids := map[string]int64{}
 	var seed *store.Task
-	for _, scenario := range []string{"native-rich", "native-zero", "native-unknown", "native-no-exports", "native-bad-sarif", "native-bad-history", "native-old", "native-future"} {
+	for _, scenario := range []string{"native-rich", "native-zero", "native-unknown", "native-no-exports", "native-bad-sarif", "native-bad-history", "native-old", "native-future", "native-historical-estimate"} {
 		t.Run(scenario, func(t *testing.T) {
 			t.Setenv("AXIOM_RESULT_TEST_SCENARIO", scenario)
 			body := map[string]any{"sourceSnapshotId": snapshot, "modelConfigId": cfg.ID}
@@ -61,21 +61,19 @@ func runNativeSDKAcceptance(t *testing.T, s *store.Store, agent, root, url, toke
 			if e != nil || native == nil {
 				t.Fatal(e)
 			}
-			if native.UsageEstimate.Execution != archive.Result.Execution || native.ScanID == nil {
+			if native.ScanID == nil {
 				t.Fatal("native identity lost")
 			}
 			code, raw := getJSON(t, url+fmt.Sprintf("/api/v1/scans/%d/attempts/1/sdk-cost-estimate", task.ID), token)
-			if code != 200 {
-				t.Fatal(code, string(raw))
+			if scenario == "native-historical-estimate" {
+				if code != 200 || native.UsageEstimate == nil || native.UsageEstimate.EstimatedUSD == nil || *native.UsageEstimate.EstimatedUSD != 0.00034 {
+					t.Fatal("historical SDK estimate was lost or recalculated", code, string(raw))
+				}
+			} else if code != 410 || native.UsageEstimate != nil {
+				t.Fatal("new SDK estimate was generated", code, string(raw))
 			}
-			var estimated struct {
-				Data contracts.SDKCostEstimate `json:"data"`
-			}
-			if e = json.Unmarshal(raw, &estimated); e != nil {
-				t.Fatal(e)
-			}
-			if archive.Result.Cost.Value == nil || *archive.Result.Cost.Value.EstimatedUSD != 1.125 {
-				t.Fatal("usage estimate changed the scan cost ledger")
+			if archive.Result.Cost.Value != nil {
+				t.Fatal("new result used a native SDK price")
 			}
 			switch scenario {
 			case "native-rich":
@@ -91,11 +89,11 @@ func runNativeSDKAcceptance(t *testing.T, s *store.Store, agent, root, url, toke
 				}
 				seed = current
 			case "native-zero":
-				if estimated.Data.EstimatedUSD == nil || *estimated.Data.EstimatedUSD != 0 {
+				if native.UsageEstimate != nil {
 					t.Fatal("known zero became unknown")
 				}
 			case "native-unknown":
-				if estimated.Data.EstimatedUSD != nil || native.RepositoryHistory.State != "not_reported" {
+				if native.UsageEstimate != nil || native.RepositoryHistory.State != "not_reported" {
 					t.Fatal("unknown became known")
 				}
 			case "native-no-exports":

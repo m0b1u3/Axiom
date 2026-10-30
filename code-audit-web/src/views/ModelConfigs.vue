@@ -6,6 +6,7 @@ const pricingRevision=ref(0);
 import { useAuth } from "../composables/auth";
 const { canAdmin } = useAuth();
 import { computed, h, onMounted, reactive, ref } from "vue";
+import {useRoute,useRouter} from 'vue-router';
 import { Plus, Trash2, Pencil, Plug, SlidersHorizontal, ChevronDown, Eye, EyeOff, Check, Cpu, Search, Lock } from "lucide-vue-next";
 import type { ColumnDef } from "@tanstack/vue-table";
 import { api, type ModelConfig, type ModelConfigPayload, type ProviderPreset } from "../api";
@@ -25,6 +26,8 @@ import iconQwen from "../assets/providers/qwen.svg";
 import iconZhipu from "../assets/providers/zhipu.svg";
 import iconOpenai from "../assets/providers/openai.svg";
 withDefaults(defineProps<{embedded?:boolean}>(),{embedded:false});
+const route=useRoute(),router=useRouter();
+const setupIdentityId=ref('');
 
 /* 品牌图标（cc-switch 同款 SVG）；custom/未知 → lucide Plug */
 const ICONS: Record<string, string> = {
@@ -125,6 +128,7 @@ function pickPreset(key: string): void {
   const next = presets.value.find((x) => x.key === key);
   const nameIsPreset = !form.name.trim() || form.name.trim() === (prev?.label ?? "");
   form.provider = key;
+  if(key!=='openai'){form.sdkIdentityOnly=false;setupIdentityId.value='';}
   fetchedModels.value = [];
   probeResult.value = null;
   if (editing.value) return;
@@ -137,6 +141,7 @@ function pickPreset(key: string): void {
 /* 「获取模型列表」：服务端代理 GET {modelsUrl}，用表单里的 key（编辑时可复用已存 key） */
 async function fetchModelList(): Promise<void> {
   if (fetchingModels.value) return;
+  if (form.sdkIdentityOnly) return;
   if (!form.provider) {
     message.warning("请先选择供应商");
     return;
@@ -191,6 +196,7 @@ async function loadPresets(): Promise<void> {
 }
 
 function openCreate(): void {
+  setupIdentityId.value='';
   formError.value = "";
   showKey.value = false;
   editing.value = false;
@@ -204,6 +210,7 @@ function openCreate(): void {
 }
 
 function openEdit(row: ModelConfig): void {
+  setupIdentityId.value='';
   formError.value = "";
   showKey.value = false;
   editing.value = true;
@@ -260,12 +267,14 @@ async function save(): Promise<void> {
  reasoningEffort:form.reasoningEffort==="sdk-default"?"":form.reasoningEffort,
       ...(form.apiKey ? { apiKey: form.apiKey } : {}),
     };
-    if (editing.value) {
-      await api.updateModelConfig(editingId.value, payload);
-    } else {
-      await api.createModelConfig(payload);
-    }
+    const saved = editing.value
+      ? await api.updateModelConfig(editingId.value, payload)
+      : await api.createModelConfig(payload);
     dialogOpen.value = false;
+    if(setupIdentityId.value&&form.sdkIdentityOnly&&!editing.value){
+      await router.push({name:'new-scan',query:{modelConfigId:String(saved.id),sdkIdentityId:setupIdentityId.value}});
+      return;
+    }
     await load();
   } catch (error) {
     formError.value = `模型配置保存失败：${(error as Error).message}`;
@@ -355,9 +364,14 @@ const columns: ColumnDef<ModelConfig>[] = [
   },
 ];
 
-onMounted(() => {
+onMounted(async () => {
   void load();
-  void loadPresets();
+  await loadPresets();
+  if(canAdmin.value&&route.query.setup==='authorized'&&typeof route.query.identity==='string'&&/^[1-9]\d*$/.test(route.query.identity)){
+    const identityId=route.query.identity;
+    openCreate();pickPreset('openai');form.sdkIdentityOnly=true;
+    setupIdentityId.value=identityId;
+  }
 });
 </script>
 
@@ -420,7 +434,7 @@ onMounted(() => {
         </label>
 
         <label v-if="!editing&&form.provider==='openai'" class="field full"><span><input type="checkbox" v-model="form.sdkIdentityOnly" @change="form.apiKey=''"/> 扫描时使用授权账户提供凭据</span><span class="hint">模型只保存型号和接口地址；创建扫描时选择已登录的授权账户。</span></label>
-        <label v-if="!form.sdkIdentityOnly||editing" class="field">
+        <label v-if="!form.sdkIdentityOnly" class="field">
           <span class="lab">API Key <button type="button" class="key-toggle" :aria-label="showKey?'隐藏 API Key':'显示 API Key'" @click="showKey=!showKey"><EyeOff v-if="showKey" :size="14"/><Eye v-else :size="14"/></button></span>
           <div class="inbox">
             <Input
@@ -456,7 +470,7 @@ onMounted(() => {
           <div class="field-row">
             <Input v-model="form.model" placeholder="模型 ID" />
             <DropdownMenu
-              v-if="fetchedModels.length"
+              v-if="!form.sdkIdentityOnly&&fetchedModels.length"
               :items="fetchedModelItems"
               @select="(k: string) => (form.model = k)"
             >
@@ -464,9 +478,10 @@ onMounted(() => {
                 获取列表<ChevronDown :size="13" :stroke-width="2" class="caret" />
               </Button>
             </DropdownMenu>
-            <Button v-else variant="outline" :loading="fetchingModels" @click="fetchModelList">获取列表</Button>
+            <Button v-else-if="!form.sdkIdentityOnly" variant="outline" :loading="fetchingModels" @click="fetchModelList">获取列表</Button>
           </div>
-          <span v-if="presetOf?.modelExamples" class="hint">例如：{{ presetOf.modelExamples }} 等。</span>
+          <span v-if="form.sdkIdentityOnly" class="hint">填写此账户可使用的模型 ID。当前 SDK 不提供授权账户模型列表；保存配置不代表已验证模型访问权限。</span>
+          <span v-else-if="presetOf?.modelExamples" class="hint">例如：{{ presetOf.modelExamples }} 等。</span>
           <span v-else class="hint">填写服务商提供的模型 ID。</span>
         </label>
 
@@ -495,7 +510,7 @@ onMounted(() => {
 
       <template #footer>
         <Button variant="secondary" @click="dialogOpen = false">取消</Button>
-        <Button :loading="saving" @click="save">{{ editing ? "保存" : "添加" }}</Button>
+        <Button :loading="saving" @click="save">{{ setupIdentityId&&form.sdkIdentityOnly ? "保存并配置扫描" : editing ? "保存" : "添加" }}</Button>
       </template>
     </Dialog>
   </div>

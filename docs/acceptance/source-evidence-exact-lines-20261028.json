@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-28",
+  "scope": "Exact source evidence production fix and local real Standard acceptance; no VPS deployment.",
+  "diagnosis": {
+    "priorAttempt": 2,
+    "modelDraftEventSequence": 180,
+    "proof": [
+      {
+        "evidenceIndex": 0,
+        "path": "app.py",
+        "startLine": 32,
+        "presentInModelToolArguments": true
+      },
+      {
+        "evidenceIndex": 2,
+        "path": "README.md",
+        "startLine": 5,
+        "presentInModelToolArguments": true
+      }
+    ],
+    "cause": [
+      "The model-authored entry code omitted the eight-space indentation already in its draft tool arguments.",
+      "The model-authored README code contained only the first sentence of a longer source line.",
+      "SDK native artifacts retained those draft strings; the Axiom source verifier correctly rejected them.",
+      "Axiom scan instructions prohibited per-line slicing and did not specify complete-line preservation."
+    ],
+    "priorArtifactsUnchanged": true
+  },
+  "fix": {
+    "producer": "Read-only source-evidence extract/check helper staged in each execution outside the source snapshot.",
+    "exactExtraction": "Returns complete lines with original indentation and spaces, explicit start/end lines and source file hash.",
+    "preSubmissionCheck": "The model checks the same saved draft object before submitting it to SDK; checker fails nonzero and never rewrites evidence or source.",
+    "guidance": "Require exact full source lines; explanations stay in explanation; preserve SDK artifact schema.",
+    "serverSourceVerifierChanged": false,
+    "serverSourceVerifierSha256": "087c6afd21de5c0ae575f491ed9cb1c68c5f7fdda85fcb56e004fd4d48022c4f",
+    "sdkDependenciesChanged": false,
+    "retryConfigurationChanged": false
+  },
+  "isolation": {
+    "status": "passed",
+    "scannerTests": 18,
+    "scannerBuildAndTypecheck": "passed",
+    "serverEvidenceTests": "passed",
+    "regressions": [
+      "Prior dedented and sentence-only excerpts fail both producer and Server checks.",
+      "Full original source lines pass.",
+      "Changed tokens, incorrect line ranges, unsafe paths, symlinks and oversized source remain rejected.",
+      "Checker leaves input draft bytes unchanged.",
+      "Responses/Schema contract tests pass."
+    ]
+  },
+  "realAcceptance": {
+    "taskId": 1,
+    "attempt": 3,
+    "model": "gpt-6.1-terra",
+    "credentialKind": "chatgpt",
+    "wireApi": "responses",
+    "outputMode": "native_schema",
+    "sdkVersion": "0.5.0",
+    "pluginVersion": "0.1.95",
+    "status": "completed",
+    "startedAt": "2026-10-28T06:41:06Z",
+    "finishedAt": "2026-10-28T06:42:42Z",
+    "durationSeconds": 96,
+    "findingCount": 1,
+    "sourceContentHash": "d8fc8d7e483c2bcdbbd561c6fb31e0cddd7314460c0f2feec3ca66a71ec4f50f",
+    "sourceUnchanged": true,
+    "resultCommitted": true,
+    "preSubmitCheck": {
+      "ok": true,
+      "checked": 2,
+      "diagnostics": []
+    },
+    "preSubmitCheckEventSequence": 187,
+    "draftEvidenceIdenticalToSDKCanonical": true,
+    "reports": [
+      {
+        "kind": "markdown",
+        "sizeBytes": 7840,
+        "sha256": "ed496aebdf931e83c49555d95631028cd903bb5be74b8639238046988aa92ba8",
+        "verified": true
+      },
+      {
+        "kind": "sarif",
+        "sizeBytes": 4508,
+        "sha256": "e4d8b90f8bc589a30532a15cf1903f93a2d647c29d1fd963c7a894df6bb8d259",
+        "verified": true
+      }
+    ],
+    "graph": {
+      "completeness": "complete",
+      "nodes": 9,
+      "edges": 16,
+      "codeEvidence": [
+        {
+          "path": "app.py",
+          "startLine": 26,
+          "endLine": 35,
+          "sourceCheck": "matched"
+        },
+        {
+          "path": "app.py",
+          "startLine": 17,
+          "endLine": 23,
+          "sourceCheck": "matched"
+        }
+      ],
+      "diagnostics": []
+    },
+    "usage": {
+      "cacheWriteInputTokens": 0,
+      "cachedInputTokens": 770048,
+      "complete": true,
+      "execution": {
+        "attempt": 3,
+        "taskId": "1"
+      },
+      "inputTokens": 848419,
+      "outputTokens": 6035,
+      "reasoningOutputTokens": 37,
+      "requestCount": null,
+      "schemaVersion": 1,
+      "source": "sdk_on_usage",
+      "totalTokens": 854454
+    },
+    "sdkSessions": {
+      "received": 198,
+      "persisted": 198
+    },
+    "evidenceRoot": "output/source-evidence-fix-20261028"
+  },
+  "limitations": [
+    "The real model chose two Python code evidence entries; it did not submit the README sentence as code evidence in this run. README full-line extraction and sentence rejection were validated by isolated regressions.",
+    "Source matches confirm quotation identity, not dynamic exploit reproduction.",
+    "Native retries remain permitted; this run did not inject a disconnect to exercise them.",
+    "No separate independent-validation operation or VPS deployment was performed.",
+    "Cost remains unknown; existing unit prices and fee history were not changed."
+  ]
+}

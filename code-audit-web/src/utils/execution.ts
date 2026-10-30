@@ -15,6 +15,7 @@ export function queueForExecution(task:Pick<ScanTask,'id'|'status'|'startedAt'>,
 
 export const queueReasons: Record<string,string> = {
  sdk_concurrency_incompatible:"等待支持 SDK 原生并发参数的配套执行节点，请同步更新 Agent 与 Scanner",
+ token_budget_incompatible:"等待支持配置单价预算控制的配套执行节点",
  sdk_parameters_incompatible:"等待支持推理强度与组件知识、指令的配套执行节点",
  component_scan_incompatible:'等待支持冻结组件审计的配套执行节点',
  git_diff_incompatible:'等待支持冻结 Git 提交差异的配套执行节点',

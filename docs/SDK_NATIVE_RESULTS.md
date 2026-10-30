@@ -1,6 +1,6 @@
 # SDK 原生结果、导出与诊断基线
 
-当前 SDK 为 0.5.0，DeepSeek 小项目已有扫描、原生 Schema 独立复核、归档与图谱的有限真实证据，见 [当前状态](CURRENT_STATUS.md)。迁移 028 的平台单价估算与 SDK 原始费用分别保留，缺失仍未知，详见 [模型计价](MODEL_PRICING.md)。下文保留早期接入时的版本及验收记录。
+当前 SDK 为 0.5.0，DeepSeek 小项目已有扫描、原生 Schema 独立复核、归档与图谱的有限真实证据，见 [当前状态](CURRENT_STATUS.md)。迁移 028 的平台单价估算继续保留。2026-10-28 已在本地移除 SDK 内置单价估算调用、费用回调展示和独立估算入口；新扫描不将 SDK 金额写入平台结果或进度，Token 统计保留。旧费用及原始 SDK 归档仍可读，缺少必要单价或用量时费用未知，详见 [模型计价](MODEL_PRICING.md)。下文保留早期接入时的版本及验收记录。
 
 2026-10-15。固定 SDK 0.1.25 和既有受管理补丁；保留 Go Server + Go Agent + Node Scanner、HTTP、共享产物和 JSONL。所有业务入口在 Web，本批不执行真实审计、SDK 账户登录或外部发布。
 
@@ -32,9 +32,9 @@ Scanner 独立写入 logs/sdk-diagnostics.jsonl，完成前等待写入队列。
 
 旧 ScanEvent v2 禁止新增字段，因此其结构不改写：原事件继续记录警告文本，版本化诊断经 ProgressSnapshot 的扩展、最终结果扩展及上述 JSONL 传递。观察器错误可能影响进度/日志的完整性；终态由实际执行及归档 SDK 结果决定。
 
-## estimateScanCost 用量估算
+## 历史 estimateScanCost 用量估算（已停用）
 
-Scanner 显式调用 SDK 公开的 estimateScanCost(model, usage)，使用 SDK 返回的 turn.model 与 turn.usage。结果在完成时冻结，Web“查看 SDK 用量估算”只读该次归档估算；“重新读取”不会启动 SDK 或模型调用。
+早期 Scanner 曾调用 SDK 公开的 estimateScanCost(model, usage)，使用 SDK 返回的 turn.model 与 turn.usage。该接入现已移除：不再调用函数，不再生成估算，Web 不再提供“SDK 用量估算”及“SDK 回调估算”。新 SDKNativeResult 的 usageEstimate 为 null；旧归档中的对象保持原值，只用于历史读取。
 
 数据注明 SDK 0.1.25、计算方法、返回轮次范围、模型、原始用量和计算时间。已知 0、缺模型、缺用量、不支持的定价/用量格式分别表示。模型不支持时不使用配置模型或当前市场价格猜一个金额。
 
@@ -52,7 +52,7 @@ Scanner 显式调用 SDK 公开的 estimateScanCost(model, usage)，使用 SDK �
 
 ## API
 
-- GET /api/v1/scans/{id}/attempts/{attempt}/sdk-cost-estimate：返回冻结的 SDKCostEstimate；旧结果未提供为 404，不支持的扩展为 409。
+- GET /api/v1/scans/{id}/attempts/{attempt}/sdk-cost-estimate：仅为兼容历史客户端读取已冻结的 SDKCostEstimate，绝不重新计算。新结果未生成 SDK 估算时返回 410；没有原生扩展的旧结果为 404，不支持的扩展为 409。
 - GET /api/v1/scans/{id}/attempts/{attempt}/sdk-history-links?scanId=...&page=1：仅查询归档中引用的原生 ID，按同源码查找，每页 50 条；保留全部候选。
 - 原生产物与诊断日志继续 GET /api/v1/scans/{id}/attempts/{attempt}/artifacts?path=...。
 

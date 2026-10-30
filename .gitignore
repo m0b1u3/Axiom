@@ -55,3 +55,6 @@ code-audit-server/bin/
 !deploy/sdk/overrides/**/dist/**
 !deploy/sdk/legacy/0.1.25/overrides/**/dist/
 !deploy/sdk/legacy/0.1.25/overrides/**/dist/**
+
+!deploy/sdk/upstream/**/dist/
+!deploy/sdk/upstream/**/dist/**

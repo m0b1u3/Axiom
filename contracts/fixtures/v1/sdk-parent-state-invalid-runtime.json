@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "901",
+    "attempt": 1
+  },
+  "sdkVersion": "0.1.25",
+  "scanId": "fixture-scan",
+  "sourceHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "resultSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "sha256": "00cda22c5154db8cb43a2fe5262b83304b8a9905f0ecde0f2b5775c24084f892",
+  "data": "U1FMaXRlIGZvcm1hdCAzAHN5bnRoZXRpYyBjb250cmFjdCBieXRlcyBvbmx5",
+  "runtime": {
+    "id": "unknown-runtime",
+    "fingerprint": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  }
+}

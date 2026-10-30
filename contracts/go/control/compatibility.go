@@ -17,6 +17,7 @@ type Profile struct {
 	Event       int    `json:"event"`
 }
 type Requirements struct {
+	TokenBudget    bool `json:"tokenBudget,omitempty"`
 	SDKConcurrency bool `json:"sdkConcurrency,omitempty"`
 	SDKParameters  bool `json:"sdkParameters,omitempty"`
 	SDKOperation   bool `json:"sdkOperation,omitempty"`
@@ -27,6 +28,7 @@ type Requirements struct {
 	Budget         bool `json:"budget"`
 }
 type Capabilities struct {
+	TokenBudget    bool
 	SDKConcurrency bool
 	SDKParameters  bool
 	Input          contracts.InputCapabilities
@@ -58,6 +60,9 @@ func Missing(v Requirements, c Capabilities) []string {
 		return []string{"task_contract_unsupported"}
 	}
 	missing := []string{}
+	if v.TokenBudget && !c.TokenBudget {
+		missing = append(missing, "token_budget")
+	}
 	if v.SDKConcurrency && !c.SDKConcurrency {
 		missing = append(missing, "sdk_concurrency")
 	}
@@ -100,6 +105,7 @@ type RuntimeReport struct {
 	Runtime contracts.AgentRuntime `json:"runtime"`
 }
 type ServerDescription struct {
+	TokenBudgetVersion    int    `json:"tokenBudgetVersion,omitempty"`
 	SDKDeepResumeVersion  int    `json:"sdkDeepResumeVersion,omitempty"`
 	SDKConcurrencyVersion int    `json:"sdkConcurrencyVersion,omitempty"`
 	TaskDispatch          string `json:"taskDispatch,omitempty"`

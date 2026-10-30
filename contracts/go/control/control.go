@@ -49,6 +49,7 @@ type ContractLease struct {
 	ResultContractVersion int `json:"resultContractVersion"`
 }
 type ObservationClaimRequest struct {
+	TokenBudgetVersion    int `json:"tokenBudgetVersion,omitempty"`
 	SDKDeepResumeVersion  int `json:"sdkDeepResumeVersion,omitempty"`
 	SDKConcurrencyVersion int `json:"sdkConcurrencyVersion,omitempty"`
 	SDKParametersVersion  int `json:"sdkParametersVersion,omitempty"`
@@ -71,6 +72,7 @@ func ValidDispatchPresence(mode string, slots int) bool {
 }
 
 type ObservationLease struct {
+	TokenBudget          *contracts.TokenBudgetAssignment      `json:"tokenBudget,omitempty"`
 	DeepResumeContext    *contracts.DeepResumeContext          `json:"deepResumeContext,omitempty"`
 	DeepResume           *contracts.DeepResumeAssignment       `json:"deepResume,omitempty"`
 	SDKParametersVersion int                                   `json:"sdkParametersVersion,omitempty"`

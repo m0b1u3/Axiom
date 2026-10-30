@@ -1,10 +1,10 @@
 # Axiom — AI 源代码安全审计一体机
 
-当前使用 **SDK 0.5.0 / Scanner description 14**。参考 VPS 已部署核心工作流和模型计价，保持 **DeepSeek + Responses + 原生 Schema**。当前功能、部署与验收范围统一见 [当前状态](docs/CURRENT_STATUS.md)；旧 SDK 和早期部署记录保留历史语义。
+当前源码使用 **SDK 0.5.0 / Scanner description 15**，参考部署仍为 description 14。参考 VPS 已部署核心工作流和模型计价，保持 **DeepSeek + Responses + 原生 Schema**。当前功能、部署与验收范围统一见 [当前状态](docs/CURRENT_STATUS.md)；旧 SDK 和早期部署记录保留历史语义。
 
 自托管的 Web 源代码安全审计平台。用户在浏览器配置模型、上传源码、控制扫描和查看证据，后台使用 Go Server + Go Agent + Node Scanner / Codex Security SDK。
 
-源码候选版本：`0.1.0-beta.2`。支持 **Linux amd64、可信用户、自托管**。DeepSeek 小项目已真实跑通扫描、复核、归档和证据图谱；新计价完成隔离测试和部署，真实计费、更多项目和长期稳定性仍待验收。候选整理不调用模型、不代表已公开发布；详见 [候选说明](docs/releases/0.1.0-beta.2.md) 与 [CHANGELOG](CHANGELOG.md)。
+源码候选版本：`0.1.0-beta.2`。支持 **Linux amd64、可信用户、自托管**。DeepSeek 小项目已真实跑通扫描、复核、归档和证据图谱；最新本地原生 V2 又补齐 Deep、真实中断续扫、两个组件及匹配、Git 差异，并核对冻结单价下的实际 Token 估算，最新修复未部署 VPS。供应商账单、更多项目和长期稳定性仍待验收，源码候选不代表已公开发布；详见 [扩展真实验收](docs/SDK_V2_DEEPSEEK_COMPATIBILITY.md)、[候选说明](docs/releases/0.1.0-beta.2.md) 与 [CHANGELOG](CHANGELOG.md)。
 
 [安装、升级与回滚](docs/BETA_INSTALLATION.md) · [部署与备份](deploy/README.md) · [参与贡献](CONTRIBUTING.md) · [私密报告安全问题](SECURITY.md) · [发布流程](docs/RELEASE_PROCESS.md)
 
@@ -12,13 +12,17 @@
 
 高级 SDK 参数与知识文档的固定版本、归档/恢复、任务冻结和父扫描状态已接入 Web，范围与测试见 [扫描输入与知识库基线](docs/SDK_INPUT_KNOWLEDGE.md)。这批完成项不表示 SDK 全部能力已集成；后续范围由 [能力清单](deploy/sdk/integration.json) 记录。
 
-原生报告、仓库历史、结构化诊断与用量估算见 [SDK 原生结果基线](docs/SDK_NATIVE_RESULTS.md)。
+原生报告、仓库历史、结构化诊断与用量估算见 [SDK 原生结果基线](docs/SDK_NATIVE_RESULTS.md)。扫描/复核哪些直接使用 SDK、哪些平台逻辑确实需要保留，以及本地已删除的重复实现，见 [SDK 原生复用与自研边界检查](docs/SDK_NATIVE_REUSE_REVIEW.md)。
+
+本地后续收敛将官方 SDK 恢复为原始 V2 基线，旧 V1 补丁只保留在明确选择的兼容运行包；SDK 版本仍为 0.5.0，VPS 未随之升级。连接选择、任务指纹与历史状态边界见 [SDK 运行环境隔离](docs/SDK_RUNTIME_ISOLATION.md)。
+
+2026-10-30 本地补齐跨组件匹配的 Token 与冻结单价估算，网页支持匹配明细及原始统计下载，缺数据保持未知，历史单价与费用不补算。[隔离验收](docs/acceptance/component-matching-usage-20261030.json)后，追加[真实验收](docs/acceptance/component-matching-real-20261030.json)：两个组件发现归并为 1 组，匹配与整次执行费用独立核算通过，两份严格 Schema 复核、归档、图谱和 V2 运行中消息投递均通过。原 32 次执行、652 个归档及历史价格、费用不变，未部署 VPS；该小项目验收不代表全部候选或供应商账单已通过。
 
 漏洞详情支持[单个漏洞证据链图谱](docs/FINDING_EVIDENCE_GRAPH.md)：关联 SDK 证据引用、代码、推断路径和复核依据，区分源码观察与漏洞验证，并保留历史报告和原始对象。
 
 已提交的 [Git base/head 差异审计](docs/SDK_GIT_DIFF.md) 已接入：Web 上传完整仓库归档，冻结提交并预览差异，使用 Standard 调用 SDK refs 目标，证据绑定 HEAD；未提交工作区差异仍待后续接入。
 
-[组件规划与计划管理](docs/SDK_COMPONENT_PLANS.md) 已接入：Web 编辑、SDK 自动建议、本地规范化与全量路径检查、人工确认冻结和历史版本下载。SDK 0.5.0；计划确认不会启动组件扫描，真实规划模型仍未验收。
+[组件规划与计划管理](docs/SDK_COMPONENT_PLANS.md) 已接入：Web 编辑、SDK 自动建议、本地规范化与全量路径检查、人工确认冻结和历史版本下载。SDK 0.5.0；计划确认不会自动启动组件扫描。两个组件的审计、原生跨组件匹配和独立复核已在本地真实完成，范围与限制见 [扩展验收记录](docs/acceptance/extended-native-v2-20261029.json)。
 
 ## 仓库结构
 

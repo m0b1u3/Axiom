@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "status": "completed",
+  "startedAt": "2026-10-13T00:00:00Z",
+  "finishedAt": "2026-10-13T00:01:00Z",
+  "engine": {
+    "name": "fixture-engine",
+    "version": "fixture-1",
+    "pluginVersion": null,
+    "patchRevision": null
+  },
+  "model": {
+    "providerId": "fixture-provider",
+    "connectionType": "openai_compatible",
+    "model": "fixture-model",
+    "baseUrl": "https://fixture.invalid/v1",
+    "wireApi": "responses",
+    "credentialEnv": "FIXTURE_API_KEY",
+    "configurationRevision": "fixture-revision-1"
+  },
+  "findings": [
+    {
+      "fingerprint": "fixture-only-fingerprint",
+      "title": "Contract fixture, not a real vulnerability",
+      "severity": "info",
+      "description": "Synthetic fixture for field retention.",
+      "severityScore": 0,
+      "scoringSystem": "fixture",
+      "confidence": {
+        "level": "unknown",
+        "rationale": null,
+        "value": null
+      },
+      "category": "fixture",
+      "cwe": [],
+      "filePath": "src/a,b.ts",
+      "startLine": 1,
+      "endLine": 1,
+      "evidence": "fixture evidence",
+      "remediation": "fixture recommendation",
+      "rootCause": "fixture root cause",
+      "attackPath": "fixture path",
+      "entrypoint": "fixture entry",
+      "source": "fixture source",
+      "dataflow": "fixture flow",
+      "sink": "fixture sink",
+      "reachability": "unknown",
+      "impact": "fixture impact",
+      "likelihood": "unknown",
+      "attackSteps": [],
+      "preconditions": [],
+      "codeEvidence": [
+        {
+          "id": "fixture-evidence",
+          "label": "Fixture",
+          "path": "src/a,b.ts",
+          "startLine": 1,
+          "endLine": 1,
+          "language": "typescript",
+          "role": "fixture",
+          "code": "// fixture, not production code",
+          "explanation": "Contract field retention only"
+        }
+      ],
+      "validation": {
+        "fixtureOnly": true,
+        "observed": false
+      },
+      "remediationTests": [],
+      "preventiveControls": [],
+      "provenance": null,
+      "extensions": {
+        "future": {
+          "nested": [
+            0,
+            false,
+            null,
+            ""
+          ]
+        }
+      },
+      "raw": {
+        "fixtureOnly": true,
+        "opaque": {
+          "unchanged": [
+            true,
+            null,
+            0
+          ]
+        }
+      },
+      "engineFindingId": "fixture-finding",
+      "engineOccurrenceId": "fixture-occurrence",
+      "ruleId": "fixture-rule"
+    }
+  ],
+  "coverage": {
+    "completeness": "complete",
+    "details": {
+      "surfaces": [],
+      "futureField": {
+        "retained": true
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "kind": "evidence",
+      "relativePath": "artifacts/evidence.json",
+      "sizeBytes": 0,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "cost": null,
+  "extensions": {
+    "fixtureOnly": true,
+    "componentMatchingEstimate": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      },
+      "method": "configured_token_prices",
+      "pricingSnapshot": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "9007199254740993",
+          "attempt": 2
+        },
+        "modelConfigId": 2,
+        "revision": 1,
+        "capturedAt": "2026-10-27T08:00:00Z",
+        "provider": "deepseek",
+        "model": "fixture-model",
+        "pricing": {
+          "schemaVersion": 1,
+          "currency": "USD",
+          "unit": "per_million_tokens",
+          "cacheMode": "cache_read",
+          "inputPerMillion": "1",
+          "cacheReadPerMillion": "0.1",
+          "cacheWritePerMillion": null,
+          "outputPerMillion": "4",
+          "note": "Fixtures / Mock pricing only"
+        },
+        "reason": ""
+      },
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "9007199254740993",
+          "attempt": 2
+        },
+        "source": "sdk_on_usage",
+        "complete": true,
+        "inputTokens": 100000,
+        "cachedInputTokens": 20000,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 10000,
+        "reasoningOutputTokens": 5000,
+        "totalTokens": 110000,
+        "requestCount": null
+      },
+      "status": "estimated",
+      "currency": "USD",
+      "amountMicros": 122000,
+      "reason": "",
+      "computedAt": "2026-10-27T08:01:00Z"
+    }
+  }
+}

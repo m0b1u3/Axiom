@@ -53,13 +53,17 @@ func assertResultPipeline(t *testing.T, s *store.Store, url, token string, task 
 		}
 		return
 	}
-	if scenario == "failed" {
+	if result.Cost.Value != nil || len(result.Extensions.Value["lastObservedCost"]) != 0 {
+		t.Fatal("discontinued SDK fees leaked into a new result")
+	}
+	if scenario != "progress-io" {
 		progress, e := contracts.DecodeProgressSnapshotV2([]byte(task.ProgressJSON), &result.Execution)
-		if e != nil || result.Cost.Value != nil || progress.Cost == nil || *progress.Cost.EstimatedUSD != 1.125 || *progress.Cost.InputTokens != 0 || len(result.Extensions.Value["lastObservedCost"]) == 0 {
-			t.Fatal("partial cost lost or promoted to final cost", e)
+		if e != nil || progress.Cost != nil {
+			t.Fatal("discontinued SDK fees leaked into progress", e)
 		}
-	} else if result.Cost.Value == nil || *result.Cost.Value.EstimatedUSD != 1.125 || *result.Cost.Value.InputTokens != 0 {
-		t.Fatal("observed cost or zero tokens were lost")
+	}
+	if len(result.Extensions.Value["executionUsage"]) == 0 && scenario != "failed" {
+		t.Fatal("removing SDK prices discarded real token observations")
 	}
 	if scenario == "partial-empty" {
 		if task.Status != "partial" || len(result.Findings) != 0 {

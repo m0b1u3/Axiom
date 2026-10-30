@@ -1,6 +1,6 @@
 # SDK 修改盘点与重建基线
 
-当前精确锁定 SDK 0.5.0 / Codex 0.163.0、Scanner description 14；七项补丁基于 0.5.0 发布字节制作。重建与原始隔离验收见 [0.5.0 兼容验收](SDK_050_COMPATIBILITY.md)，后续 VPS、Responses + 原生 Schema 和有限真实验收见 [当前状态](CURRENT_STATUS.md)。源码候选为 0.1.0-beta.2，本次整理不重新部署或调用模型。
+当前精确锁定 SDK 0.5.0 / Codex 0.163.0。本地公共 SDK 已恢复官方原始文件，七项补丁仅用于独立 legacy 兼容包，安装与校验同时覆盖两个环境；详见 [SDK 运行环境隔离](SDK_RUNTIME_ISOLATION.md)。此前重建与隔离验收见 [0.5.0 兼容验收](SDK_050_COMPATIBILITY.md)，VPS、Responses + 原生 Schema 和有限真实验收见 [当前状态](CURRENT_STATUS.md)。源码候选为 0.1.0-beta.2；本地修改不表示已部署 VPS。
 
 下文是原 SDK 0.1.25 的修改盘点和分阶段历史记录，旧清单及补丁位于 `deploy/sdk/legacy/0.1.25/`；旧版 Chat 转换和当时的无真实模型结论不代表当前实现。当前已移除 Chat 协议适配，undici 用于 Responses 传输。
 

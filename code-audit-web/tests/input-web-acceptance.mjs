@@ -19,6 +19,7 @@ try {
  await page.waitForURL(url=>!url.pathname.endsWith('/login'));
  await page.goto(base+'/scans/new');
  await page.getByRole('heading',{name:'扫描配置',exact:true}).waitFor();
+ await page.getByLabel('模型配置',{exact:true}).click();await page.getByRole('option',{name:/Fixture browser input/}).click();
  assert.equal(await page.locator('.knowledge-options[open]').count(),0,'optional knowledge must start collapsed');
  assert.equal(await page.locator('.advanced-scan[open]').count(),0,'advanced SDK parameters must start collapsed');
  const primary=await page.locator('.scan-grid > .scan-section').evaluateAll(elements=>elements.map(el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,right:r.right,width:r.width}}));
@@ -33,12 +34,12 @@ try {
  let creates=0;page.on('request',request=>{if(request.method()==='POST'&&new URL(request.url()).pathname==='/api/v1/scans')creates++;});
  await budget.fill('0');
  await page.getByRole('button',{name:'创建扫描',exact:true}).click();
- await page.getByText('费用预算须为正数；不设置预算时请留空。').first().waitFor();
+ await page.getByText(/单次上限预算须为/).first().waitFor();
  assert.equal(creates,0,'invalid budget reached the Server');
  await budget.fill('4.25');
  const screenshots=process.env.AXIOM_TEST_SCREENSHOT_DIR;
  if(screenshots){
-   await page.getByText('费用预算须为正数；不设置预算时请留空。',{exact:true}).first().waitFor({state:'hidden'});
+   await page.getByText(/单次上限预算须为/).first().waitFor({state:'hidden'});
    await mkdir(screenshots,{recursive:true});
    await page.evaluate(()=>{document.activeElement?.blur();window.scrollTo(0,0);});
    await page.screenshot({path:path.join(screenshots,'input-desktop.png'),fullPage:true,animations:'disabled'});

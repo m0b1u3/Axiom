@@ -974,5 +974,10 @@
       "after": "4033467beddec085fcd35b689a03d0b8efe7b29f654b324bb2fd9cea9a381424",
       "source": "overrides/@openai/codex-security/dist/custom-validation-prompt.js"
     }
-  ]
+  ],
+  "runtimeIsolation": {
+    "schemaVersion": 1,
+    "default": "official-v2",
+    "compatibilityPackage": "@axiom/codex-security-compat-v1"
+  }
 }

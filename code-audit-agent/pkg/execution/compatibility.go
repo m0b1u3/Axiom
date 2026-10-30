@@ -15,7 +15,7 @@ import (
 var AgentBuild = "development"
 
 func (c *Client) capabilities() control.Capabilities {
-	v := control.Capabilities{SDKConcurrency: c.SDKConcurrencyVersion == 1, SDKParameters: c.SDKParametersVersion == 1, Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
+	v := control.Capabilities{TokenBudget: c.TokenBudgetVersion == 1, SDKConcurrency: c.SDKConcurrencyVersion == 1, SDKParameters: c.SDKParametersVersion == 1, Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
 	if c.InputCapabilities != nil {
 		v.Input = *c.InputCapabilities
 	}
@@ -86,6 +86,9 @@ func (c *Client) Negotiate(ctx context.Context, id string, slots int) error {
 		if c.DispatchMode == control.DispatchUnbounded && (v.Data.TaskDispatch != control.DispatchUnbounded || max != 4) {
 			return &ProtocolError{Code: contracts.ErrorCodeProtocolVersionUnsupported, Origin: contracts.ErrorOriginAgent, Message: "Server 尚不支持无配额调度，请同步更新 Server 与 Agent；模型尚未启动。", Retryable: false}
 		}
+		if v.Data.TokenBudgetVersion != 1 {
+			c.TokenBudgetVersion = 0
+		}
 		if v.Data.SDKConcurrencyVersion != 1 {
 			c.SDKConcurrencyVersion = 0
 		}
@@ -117,6 +120,7 @@ func (c *Client) Negotiate(ctx context.Context, id string, slots int) error {
 	if c.DispatchMode == control.DispatchUnbounded {
 		return &ProtocolError{Code: contracts.ErrorCodeProtocolVersionUnsupported, Origin: contracts.ErrorOriginAgent, Message: "Server 未声明无配额调度能力，请同步更新配套组件。", Retryable: false}
 	}
+	c.TokenBudgetVersion = 0
 	c.SDKDeepResumeVersion = 0
 	c.SDKIdentityVersion = 0
 	c.SDKParametersVersion = 0
@@ -142,7 +146,7 @@ func (c *Client) validateLease(l *Lease) (*Lease, error) {
 	if !l.HasTask() {
 		return l, nil
 	}
-	v := control.Requirements{SDKParameters: l.SDKParameters != nil, SDKOperation: l.SDKOperation != nil, ScanInput: l.ScanInput != nil, Result: l.ResultContractVersion, Observation: l.ObservationContractVersion}
+	v := control.Requirements{TokenBudget: l.TokenBudget != nil, SDKParameters: l.SDKParameters != nil, SDKOperation: l.SDKOperation != nil, ScanInput: l.ScanInput != nil, Result: l.ResultContractVersion, Observation: l.ObservationContractVersion}
 	if l.Assignment != nil {
 		v.Input = int(l.Assignment.SchemaVersion)
 		if l.ScanInput != nil {

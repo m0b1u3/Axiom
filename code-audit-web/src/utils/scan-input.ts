@@ -6,10 +6,8 @@ export function scopePaths(text: string): string[] {
 }
 
 export function optionalBudget(text: string): number | null {
-  if(String(text).trim()==="")return null;
-  const value=Number(text);
-  if(!Number.isFinite(value)||value<=0||value>Number.MAX_SAFE_INTEGER)throw new Error("费用预算须为正数；不设置预算时请留空。");
-  return value;
+  try{return optionalTotalBudget(text)}
+  catch{throw new Error("单次上限预算须为最多六位小数的正数，最高 9007199254.740991 USD；不设置预算时请留空。")}
 }
 
 export function optionalTotalBudget(text: string): number | null {

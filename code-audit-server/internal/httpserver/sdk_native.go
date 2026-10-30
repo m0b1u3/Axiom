@@ -32,9 +32,14 @@ func (s *Server) nativeSDKArchive(w http.ResponseWriter, r *http.Request) (int64
 	w.Header().Set("Cache-Control", "no-store")
 	return id, native, true
 }
+// Compatibility read for old archives only. New executions have no SDK estimate.
 func (s *Server) sdkCostEstimate(w http.ResponseWriter, r *http.Request, u *store.User) {
 	_, native, ok := s.nativeSDKArchive(w, r)
 	if !ok {
+		return
+	}
+	if native.UsageEstimate == nil {
+		httputil.Error(w, 410, 41000, "SDK 内置费用估算已移除，请查看任务预算与费用中的配置单价估算")
 		return
 	}
 	httputil.OK(w, native.UsageEstimate)

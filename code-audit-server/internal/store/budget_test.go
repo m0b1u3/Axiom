@@ -2,6 +2,7 @@ package store
 
 import (
 	"axiom/contracts"
+	"axiom/contracts/control"
 	"errors"
 	"fmt"
 	"math"
@@ -167,6 +168,15 @@ func budgetTask(t *testing.T, s *Store, total, single float64) (int64, ClaimLimi
 func budgetClaim(t *testing.T, s *Store, limits ClaimLimits) *Task {
 	t.Helper()
 	input, output := modernCaps()
+	limits.TokenBudgetCapable = true
+	if e := s.ReportAgentWithObservations(t.Context(), "fixture-budget-agent", 1, input, output, observationCaps()); e != nil {
+		t.Fatal(e)
+	}
+	version := int64(15)
+	build := "Fixtures-Mock-scanner"
+	if e := s.ReportAgentRuntime(t.Context(), "fixture-budget-agent", contracts.AgentRuntime{SchemaVersion: 1, AgentBuild: "Fixtures-Mock", ScannerBuild: &build, ControlAPI: 4, State: "ready", MatrixHash: control.MatrixHash, ScannerDescriptionVersion: &version}); e != nil {
+		t.Fatal(e)
+	}
 	task, e := s.ClaimExecutionWithObservations(t.Context(), "fixture-budget-agent", limits, input, output, observationCaps())
 	if e != nil || task == nil {
 		t.Fatalf("claim %+v %v", task, e)
@@ -349,6 +359,17 @@ func TestBudgetConcurrentRetriesCannotAllocateTwice(t *testing.T) {
 	claims := make(chan *Task, 4)
 	errs := make(chan error, 4)
 	input, output := modernCaps()
+	limits.TokenBudgetCapable = true
+	for i := 0; i < 4; i++ {
+		agent := fmt.Sprint("fixture-agent-", i)
+		if e := s.ReportAgentWithObservations(t.Context(), agent, 1, input, output, observationCaps()); e != nil {
+			t.Fatal(e)
+		}
+		version, build := int64(15), "Fixtures-Mock-scanner"
+		if e := s.ReportAgentRuntime(t.Context(), agent, contracts.AgentRuntime{SchemaVersion: 1, AgentBuild: "Fixtures-Mock", ScannerBuild: &build, ScannerDescriptionVersion: &version, ControlAPI: 4, State: "ready", MatrixHash: control.MatrixHash}); e != nil {
+			t.Fatal(e)
+		}
+	}
 	for i := 0; i < 4; i++ {
 		wg.Add(1)
 		go func(i int) {

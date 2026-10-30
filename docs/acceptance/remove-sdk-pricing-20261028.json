@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "isolated-acceptance",
+  "status": "passed",
+  "capturedAt": "2026-10-28T03:22:31.696749+00:00",
+  "baseCommit": "3379d4d43756d104478046f152cafcf2fbb11334",
+  "workingTreeChanges": true,
+  "profile": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "wireAPI": "responses",
+    "reviewOutputMode": "native_schema",
+    "sdkVersion": "0.5.0"
+  },
+  "scope": "Remove Axiom standalone SDK price estimation, Standard/Deep SDK fee projections and duplicate SDK fee displays; retain raw archives and native SDK workflow boundaries.",
+  "realModelRequests": 0,
+  "productionDeploymentPerformed": false,
+  "productionDataModified": false,
+  "databaseMigrationsAdded": false,
+  "checks": {
+    "contracts": 503,
+    "scanner": 308,
+    "web": 100,
+    "scannerBuild": "passed",
+    "webBuild": "passed",
+    "postgresStoreRegression": "passed",
+    "configuredPriceBudgetAndBrowserPipeline": "passed",
+    "historicalSDKCostRead": "passed; old estimate remains exactly 0.00034; new requests return HTTP 410",
+    "finalPageRegression": "passed; result records, SDK operations, archived-result browser and new-scan browser",
+    "nativeReportsBrowser": "passed; 17 scenarios including SDK price entry removal",
+    "sdkPatchVerification": "7 pinned patches; 0 dependency files updated",
+    "sdkIntegrationVerification": "passed"
+  },
+  "verifiedBehaviors": [
+    "The application no longer calls SDK estimateScanCost or provides a Web SDK estimate action.",
+    "Standard and Deep runs no longer subscribe to onCost or publish SDK returned/callback amounts as platform result or progress costs.",
+    "Token and cache usage, configured pricing, conservative budgets and historical price snapshots remain available.",
+    "New SDKNativeResult usageEstimate is null; frozen historical SDKCostEstimate objects retain their version and execution validation.",
+    "A compatibility endpoint reads historical SDK estimates without recalculation; new results return a clear HTTP 410.",
+    "Archive summaries, live progress, independent-review results and SDK-native result panels no longer display a second SDK fee amount.",
+    "Original SDK JSON, archived fees and manual reconciliation remain intact.",
+    "Desktop and 390px browser checks preserve original report downloads, inert preview, diagnostics, token metadata and keyboard-accessible budget history."
+  ],
+  "sourceSha256": {
+    "code-audit-scanner/src/artifact/sdk-native-result.ts": "09c7fc351e74f1c2418168f6fae54d4aff41a6ed0a189c47f6f4724482c9e0b5",
+    "code-audit-scanner/src/artifact/result-publisher.ts": "c59a6c6b664c8351e6adf504963296a71f5edc220a16840d0c5730ad4d4bb8d4",
+    "code-audit-scanner/src/engine/codex-security-engine.ts": "24b29f63f8c715a57827358ecb9f4e81179ef19ddc5b646d10eb2a98ebbdea59",
+    "code-audit-web/src/components/SDKNativeResult.vue": "166269267f268567e9f105f681ae7af2fdab1bbbfe958d23f1c6d459da1064de",
+    "code-audit-web/src/components/SDKOperationResult.vue": "79ec4ae32299739db52bc2088c297b3a8ad3af3e36ef87719324b97d70427ef7",
+    "code-audit-web/src/components/ScanActivity.vue": "da39bfef559ecd2f67a2e966d6789f7d0ad21acc69599dab7e2c4d625e2053ea",
+    "code-audit-web/src/components/ExecutionResult.vue": "9c621225bb1569e1b9752c8995b2f260aa60ea74f21c2199514b65d2fd9e0bfd",
+    "code-audit-web/src/utils/sdk-native.ts": "c4f924fe83cccf64eaab9868c97bd3b96da648f86c46294ce0839526f5c7b6ce",
+    "code-audit-web/src/utils/scan-result.ts": "94496a6e72e39a57e4a47b0d633b9e0df4aeb982e6392eeec3b69abf37d699f8",
+    "code-audit-server/internal/httpserver/sdk_native.go": "31b7ed611bf582f6d2ca8075844ca8178121b2660cc9d60c260eb5950866d4c3",
+    "contracts/schemas/v1/sdk-native-result.schema.json": "ad33cb069420c7d71de09ba7a868fead2fca7fd1f4be6576cb5acd54f689c8ef"
+  },
+  "limitations": [
+    "The pinned third-party SDK package is unchanged. Its raw output may still contain internal SDK cost metadata; this is not used for Standard/Deep platform pricing.",
+    "Other native SDK workflows retain their own budget guards and acceptance boundaries.",
+    "Offline fixtures do not certify new live model behavior or reconcile provider billing."
+  ]
+}

@@ -37,9 +37,10 @@ def excluded(relative):
         return True
     if "data" in parts and parts[:2] != ("contracts", "data"):
         return True
-    # Active and explicitly retained SDK replacement dist files are reviewed
-    # source. Other dist directories remain generated output.
+    # Reviewed upstream restoration bytes and compatibility replacements are
+    # source inputs. Other dist directories remain generated output.
     sdk_override = (parts[:3] == ("deploy", "sdk", "overrides") or
+                    parts[:5] == ("deploy", "sdk", "upstream", "@openai", "codex-security") or
                     parts[:5] == ("deploy", "sdk", "legacy", "0.1.25", "overrides"))
     if "dist" in parts and not sdk_override:
         return True

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axiom.invalid/contracts/v1/token-budget-assignment.schema.json",
+  "title": "TokenBudgetAssignment",
+  "$ref": "#/$defs/TokenBudgetAssignment",
+  "$defs": {
+    "TokenBudgetAssignment": {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "const": 1
+        },
+        "execution": {
+          "$ref": "https://axiom.invalid/contracts/v1/definitions.schema.json#/$defs/ExecutionRef"
+        },
+        "limitMicros": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "pricingSnapshot": {
+          "$ref": "https://axiom.invalid/contracts/v1/model-pricing.schema.json#/$defs/ModelPricingSnapshot"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "execution",
+        "limitMicros",
+        "pricingSnapshot"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

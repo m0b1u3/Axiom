@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-29",
+  "timezone": "Asia/Shanghai",
+  "status": "basic_responses_passed_native_sdk_acceptance_not_passed",
+  "scope": "Local real API and native V2 probes for the user-supplied Spark connection; no full security scan created",
+  "connection": {
+    "provider": "custom",
+    "model": "spark-x2.6",
+    "endpoint": "https://maas-api.cn-huabei-1.xf-yun.com/v1/responses",
+    "wireApi": "responses",
+    "localModelConfigId": 3,
+    "enabledAsDefault": false,
+    "credentials": "Stored encrypted by local Axiom; absent from published evidence and saved text artifacts"
+  },
+  "versions": {
+    "securitySDK": "0.5.0",
+    "codex": "0.163.0",
+    "runtime": "official-v2"
+  },
+  "minimal": {
+    "model": "spark-x2.6",
+    "provider": "custom",
+    "endpoint": "https://maas-api.cn-huabei-1.xf-yun.com/v1/responses",
+    "protocol": "responses",
+    "format": "json_schema",
+    "strict": true,
+    "httpStatus": 200,
+    "responseStatus": "completed",
+    "contentType": "application/json",
+    "requestId": null,
+    "responseKeys": [
+      "created_at",
+      "id",
+      "model",
+      "object",
+      "output",
+      "output_text",
+      "status",
+      "usage"
+    ],
+    "schemaAndTokenValid": true,
+    "outputTextCharacters": 44,
+    "outputTextSha256": "1f1a86cdd5ee189defd147ff36e53aa28f44f40d167df36ccd0ee4c40e458344",
+    "usage": {
+      "input_tokens": 66,
+      "input_tokens_details": {
+        "cached_tokens": 0
+      },
+      "output_tokens": 102,
+      "output_tokens_details": {
+        "reasoning_tokens": 0
+      },
+      "total_tokens": 168
+    },
+    "error": null,
+    "modelRequests": 1,
+    "feeState": "unknown",
+    "status": "passed"
+  },
+  "nativeV2": {
+    "status": "not_passed",
+    "timeoutSeconds": 180,
+    "parentCompleted": false,
+    "termination": "The operation was aborted",
+    "initialAndFollowupTasksAttempted": true,
+    "forkTurns": "none",
+    "contextsActuallyV2": true,
+    "childSessionsObserved": 2,
+    "modelRequests": 31,
+    "parentToolCalls": [
+      "spawn_agent",
+      "wait_agent",
+      "wait_agent",
+      "list_agents",
+      "wait_agent",
+      "wait_agent",
+      "interrupt_agent",
+      "wait_agent",
+      "wait_agent",
+      "followup_task",
+      "wait_agent",
+      "list_agents",
+      "wait_agent"
+    ],
+    "notes": [
+      "No completed independent task echo was validated before timeout.",
+      "The child inspected temporary test context and created a nested child; this was not accepted as successful task delivery.",
+      "The provider omitted message phase metadata; absence of phase alone was not used to conclude that no response existed."
+    ],
+    "usage": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "20261029",
+        "attempt": 1
+      },
+      "source": "responses_usage",
+      "complete": false,
+      "inputTokens": 304092,
+      "cachedInputTokens": 282624,
+      "cacheWriteInputTokens": null,
+      "outputTokens": 5825,
+      "reasoningOutputTokens": 0,
+      "totalTokens": 309917,
+      "requestCount": 31
+    }
+  },
+  "messageEnvelopeControls": {
+    "requestsWithAgentEnvelopePreservedAcrossAxiom": 17,
+    "cases": [
+      {
+        "name": "A_original_agent_message",
+        "change": "unchanged captured agent-message envelope",
+        "httpStatus": 200,
+        "status": "completed",
+        "requestSha256": "ff5fdc0af54ddd352c60d29fa44fcee3ebb6c94886ab31ea128a5c842e3ff55e",
+        "format": "json_schema",
+        "strict": true,
+        "received": false,
+        "returnedExpectedToken": false,
+        "returnedTokenCharacters": 0,
+        "error": null,
+        "usage": {
+          "input_tokens": 74,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          },
+          "output_tokens": 124,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 198
+        }
+      },
+      {
+        "name": "B_plain_content",
+        "change": "only task content-block representation: encrypted_content -> input_text",
+        "httpStatus": 200,
+        "status": "completed",
+        "requestSha256": "433bf223591f1fcb2f0461317b54b647aa966c2cc3fd16ea36ad511225829dec",
+        "format": "json_schema",
+        "strict": true,
+        "received": null,
+        "returnedExpectedToken": false,
+        "returnedTokenCharacters": 0,
+        "error": null,
+        "usage": {
+          "input_tokens": 74,
+          "input_tokens_details": {
+            "cached_tokens": 64
+          },
+          "output_tokens": 379,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 453
+        }
+      },
+      {
+        "name": "C_explicit_user_role",
+        "change": "only add role=user to B",
+        "httpStatus": 200,
+        "status": "completed",
+        "requestSha256": "fb95c04cb1566fb209a8a70513e128290b969d9d0843930989ae106e8420363a",
+        "format": "json_schema",
+        "strict": true,
+        "received": false,
+        "returnedExpectedToken": false,
+        "returnedTokenCharacters": 0,
+        "error": null,
+        "usage": {
+          "input_tokens": 74,
+          "input_tokens_details": {
+            "cached_tokens": 64
+          },
+          "output_tokens": 197,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 271
+        }
+      },
+      {
+        "name": "D_standard_message_type",
+        "change": "only change type=message from C",
+        "httpStatus": 200,
+        "status": "completed",
+        "requestSha256": "71978f6192e6b6a9262c6f514d179989c15bca55153ccc1b1e62ae541d8e02e4",
+        "format": "json_schema",
+        "strict": true,
+        "received": null,
+        "returnedExpectedToken": false,
+        "returnedTokenCharacters": 0,
+        "error": null,
+        "usage": {
+          "input_tokens": 152,
+          "input_tokens_details": {
+            "cached_tokens": 64
+          },
+          "output_tokens": 907,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 1059
+        }
+      }
+    ],
+    "interpretation": "The agent_message variants reported 74 input tokens; the standard message variant reported 152 and returned an unstructured refusal. This is not a successful V2 delivery or Schema pass."
+  },
+  "schemaEnforcement": {
+    "parameterSent": "text.format={type:json_schema,strict:true,schema:...}",
+    "sameUserInput": "计算17乘以23，只给出结果。",
+    "changedVariable": "Only the result type/enum in Schema changed between S1 and S2.",
+    "results": [
+      {
+        "name": "S1_integer_object",
+        "changedVariable": "normal user arithmetic input with strict object Schema",
+        "httpStatus": 200,
+        "responseStatus": "completed",
+        "format": "json_schema",
+        "strict": true,
+        "outputText": "391",
+        "schemaValid": false,
+        "usage": {
+          "input_tokens": 31,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          },
+          "output_tokens": 894,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 925
+        },
+        "error": null
+      },
+      {
+        "name": "S2_string_enum_object",
+        "changedVariable": "only the Schema result type/enum changed; model, input and other fields identical",
+        "httpStatus": 200,
+        "responseStatus": "completed",
+        "format": "json_schema",
+        "strict": true,
+        "outputText": "391",
+        "schemaValid": false,
+        "usage": {
+          "input_tokens": 31,
+          "input_tokens_details": {
+            "cached_tokens": 0
+          },
+          "output_tokens": 55,
+          "output_tokens_details": {
+            "reasoning_tokens": 0
+          },
+          "total_tokens": 86
+        },
+        "error": null
+      }
+    ],
+    "verdict": "Both responses violated the requested object Schema. This endpoint did not enforce the standard Responses Schema fields used by the current SDK in these tests."
+  },
+  "requestCount": 38,
+  "accounting": {
+    "feeState": "unknown",
+    "estimatedUsd": null,
+    "pricingConfigured": false,
+    "nativeProbeUsageComplete": false,
+    "cacheWriteInputTokens": null,
+    "providerUsageNotInvoiceReconciled": true
+  },
+  "preservation": {
+    "taskIds": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "historicalFilesUnchanged": 159,
+    "executionAndFeesUnchanged": true,
+    "existingModelIdsUnchanged": [
+      1,
+      2
+    ],
+    "existingModelPricesUnchanged": true,
+    "sparkEnabled": false,
+    "productionSourceHashesUnchanged": true,
+    "vpsDeploymentPerformed": false
+  },
+  "credentialAudit": {
+    "savedTextFilesChecked": 1079,
+    "plaintextKeyMatches": 0
+  },
+  "notPerformed": [
+    "Full Standard security scan with Spark",
+    "Independent vulnerability report validation with Spark",
+    "New Spark finding archive or evidence graph acceptance",
+    "Switching to Chat, JSON mode, alternative Schema parameters or a provider-specific production patch"
+  ],
+  "limits": [
+    "This evaluates the supplied endpoint with SDK-standard Responses parameters, not every possible Spark API or vendor configuration.",
+    "The initial valid JSON reply followed an explicit JSON instruction in the prompt and did not establish API-level Schema enforcement.",
+    "The existing DeepSeek message conversion was deliberately not applied to this unverified custom connection."
+  ]
+}

@@ -122,13 +122,15 @@ func TestInputPipelineToSDK(t *testing.T) {
 		workers              *int
 		mutate               bool
 	}{
-		{"native-model-budget", "openai", "standard", ptrFloat(4.25), nil, true},
+		{"native-frozen-model", "openai", "standard", nil, nil, true},
+		{"native-model-budget", "openai", "standard", ptrFloat(4.25), nil, false},
 		{"deep-unset-budget-workers", "openai", "deep", nil, nil, false},
 		{"deep-explicit-workers", "openai", "deep", ptrFloat(8.5), ptrInt(3), false},
-		{"compatible-frozen-connection", "custom", "standard", ptrFloat(2.75), nil, true},
+		{"compatible-frozen-connection", "custom", "standard", nil, nil, true},
+		{"compatible-model-budget", "custom", "standard", ptrFloat(2.75), nil, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := store.ModelConfigRow{Name: "Fixture " + test.name, Provider: test.provider, Model: "fixture-selected-" + test.name, ApiKeyEncrypted: encrypted, WireAPI: "responses"}
+			model := store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixture " + test.name, Provider: test.provider, Model: "fixture-selected-" + test.name, ApiKeyEncrypted: encrypted, WireAPI: "responses"}
 			if test.provider == "custom" {
 				model.BaseURL = "https://fixture.invalid/v1"
 				model.WireAPI = "responses"
@@ -204,7 +206,7 @@ func TestInputPipelineToSDK(t *testing.T) {
 	for _, scenario := range []string{"rich", "empty", "partial-empty", "failed", "canceled", "late-exit", "wrong-task", "wrong-attempt", "tampered", "no-commit", "bad-json", "oversized", "observations", "progress-io"} {
 		t.Run("result-"+scenario, func(t *testing.T) {
 			t.Setenv("AXIOM_RESULT_TEST_SCENARIO", scenario)
-			cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture result " + scenario, Provider: "openai", Model: "fixture-result-configured-model", ApiKeyEncrypted: encrypted})
+			cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixture result " + scenario, Provider: "openai", Model: "fixture-result-configured-model", ApiKeyEncrypted: encrypted})
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -254,7 +256,7 @@ func TestInputPipelineToSDK(t *testing.T) {
 		})
 		t.Run("browser-progress", func(t *testing.T) {
 			t.Setenv("AXIOM_RESULT_TEST_SCENARIO", "observation-cancel")
-			cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture live progress", Provider: "openai", Model: "fixture-live-progress-model", ApiKeyEncrypted: encrypted})
+			cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixture live progress", Provider: "openai", Model: "fixture-live-progress-model", ApiKeyEncrypted: encrypted})
 			if e != nil {
 				t.Fatal(e)
 			}
@@ -284,7 +286,7 @@ func TestInputPipelineToSDK(t *testing.T) {
 		})
 
 		t.Run("browser-create-scan", func(t *testing.T) {
-			cfg, err := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture browser input", Provider: "openai", Model: "fixture-browser-selected-model", ApiKeyEncrypted: encrypted})
+			cfg, err := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixture browser input", Provider: "openai", Model: "fixture-browser-selected-model", ApiKeyEncrypted: encrypted})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -380,14 +382,24 @@ func assertSDKInput(t *testing.T, capture string, task *store.Task, model store.
 		t.Fatalf("SDK scope was split: %s", target)
 	}
 	value, present := v.Options["maxCostUsd"]
-	if present != (budget != nil) || (budget != nil && value != *budget) {
-		t.Fatal("SDK budget differs from Web configuration")
+	if present {
+		t.Fatal("configured budget must not use the SDK price list")
+	}
+	if budget != nil {
+		raw, e := os.ReadFile(filepath.Join(task.OutputPath, "runtime/token-budget.json"))
+		if e != nil {
+			t.Fatal(e)
+		}
+		assignment, e := contracts.DecodeTokenBudgetAssignment(raw, &contracts.ExecutionRef{TaskID: contracts.TaskID(fmt.Sprint(task.ID)), Attempt: int64(task.Attempt)})
+		if e != nil || float64(assignment.LimitMicros)/1e6 != *budget || assignment.PricingSnapshot.Model != model.Model {
+			t.Fatal("configured budget or frozen price missing", e, assignment)
+		}
 	}
 	value, present = v.Options["workers"]
 	if present != (workers != nil) || (workers != nil && value != float64(*workers)) {
 		t.Fatal("SDK worker defaults or explicit count were changed")
 	}
-	if mode == "deep" && v.Options["maxTimeHours"] != 47.0/60 {
+	if mode == "deep" && v.Options["maxTimeMinutes"] != float64(47) {
 		t.Fatal("SDK discovery budget differs from configured time")
 	}
 	if mode == "standard" && !strings.Contains(v.Options["scanPrompt"].(string), "第二行业务背景") {
@@ -397,4 +409,10 @@ func assertSDKInput(t *testing.T, capture string, task *store.Task, model store.
 	if v.CredentialDigest != hex.EncodeToString(digest[:]) || v.Leaked {
 		t.Fatal("credential binding changed or unrelated server credentials leaked")
 	}
+}
+
+func inputFixturePrice() *contracts.ModelPricing {
+	rate := contracts.TokenUnitPrice("1")
+	output := contracts.TokenUnitPrice("66176.470588") // 17 fixture output tokens round once to the historical $1.125 receipt.
+	return &contracts.ModelPricing{SchemaVersion: 1, Currency: "USD", Unit: "per_million_tokens", CacheMode: "input_only", InputPerMillion: &rate, OutputPerMillion: &output, Note: "Fixtures / Mock only; synthetic prices, no model calls"}
 }

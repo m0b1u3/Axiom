@@ -382,7 +382,7 @@ func (s *Store) ReportSDKIdentity(ctx context.Context, v contracts.SDKIdentityRe
 	// Raw SDK stdout/details are intentionally never a public account summary.
 	var message any
 	if v.Error != nil {
-		message = "SDK 身份操作未完成；请检查节点并在 Web 重新核对"
+		message = sdkIdentityPublicError(*v.Error)
 	}
 	_, e = tx.ExecContext(ctx, `UPDATE sdk_identity_operations SET status=?,sequence=?,report_hash=?,instructions_json=?,error=?,updated_at=?,lease_until=?,secret_encrypted=CASE WHEN ? THEN '' ELSE secret_encrypted END WHERE id=?`, string(v.Status), v.Sequence, hash, instructions, message, stamp, time.Now().UTC().Add(lease).Format(time.RFC3339), terminal, op.ID)
 	if e != nil {

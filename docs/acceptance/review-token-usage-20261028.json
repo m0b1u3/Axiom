@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "kind": "isolated-acceptance",
+  "status": "passed",
+  "capturedAt": "2026-10-28T02:22:48.268343+00:00",
+  "baseCommit": "3379d4d43756d104478046f152cafcf2fbb11334",
+  "workingTreeChanges": true,
+  "profile": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "wireAPI": "responses",
+    "reviewOutputMode": "native_schema",
+    "strictSchema": true,
+    "sdkVersion": "0.5.0"
+  },
+  "modelBoundary": "SDK inference is replaced; only loopback HTTP with sanitized historical usage metadata is used.",
+  "realModelRequests": 0,
+  "automaticModelRetries": 0,
+  "productionDeploymentPerformed": false,
+  "productionDataModified": false,
+  "databaseMigrationsAdded": false,
+  "historicalReplay": {
+    "source": "2026-10-27 independent-review usage metadata only",
+    "responseCount": 2,
+    "inputTokens": 24126,
+    "cachedInputTokens": 15488,
+    "cacheWriteInputTokens": null,
+    "outputTokens": 3436,
+    "reasoningOutputTokens": 1729,
+    "totalTokens": 27562
+  },
+  "checks": {
+    "contracts": 502,
+    "scanner": 308,
+    "web": 99,
+    "scannerBuild": "passed",
+    "sdkPatchVerification": "7 pinned patches verified; 0 files updated",
+    "sdkIntegrationVerification": "passed",
+    "offlinePipelines": [
+      "TestModelPricingOfflinePipeline",
+      "TestInputPipelineToSDK",
+      "TestInterimReviewPipeline"
+    ],
+    "priceAndHistoryRegression": [
+      "TestConfiguredPriceArithmetic",
+      "TestConfiguredPriceSnapshotsAndCumulativeAccounting",
+      "TestConfiguredPriceUnknownsAndForeignCurrency",
+      "TestModelPricingSQLiteHistorySurvivesReopenAndDelete",
+      "TestModelPricingAPIValidationAndHistory"
+    ]
+  },
+  "verifiedBehaviors": [
+    "Independent review finalizes response usage after transport shutdown and archives the same token/cache totals in the result and terminal progress snapshot.",
+    "Response usage survives the Agent, Server database and public budget API, independently of native SDK cost availability.",
+    "Missing cache-write fields remain null, including a mix of explicitly reported zero and missing fields; only explicitly reported zero remains zero.",
+    "HTTP failures, missing usage, incomplete reports and invalid token counts retain valid observations without claiming complete totals or retrying fixture requests.",
+    "A separate cache-write price requires cache-write usage; missing usage keeps the estimate unknown instead of treating it as zero.",
+    "Original price revisions, fees and unknown historical review costs remain unchanged; no historical metadata or prices are backfilled.",
+    "Responses strict JSON Schema and the existing report validation are retained."
+  ],
+  "sourceSha256": {
+    "code-audit-scanner/src/engine/sdk-operation.ts": "92e308d5c934b3c09f51558a64a544d9ef838fb2fb27acfeb4688f18c6c58f3d",
+    "code-audit-scanner/src/runtime/contract-progress.ts": "9749a91285a95a8b8fc91f1654d495bfaeaba286c210e64405739b3bc7744137",
+    "code-audit-scanner/src/runtime/execution-token-usage.ts": "f7f38a009465d424b7b635e422319814c66b39c115b314d538ab9b934abfa04f",
+    "code-audit-scanner/test/independent-review-usage.test.ts": "bd9b92cc974515c6527a9c4aec428ceca34581fb9ba825b23901cfee30fd31d5",
+    "code-audit-server/internal/httpserver/model_pricing_pipeline_test.go": "b018da26b52edfe7996e20b3dd27240616db35ec2eb083f040cab3cc0dcd6fd0",
+    "contracts/fixtures/deepseek-review-usage-20261027.json": "9ab9bb083e1b966eb951408d4d8731f5b9b27bfd58adc3eab6a49e07fde224f0",
+    "contracts/tests/fixtures/input-sdk.mjs": "9110dbce95c9533343ced1ca1ad471e5fc04ddeaee94eb538cb7155f3e41044d",
+    "code-audit-web/tests/model-pricing.test.mjs": "5caff7181bbb995858b58de136f1a6eeecbfccc0dbb9bb66904578da2e8046f5"
+  },
+  "limitations": [
+    "Offline tests do not prove new live model compatibility or reconcile a supplier bill.",
+    "This fix is local and has not been deployed to the VPS."
+  ]
+}

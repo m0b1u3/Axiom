@@ -8,6 +8,8 @@ import {
 import type { ScanErrorCode, ScanResultStatus } from "../contract/scan-result.js";
 import {InvalidSDKResultError} from '../artifact/result-publisher.js';
 import {ContractValidationError} from '@axiom/contracts';
+import {TokenBudgetError} from '../runtime/token-budget.js';
+import {isSDKRuntimeError} from '../runtime/sdk-runtime.js';
 
 export interface MappedEngineError {
   status: ScanResultStatus;
@@ -16,21 +18,25 @@ export interface MappedEngineError {
 }
 
 export function mapEngineError(error: unknown): MappedEngineError {
+  if(error instanceof TokenBudgetError){
+    if(error.upstreamFailure){const original=classifyMessage(error.upstreamFailure);return {...original,code:original.code==='unknown'?'provider_error':original.code,message:error.message};}
+    return {status:error.code==='budget_price_missing'?'failed':'partial',code:error.code==='budget_exceeded'?'budget_exceeded':error.code==='budget_price_missing'?'invalid_input':'incomplete',message:error.message};
+  }
   if(error instanceof InvalidSDKResultError || error instanceof ContractValidationError){return {status:'failed',code:'result_corrupt',message:error.message}}
   // ScanCostLimitExceededError extends ScanInterruptedError — check it first.
-  if (error instanceof ScanCostLimitExceededError) {
+  if (error instanceof Error && (error instanceof ScanCostLimitExceededError||isSDKRuntimeError(error,'ScanCostLimitExceededError'))) {
     return { status: "partial", code: "budget_exceeded", message: error.message };
   }
-  if (error instanceof ScanInterruptedError) {
+  if (error instanceof Error && (error instanceof ScanInterruptedError||isSDKRuntimeError(error,'ScanInterruptedError'))) {
     return { status: "canceled", code: "canceled", message: error.message };
   }
-  if (error instanceof AuthenticationRequiredError) {
+  if (error instanceof Error && (error instanceof AuthenticationRequiredError||isSDKRuntimeError(error,'AuthenticationRequiredError'))) {
     return { status: "failed", code: "auth_failed", message: error.message };
   }
-  if (error instanceof IncompleteScanError) {
+  if (error instanceof Error && (error instanceof IncompleteScanError||isSDKRuntimeError(error,'IncompleteScanError'))) {
     return { status: "partial", code: "incomplete", message: error.message };
   }
-  if (error instanceof CodexSecurityError) {
+  if (error instanceof Error && (error instanceof CodexSecurityError||isSDKRuntimeError(error,'CodexSecurityError'))) {
     const classified = classifyMessage(error.message);
     return classified;
   }

@@ -3190,6 +3190,84 @@
       "kind": "TokenCostEstimate",
       "file": "token-cost-invalid-unknown-amount.json",
       "valid": false
+    },
+    {
+      "id": "token-budget",
+      "kind": "TokenBudgetAssignment",
+      "file": "token-budget.json",
+      "valid": true
+    },
+    {
+      "id": "token-budget-invalid",
+      "kind": "TokenBudgetAssignment",
+      "file": "token-budget-invalid.json",
+      "valid": false
+    },
+    {
+      "id": "scanner-description-v15",
+      "kind": "ScannerDescriptionV15",
+      "file": "scanner-description-v15.json",
+      "valid": true
+    },
+    {
+      "id": "token-budget-foreign-price",
+      "kind": "TokenBudgetAssignment",
+      "file": "token-budget-foreign-price.json",
+      "valid": false
+    },
+    {
+      "id": "sdk-native-result-no-cost",
+      "kind": "SDKNativeResult",
+      "file": "sdk-native-result-no-cost.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-parent-state-native-runtime",
+      "kind": "SDKParentState",
+      "file": "sdk-parent-state-native-runtime.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-parent-state-legacy-runtime",
+      "kind": "SDKParentState",
+      "file": "sdk-parent-state-legacy-runtime.json",
+      "valid": true
+    },
+    {
+      "id": "sdk-parent-state-invalid-runtime",
+      "kind": "SDKParentState",
+      "file": "sdk-parent-state-invalid-runtime.json",
+      "valid": false
+    },
+    {
+      "id": "result-component-matching-estimate",
+      "kind": "ScanResult",
+      "file": "result-component-matching-estimate.json",
+      "valid": true
+    },
+    {
+      "id": "progress-component-matching-partial",
+      "kind": "ProgressSnapshotV2",
+      "file": "progress-component-matching-partial.json",
+      "valid": true
+    },
+    {
+      "id": "result-component-matching-foreign",
+      "kind": "ScanResult",
+      "file": "result-component-matching-foreign.json",
+      "valid": false
+    },
+    {
+      "id": "result-component-matching-no-scope",
+      "kind": "ScanResult",
+      "file": "result-component-matching-no-scope.json",
+      "valid": false
+    },
+    {
+      "id": "progress-component-matching-unknown-amount",
+      "kind": "ProgressSnapshotV2",
+      "file": "progress-component-matching-unknown-amount.json",
+      "valid": false
     }
   ]
 }

@@ -349,6 +349,26 @@ func (s *Store) recordFinalCost(ctx context.Context, tx *transaction, c Completi
 				return ErrInvalidResult
 			}
 			lower := v.Snapshot.ObservedMicros
+			matching, e := frozenMatchingEstimate(ctx, tx, c.contract.Result.Value.Extensions.Value["componentMatchingEstimate"], c.contract.Execution)
+			if e != nil {
+				return ErrInvalidResult
+			}
+			if matching != nil && matching.AmountMicros != nil {
+				var usage *contracts.ExecutionTokenUsage
+				if data := c.contract.Result.Value.Extensions.Value["executionUsage"]; len(data) > 0 {
+					v, e := contracts.DecodeExecutionTokenUsage(data, &c.contract.Execution)
+					if e != nil {
+						return ErrInvalidResult
+					}
+					usage = &v
+				}
+				if estimateTokens(matching.PricingSnapshot, usage).AmountMicros == nil {
+					if lower > MaxMoneyMicros-*matching.AmountMicros {
+						return ErrInvalidResult
+					}
+					lower += *matching.AmountMicros
+				}
+			}
 			if _, e = tx.ExecContext(ctx, `UPDATE task_cost_attempts SET observed_micros=CASE WHEN observed_micros IS NULL OR observed_micros<? THEN ? ELSE observed_micros END,booked_micros=CASE WHEN booked_micros IS NULL OR booked_micros<? THEN ? ELSE booked_micros END,source='sdk_progress' WHERE task_id=? AND attempt=?`, lower, lower, lower, lower, c.TaskID, c.Attempt); e != nil {
 				return e
 			}

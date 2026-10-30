@@ -23,6 +23,7 @@ const (
 )
 
 type Request struct {
+	TokenBudget                *contracts.TokenBudgetAssignment
 	DeepResumeContext          *contracts.DeepResumeContext
 	DeepResume                 *contracts.DeepResumeAssignment
 	SDKParameters              *contracts.SDKParametersAssignment
@@ -134,6 +135,17 @@ func Run(ctx context.Context, req Request) (*Result, error) {
 				return nil, e
 			}
 			args = append(args, sidecar.flag, file)
+		}
+		if req.TokenBudget != nil {
+			caps, e := ProbeContracts(ctx, req.ScannerDir, req.NodePath)
+			if e != nil || caps.TokenBudgetVersion != 1 {
+				return nil, errors.New("Scanner 不支持按冻结单价控制预算，模型尚未启动")
+			}
+			file, e := prepareDeepSidecar(req, req.TokenBudget, contracts.KindTokenBudgetAssignment, "token-budget")
+			if e != nil {
+				return nil, e
+			}
+			args = append(args, "--token-budget", file)
 		}
 		if req.SDKParameters != nil {
 			file, e := prepareSDKParameters(ctx, req)

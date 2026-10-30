@@ -5,3 +5,9 @@ test('Web native view preserves known zeros, SDK closed/unconfirmed history and 
 test('future version, wrong identity and forged artifact are isolated from core historical result',()=>{for(const change of [v=>v.schemaVersion=2,v=>v.execution.attempt++,v=>v.usageEstimate.execution.attempt++,v=>v.reports.markdown.artifact.sha256='0'.repeat(64),v=>v.repositoryHistory.records[0].status='resolved']){const v=structuredClone(native);change(v);assert.equal(sdkNativeView(v,native.execution,refs).invalid,true);}});
 test('structured diagnostic counts and ordered execution identity cannot be inferred from messages',()=>{assert.equal(sdkDiagnosticsView(native.diagnostics,native.execution).value.warningCount,1);for(const change of [v=>v.entries[0].execution.attempt++,v=>v.omittedCount++,v=>v.entries[0].sequence++,v=>v.warningCount=-1]){const v=structuredClone(native.diagnostics);change(v);assert.equal(sdkDiagnosticsView(v,native.execution).invalid,true);}});
 test('usage estimates retain unsupported model as unknown rather than zero',()=>{const v=structuredClone(native.usageEstimate);v.status='unsupported_model_or_usage';v.estimatedUsd=null;assert.equal(sdkCostEstimateView(v,native.execution).estimatedUsd,null);v.estimatedUsd=0;assert.equal(sdkCostEstimateView(v,native.execution),null);});
+
+test('new results have no SDK price estimate while historical estimates stay readable',()=>{
+ const current={...structuredClone(native),usageEstimate:null};
+ const view=sdkNativeView(current,current.execution,refs);assert.equal(view.invalid,false);assert.equal(view.value.usageEstimate,null);
+ assert.equal(sdkNativeView(native,native.execution,refs).value.usageEstimate.estimatedUsd,0);
+});

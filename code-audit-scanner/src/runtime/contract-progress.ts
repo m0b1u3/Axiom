@@ -3,7 +3,7 @@ import path from 'node:path';
 import {validate,normalizeLegacyErrorCode,type SDKLifecycle,type ActivityV2,type ContractError,type CostObservation,type CounterUnit,type ExecutionRef,type ProgressSnapshotV2,type ProgressSource,type ScanEventV2,type ScanPhase,type TerminalStatus,type WorkerObservation,type WorkerRef,type WorkerPoolStatus} from '@axiom/contracts';
 import {redactSecrets} from '../security/secret-redactor.js';
 import {SCANNER_LAYOUT} from '../contract/workspace.js';
-import type {SDKDiagnostic,SDKDiagnostics} from '@axiom/contracts';
+import type {SDKDiagnostic,SDKDiagnostics,ExecutionTokenUsage} from '@axiom/contracts';
 import {ACTIVE_SDK_VERSION} from './sdk-version.js';
 
 export interface ObserverProgress {phase:string;phaseReportedAt:string|null;reportedAt:string|null;filesTotal:number|null;completed:number|null;total:number|null;unit:string|null}
@@ -67,6 +67,14 @@ export class ContractProgressSink {
   // Persisted-session discovery supplies neither a phase nor a running state.
   if(this.findWorker(worker))return;
   await this.emit('scan.worker',this.putWorker(worker,'unknown'),'info',`SDK 已记录 Worker ${v.worker}；运行状态尚未提供`);
+ });}
+ executionUsage(input:ExecutionTokenUsage){const value=structuredClone(input);validate('ExecutionTokenUsage',value,this.snapshot.execution);return this.update(async()=>{
+  this.snapshot.extensions={...this.snapshot.extensions,executionUsage:value};
+  await this.emit('scan.activity',{kind:'message',status:'completed',description:'已保存请求回执的 Token 与缓存用量；未返回的计数保持未知'},'info','已保存请求回执的 Token 与缓存用量；未返回的计数保持未知');
+ });}
+ componentMatchingEstimate(input:import('@axiom/contracts').TokenCostEstimate,usage:ExecutionTokenUsage){const value=structuredClone(input),total=structuredClone(usage);validate('TokenCostEstimate',value,this.snapshot.execution);validate('ExecutionTokenUsage',total,this.snapshot.execution);return this.update(async()=>{
+  this.snapshot.extensions={...this.snapshot.extensions,componentMatchingEstimate:value,executionUsage:total};
+  await this.emit('scan.activity',{kind:'message',status:'completed',description:'已归档组件与跨组件匹配的 Token 回执及冻结单价估算；缺失数据保持未知'},'info','已归档组件与跨组件匹配用量');
  });}
  usage(input:Record<string,unknown>,componentIndex?:number){const v=structuredClone(input);return this.update(async()=>{
   const usage={schemaVersion:1 as const,execution:this.snapshot.execution,sdkVersion:ACTIVE_SDK_VERSION,observedAt:new Date().toISOString(),source:'sdk_on_usage' as const,measurement:'observed_tokens' as const,

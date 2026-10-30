@@ -13,7 +13,7 @@ import (
 )
 
 func runSDKOperationsAcceptance(t *testing.T, s *store.Store, agent, root, url, token, agentToken, scratch string, snapshot int64, encrypted string) {
-	cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "SDK operations fixture", Provider: "openai", Model: "fixture-frozen-operation-model", ApiKeyEncrypted: encrypted})
+	cfg, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "SDK operations fixture", Provider: "openai", Model: "fixture-frozen-operation-model", ApiKeyEncrypted: encrypted})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -30,10 +30,6 @@ func runSDKOperationsAcceptance(t *testing.T, s *store.Store, agent, root, url, 
 		t.Fatal(e, "fixture finding required")
 	}
 	finding := findings[0]
-	cfg.Model = "fixture-updated-config-model"
-	if e = s.UpdateModelConfig(t.Context(), cfg.ID, *cfg); e != nil {
-		t.Fatal(e)
-	}
 	baselineStats, e := s.DashboardStats(t.Context())
 	if e != nil {
 		t.Fatal(e)
@@ -63,6 +59,12 @@ func runSDKOperationsAcceptance(t *testing.T, s *store.Store, agent, root, url, 
 	for _, scenario := range []string{"preflight", "preflight-failure", "reportable", "suppressed", "not_applicable", "deferred", "validation-failure", "validation-large"} {
 		t.Run(scenario, func(t *testing.T) {
 			t.Setenv("AXIOM_OPERATION_TEST_SCENARIO", scenario)
+			if scenario == "reportable" {
+				cfg.Model = "fixture-updated-config-model"
+				if e = s.UpdateModelConfig(t.Context(), cfg.ID, *cfg); e != nil {
+					t.Fatal(e)
+				}
+			}
 			body := map[string]any{"kind": "preflight"}
 			if !strings.HasPrefix(scenario, "preflight") {
 				body = map[string]any{"kind": "validate", "findingId": fmt.Sprint(finding.ID), "originAttempt": seed.Attempt, "acknowledgeUnknownCost": true}

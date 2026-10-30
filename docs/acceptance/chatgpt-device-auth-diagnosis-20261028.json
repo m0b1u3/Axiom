@@ -1,0 +1,136 @@
+{
+  "checkedAt": "2026-10-28T13:45:18.930801+08:00",
+  "status": "request-construction-equivalent-egress-difference-confirmed-exact-403-policy-unresolved",
+  "scope": {
+    "newRealAuthorizationRequests": 0,
+    "realModelCalls": 0,
+    "productionCodeChanges": 0,
+    "networkConfigurationChanges": 0,
+    "readOnlyNetworkProbes": [
+      {
+        "method": "GET",
+        "url": "https://auth.openai.com/cdn-cgi/trace",
+        "runsPerEnvironment": 1
+      }
+    ],
+    "offlineRequests": {
+      "local": 1,
+      "vpsIsolatedContainer": 1,
+      "syntheticResponseStatus": 403,
+      "realProviderNotContacted": true
+    }
+  },
+  "runtimeComparison": {
+    "sdkVersion": "0.5.0",
+    "codexVersion": "codex-cli 0.163.0",
+    "sdkModulesByteIdentical": true,
+    "identityAdapterByteIdentical": true,
+    "loginArguments": [
+      "login",
+      "--device-auth"
+    ],
+    "sameArguments": true,
+    "localPlatform": "darwin/arm64",
+    "vpsPlatform": "linux/x64",
+    "vpsImage": "axiom-vps/agent:vps-chatgpt-auth-20261028-01",
+    "explicitProxyEnvironmentConfigured": {
+      "local": false,
+      "vps": false
+    },
+    "customCAEnvironmentConfigured": {
+      "local": false,
+      "vps": false
+    },
+    "managedCodexConfigurationFilesPresent": {
+      "local": false,
+      "vps": false
+    }
+  },
+  "requestComparison": {
+    "evidenceType": "reconstructed with pinned native SDK and CLI against a loopback fixture; not a capture of the historical production request",
+    "method": "POST",
+    "path": "/api/accounts/deviceauth/usercode",
+    "headers": {
+      "content-type": "application/json",
+      "accept": "*/*",
+      "content-length": "44"
+    },
+    "bodyFields": [
+      "client_id"
+    ],
+    "publicClientIDEqual": true,
+    "bodySHA256": "eca39e66b483f924b2271aa2aa70a9bec208496bd0ff6e7411ff1e8eaf7c1343",
+    "methodSame": true,
+    "pathSame": true,
+    "headersSameExceptLoopbackPort": true,
+    "bodyByteHashSame": true,
+    "bodyBytes": 44,
+    "bodyKeys": [
+      "client_id"
+    ],
+    "noAuthorizationOrCookies": true,
+    "externalConnectionsAttempted": 0,
+    "cliErrorDiscardsResponseBody": true,
+    "modelOrSchemaFieldsPresent": false,
+    "userPasswordOrAPICredentialPresent": false
+  },
+  "networkComparison": {
+    "evidenceType": "current read-only probe; not a retrospective packet capture",
+    "local": {
+      "systemProxyEnabled": true,
+      "dnsUsesSyntheticAddressRange": true,
+      "countryAsReportedByAuthHost": "JP",
+      "edgeColo": "NRT",
+      "TLS": "TLSv1.3",
+      "diagnosticHTTPStatus": 200
+    },
+    "vps": {
+      "containerProxyConfigured": false,
+      "egressMatchesVPSPublicAddress": true,
+      "countryAsReportedByAuthHost": "CN",
+      "edgeColo": "SIN",
+      "TLS": "TLSv1.3",
+      "diagnosticHTTPStatus": 200
+    }
+  },
+  "historicalEvidence": {
+    "lastVPSOperationID": 6,
+    "lastVPSLoginStartedAt": "2026-10-28T13:36:43+08:00",
+    "result": "failed before device-code instructions; sdk_auth_forbidden",
+    "VPSLoginOperationsToday": 2,
+    "vpsRetainedIdentityLogFiles": 0,
+    "localNativeLoginLogLines": 0,
+    "originalHTTPBodyAndHeadersAvailable": false,
+    "nativeCLIRetainsOnlyStatusInErrorForFixture": true,
+    "agentDiscardsRawStderr": true,
+    "failedGenerationDirectoryRemoved": true
+  },
+  "assessment": {
+    "observed": "No discrepancy found in SDK version, login command, adapter bytes or reconstructed initial request fields. Local authorization passed; VPS returned 403. Current egress is JP locally and CN on VPS.",
+    "inference": "VPS egress-related authorization access policy is the leading explanation, not malformed Responses/Schema or model parameters.",
+    "notEstablished": [
+      "Whether the precise rule is geographic restriction, IP reputation, HTTP/TLS fingerprint or another provider policy.",
+      "The original failed request body, response headers, response body or provider request ID.",
+      "Whether local routing at the time of the earlier login was identical to the current probe."
+    ],
+    "noSpeculativePatchApplied": true
+  },
+  "references": {
+    "officialAuthGuide": "https://learn.chatgpt.com/docs/auth",
+    "sdkInvocation": "code-audit-scanner/src/runtime/sdk-identity.ts:46",
+    "stderrBoundary": "code-audit-agent/internal/scanner/sdk_identity.go:88",
+    "failedGenerationCleanup": "code-audit-agent/internal/scanner/sdk_identity.go:125"
+  },
+  "evidenceSha256": {
+    "local-egress.json": "70df3a41eb049d8ccbd492dbea2a93529d71cd54cfab6b873c1a3aada0e0115f",
+    "local-login-log-summary.json": "984571731f771ea8a39da49336d71053dc986fbf2c6b8f0fee5d8267885893fb",
+    "local-network-settings.json": "1a1c314aa52f07c94fe0b91f6e83c762794ddc56f6d13d89263c920b6c3b441e",
+    "local-offline-request.json": "2d76a084b79e168df5df9616853f44926f500f4bca194a8d7c5235761230f689",
+    "local-runtime.json": "72bc654e1cc3cf96f890b96740191c8151b5d4281d5a419fbbb50fc7599d1634",
+    "request-comparison.json": "831013b8550f029f88967558d65bbcb9c95cbc49840efab310921a05069c34e3",
+    "vps-egress.json": "53e34f94b4062c8830b220f77cb0ae46e8f445af8c7e50915b1f792650863edf",
+    "vps-history-summary.json": "6f37b260ea4ff8e0788349f69becf093aca51eb31ec367cea0a500982f49714f",
+    "vps-inventory.json": "fb139320e86239bedf353b6fe867301aca0e7b494760944f7b2bd9e6d57b1a06",
+    "vps-offline-request.json": "789af4ad7086ad53101a9bde932ac51c41169096a026f68a3de3721c74d8107d"
+  }
+}

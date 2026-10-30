@@ -9,17 +9,17 @@ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),sc
 const sdk=path.join(scanner,'node_modules/@openai/codex-security');
 const {DEFAULT_CODEX_CONFIG}=await import(pathToFileURL(path.join(sdk,'dist/config.js')));
 const {resolveCodexCommand,bootstrapPlugin}=await import(pathToFileURL(path.join(sdk,'dist/runtime.js')));
-assert.equal(DEFAULT_CODEX_CONFIG.features.multi_agent,true);
-assert.equal(DEFAULT_CODEX_CONFIG.features.multi_agent_v2,undefined);
+assert.equal(DEFAULT_CODEX_CONFIG.features.multi_agent,undefined);
+assert.equal(DEFAULT_CODEX_CONFIG.features.multi_agent_v2.enabled,true);
 const command=resolveCodexCommand({}).command;
 assert.ok(command.includes('/@openai/codex-linux-x64/'),'effective binary must be the pinned Linux dependency');
 const version=spawnSync(command,['--version'],{encoding:'utf8'});assert.equal(version.status,0);assert.match(version.stdout,/0\.163\.0/);
 const plugin=path.join(sdk,'_bundled_plugin');
 const credentialNames=['DEEPSEEK_API_KEY','DASHSCOPE_API_KEY','MOONSHOT_API_KEY','ZHIPU_API_KEY','CUSTOM_API_KEY'];
 const forwarded=JSON.parse(readFileSync(path.join(plugin,'.mcp.json'),'utf8')).mcpServers['codex-security'].env_vars;
-for(const name of credentialNames)assert.ok(forwarded.includes(name),`MCP must forward ${name}`);
+for(const name of credentialNames)assert.ok(!forwarded.includes(name),`native MCP must not inherit compatibility env ${name}`);
 for(const rel of ['references/core-scan.md','references/threat-model.md','skills/fix-finding/SKILL.md','skills/security-scan/references/scan-artifacts-and-ledger.md']){
- const text=readFileSync(path.join(plugin,rel),'utf8');assert.match(text,/fork_context: false/);assert.doesNotMatch(text,/fork_turns/);
+ const text=readFileSync(path.join(plugin,rel),'utf8');assert.match(text,/fork_turns/);assert.doesNotMatch(text,/fork_context: false/);
 }
 assert.equal(JSON.parse(readFileSync(path.join(plugin,'scripts/deep_scan_defaults.json'),'utf8')).workers,4);
 assert.doesNotMatch(readFileSync(path.join(scanner,'src/main.ts'),'utf8'),/args\.workers \?\? 2/);
@@ -56,4 +56,4 @@ expectedMcp.mcpServers['codex-security'].command='./scripts/launch_codex_securit
 assert.deepEqual(JSON.parse(readFileSync(path.join(installed.installedRoot,'.mcp.json'),'utf8')),expectedMcp);
 assert.equal(readFileSync(path.join(installed.installedRoot,'scripts/launch_codex_security_mcp_sdk'),'utf8'),
  '#!/bin/sh\nif [ -n "${CODEX_SECURITY_PLUGIN_ROOT:-}" ]; then\n  exec "$CODEX_SECURITY_PLUGIN_ROOT/scripts/launch_codex_security_mcp" "$@"\nfi\nexec "$(dirname "$0")/launch_codex_security_mcp" "$@"\n');
-console.log('PASS: V1 config, four plugin instructions, default deep workers=4, effective Codex '+version.stdout.trim()+', fresh plugin bootstrap with provider credential forwarding and native SDK 0.5.0 mock scan; real model calls=0');
+console.log('PASS: upstream V2 config, four original plugin instructions, default deep workers=4, effective Codex '+version.stdout.trim()+', fresh upstream plugin bootstrap and native SDK 0.5.0 mock scan; real model calls=0');

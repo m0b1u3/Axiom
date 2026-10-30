@@ -70,15 +70,11 @@ const LANGUAGE_PROMPT = [
 ].join("\n");
 
 const WORKFLOW_PROMPT = [
-  "执行可靠性要求：",
-  "- 子任务必须以非空最终结论结束：明确范围、证据路径、候选发现或未发现，以及尚未完成的工作。工具输出不等于最终审计结论。",
-  "- wait_agent 返回 completed:null/空结果时，不计为审计完成；最多请求该子任务补交一次。如果仍为空，由主任务接手该范围并记录未完成覆盖，不无限重启 worker。",
-  "- 每完成一个审计范围，立即把审查记录、候选发现与证据保存到 CODEX_SECURITY_SCAN_DIR/artifacts/checkpoints/；没有候选时也写明检查范围和限制。保留 SDK 正式产物 schema，不把未验证候选写成确认漏洞。",
-  "- 只报告有审查记录对应的已完成数量，读取文件或搜索命中不算完成审计。",
-  "- 预检完成后立即进入源码审计；复用宿主提供的 helper 结果和明确参数，不反复读取用法。",
+  "审计流程、子任务编排、检查点与完成判定遵循当前 SDK 原生工作流。",
   "工作范围：",
   "- 审计对象是 CODEX_SECURITY_REPOSITORY 下的目标源码。读完技能文档后立刻审仓库。",
-  "- 指导文件解析使用当前插件的 launch_codex_security_mcp --helper resolve-security-md，优先复用宿主已提供的解析结果；其他 helper 以当前插件文档为准。不要逐行切片阅读任何文件。",
+  "- 指导文件解析使用当前插件的 launch_codex_security_mcp --helper resolve-security-md，优先复用宿主已提供的解析结果；其他 helper 以当前插件文档为准。源码审查须保留上下文；构造证据时按指定行范围精确提取。",
+  "- codeEvidence.code 必须是冻结源码指定范围的完整原始行，保留每行缩进、空格与整行内容；不得去缩进、截句、省略或改写。文字分析只写 explanation。使用宿主提供的 source-evidence 辅助程序提取与检查后再提交，不能把结构合法当作源码匹配。",
 ].join("\n");
 
 export function isScanFocus(value: string): value is ScanFocus {

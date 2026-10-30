@@ -10,6 +10,7 @@ import {pathToFileURL} from 'node:url';
 import {decode,validate,type DeepResumeContext,type DeepResumeAssignment,type DeepResumeProbeClaim,type DeepResumeInspection,type DeepResumeUsage,type DeepResumeBaseline} from '@axiom/contracts';
 import type {ScanOptions,CodexSecurity} from '@openai/codex-security';
 import type {ScanTask} from '../contract/scan-task.js';
+import type {SDKRuntimeBinding} from './sdk-runtime.js';
 const exec=promisify(execFile),hash=(v:string|Uint8Array)=>createHash('sha256').update(v).digest('hex');
 const sdkRoot=()=>path.resolve(path.dirname(createRequire(import.meta.url).resolve('@openai/codex-security')),'..');
 const part=async(name:string)=>import(pathToFileURL(path.join(sdkRoot(),'dist',name+'.js')).href);
@@ -18,7 +19,7 @@ const tokens=['inputTokens','cachedInputTokens','cacheWriteInputTokens','outputT
 const same=isDeepStrictEqual;
 function nativePath(value:string){const v=path.resolve(value);return process.platform==='darwin'&&/^\/(var|tmp)(\/|$)/.test(v)?'/private'+v:v;}
 export const DEEP_RESUME_MANIFEST='runtime/deep-resume.json';
-interface Manifest {schemaVersion:1;context:DeepResumeContext;sourceHash:string;identity:unknown;stateRoot:string;rawDir:string;sourcePath:string;model:string;}
+interface Manifest {schemaVersion:1;context:DeepResumeContext;sourceHash:string;identity:unknown;stateRoot:string;rawDir:string;sourcePath:string;model:string;runtime?:SDKRuntimeBinding;}
 export function originOutput(output:string,attempt:number):string {
  if(!Number.isSafeInteger(attempt)||attempt<1||!/^attempt-[1-9]\d*$/.test(path.basename(output)))throw new Error('续扫执行目录身份无效');
  return path.join(path.dirname(nativePath(output)),'attempt-'+attempt);
@@ -38,7 +39,7 @@ export async function saveDeepManifest(task:ScanTask):Promise<void>{
  if(task.componentScan||task.gitTarget||task.sdkOperation||task.componentPlanning||task.scanInput?.workflowId||task.scanInput?.parentScanId)return;
  const stateRoot=process.env.CODEX_SECURITY_STATE_DIR?nativePath(process.env.CODEX_SECURITY_STATE_DIR):undefined;if(!stateRoot||!task.sourceContentHash)throw new Error('Deep 恢复状态目录缺失');
  await mkdir(stateRoot,{recursive:true,mode:0o700});await canonical(stateRoot);
- const value:Manifest={schemaVersion:1,context,sourceHash:task.sourceContentHash,identity:task.sdkIdentity?.identity??null,stateRoot,rawDir:path.join(nativePath(task.outputPath),'raw/codex-security'),sourcePath:nativePath(task.sourcePath),model:task.model};
+ const value:Manifest={schemaVersion:1,context,sourceHash:task.sourceContentHash,identity:task.sdkIdentity?.identity??null,stateRoot,rawDir:path.join(nativePath(task.outputPath),'raw/codex-security'),sourcePath:nativePath(task.sourcePath),model:task.model,...(task.sdkRuntime?{runtime:task.sdkRuntime}:{})};
  await writeFile(path.join(task.outputPath,DEEP_RESUME_MANIFEST),JSON.stringify(value)+'\n',{mode:0o600,flag:'wx'});
 }
 async function owningProcess(stateRoot:string,rawDir:string):Promise<boolean>{
@@ -66,6 +67,7 @@ export async function inspectDeepResume(claim:DeepResumeProbeClaim,checkProcesse
   await certifyDeepSDK();const origin=originOutput(claim.outputPath,claim.origin.attempt);await canonical(origin);if(!guardHeld)unlock=await acquireDeepGuard(origin);
   if(claim.origin.taskId!==claim.execution.taskId||claim.origin.attempt>claim.execution.attempt)throw new Error('原始执行身份不匹配');
   const m=JSON.parse((await regular(path.join(origin,DEEP_RESUME_MANIFEST),65536)).toString()) as Manifest;
+  if(m.runtime){const runtime=JSON.parse((await regular(path.join(origin,'logs/sdk-runtime.json'),65536)).toString());if(runtime.id!==m.runtime.id||runtime.fingerprint!==m.runtime.fingerprint)throw new Error('原 Deep 的 SDK 运行基线发生变化');}
   if(m.schemaVersion!==1||!same(m.context.execution,claim.origin)||m.context.agentId!==claim.agentId||m.context.configurationHash!==claim.configurationHash||m.sourceHash!==claim.sourceHash||m.sourcePath!==nativePath(claim.sourcePath)||m.model!==claim.model||!same(m.identity,claim.identity))throw new Error('冻结源码、模型配置、原 Agent 或身份代次已变化');
   if(await lstat(path.join(origin,'normalized/result.commit.json')).catch(()=>null))throw new Error('原执行已有完整提交结果，应恢复结果入库或新建扫描');
   const expectedState=process.env.AXIOM_DEEP_RESUME_EXPECTED_STATE_ROOT??process.env.CODEX_SECURITY_STATE_DIR;

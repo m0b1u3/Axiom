@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import {bundledPluginRoot,loadContract} from '@openai/codex-security';
 import type { CodexLikeFinding, CodexLikeScanResult } from "../converter/codex-finding-converter.js";
 
 /**
@@ -7,6 +8,20 @@ import type { CodexLikeFinding, CodexLikeScanResult } from "../converter/codex-f
  * 业务层必须回收，不能因为进程非 0 就把 finding 丢掉。
  */
 export async function loadRawCodexResult(rawDir: string): Promise<CodexLikeScanResult | undefined> {
+  const manifest = await readJson(path.join(rawDir, "scan-manifest.json"));
+  const scan=manifest?.scan;
+  // Completed/sealed SDK artifacts must pass the SDK's schema, identity and
+  // seal checks. Never fall back to a permissive reader after native rejection.
+  if(scan&&typeof scan==='object'&&!Array.isArray(scan)&&
+      (Object.hasOwn(scan,'sealedAt')||(scan as Record<string,unknown>).status==='completed')){
+    try{
+      const native=await loadContract(rawDir,{pluginRoot:await bundledPluginRoot()});
+      return {...native,pluginVersion:native.manifest.scan.producer.version,
+        toJSON:()=>({...native,recoveredArtifacts:true,recoveryValidation:'sdk_load_contract'})};
+    }catch{return undefined;}
+  }
+  // Interrupted drafts are not sealed contracts. Retain this observation-only
+  // path so failed runs do not lose partial evidence; never infer completion.
   const findingsDoc = await readJson(path.join(rawDir, "findings.json"));
   const rawFindings = findingsDoc?.["findings"];
   if (!Array.isArray(rawFindings)) {
@@ -17,8 +32,6 @@ export async function loadRawCodexResult(rawDir: string): Promise<CodexLikeScanR
     findings: { findings: rawFindings as CodexLikeFinding[] },
   };
 
-  const manifest = await readJson(path.join(rawDir, "scan-manifest.json"));
-  const scan = manifest?.["scan"];
   if (scan && typeof scan === "object" && !Array.isArray(scan)) {
     const record = scan as Record<string, unknown>;
     result.manifest = {

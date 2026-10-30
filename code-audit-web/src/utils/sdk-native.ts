@@ -14,6 +14,7 @@ export function sdkDiagnosticsView(raw:unknown,execution:ExecutionRef):{value:SD
   if(v.entries.filter(e=>e.source==='sdk_warning').length>v.warningCount||v.entries.filter(e=>e.source==='observer_error').length>v.observerErrorCount)return bad;
   return {value:v,invalid:false};
 }
+/** Validate a frozen historical record; never calculate a new SDK estimate. */
 export function sdkCostEstimateView(raw:unknown,execution:ExecutionRef):SDKCostEstimate|null{
   if(!object(raw)||raw.schemaVersion!==1||!['0.1.25','0.5.0'].includes(String(raw.sdkVersion))||!same(raw.execution,execution)||raw.method!=='estimateScanCost'||raw.scope!=='returned_turn_usage'||raw.currency!=='USD'||raw.isEstimate!==true||!['estimated','missing_model','missing_usage','unsupported_model_or_usage','unavailable'].includes(String(raw.status)))return null;
   if((raw.model!==null&&typeof raw.model!=='string')||(raw.reason!==null&&typeof raw.reason!=='string')||!Object.hasOwn(raw,'usage'))return null;
@@ -44,7 +45,9 @@ export function sdkNativeView(raw:unknown,execution:ExecutionRef,artifacts:Artif
     if(!object(row)||['findingId','occurrenceId','scanId','targetId','title','summary'].some(k=>typeof row[k]!=='string')||!object(row.severity)||!['open','closed'].includes(String(row.status))||typeof row.confirmedInLatestScan!=='boolean'||(row.knownSince!==null&&typeof row.knownSince!=='string'))return bad;
     if(['knownScanIds','matchedFindingIds'].some(k=>row[k]!==null&&(!Array.isArray(row[k])||(row[k] as unknown[]).some(v=>typeof v!=='string'))))return bad;
   }
-  if(!sdkCostEstimateView(raw.usageEstimate,execution)||!object(raw.usageEstimate)||raw.usageEstimate.sdkVersion!==raw.sdkVersion||!sdkDiagnosticsView(raw.diagnostics,execution).value)return bad;
+  // Only historical archives contain the SDK's discontinued price estimate.
+  if(raw.usageEstimate!==null&&(!sdkCostEstimateView(raw.usageEstimate,execution)||!object(raw.usageEstimate)||raw.usageEstimate.sdkVersion!==raw.sdkVersion))return bad;
+  if(!sdkDiagnosticsView(raw.diagnostics,execution).value)return bad;
   if(raw.diagnosticJournal!==null&&!matches(raw.diagnosticJournal))return bad;
   if(raw.diagnosticJournalError!==null&&typeof raw.diagnosticJournalError!=='string')return bad;
   return {value:raw as unknown as SDKNativeResult,invalid:false};

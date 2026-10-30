@@ -148,7 +148,8 @@ func TestSDKIdentitiesPipeline(t *testing.T) {
 	}
 	launch := func(identity contracts.SDKIdentitySnapshot) *store.Task {
 		t.Helper()
-		code, body := doJSON(t, ts.URL+"/api/v1/scans", token, map[string]any{"sourceSnapshotId": snap.ID, "modelConfigId": model.Data.ID, "sdkIdentityId": identity.Identity.ID, "maxCostUsd": 2.0})
+		// Identity authentication is independent of configured-price budgeting.
+		code, body := doJSON(t, ts.URL+"/api/v1/scans", token, map[string]any{"sourceSnapshotId": snap.ID, "modelConfigId": model.Data.ID, "sdkIdentityId": identity.Identity.ID})
 		if code != 200 {
 			t.Fatal(code, body)
 		}
@@ -156,6 +157,19 @@ func TestSDKIdentitiesPipeline(t *testing.T) {
 		json.Unmarshal([]byte(body), &v)
 		return &v.Data
 	}
+	t.Run("account-only-model-requires-valid-identity-before-queueing", func(t *testing.T) {
+		code, raw := getJSON(t, ts.URL+"/api/v1/model-configs", token)
+		if code != 200 || !strings.Contains(string(raw), `"supportsSdkIdentity":true`) || !strings.Contains(string(raw), `"sdkIdentityOnly":true`) {
+			t.Fatal("account-only model capability missing", code)
+		}
+		unconfigured := create("Fixtures / Mock not logged in", "chatgpt")
+		for _, id := range []string{"", "missing", unconfigured.Identity.ID} {
+			code, _ := doJSON(t, ts.URL+"/api/v1/scans", token, map[string]any{"sourceSnapshotId": snap.ID, "modelConfigId": model.Data.ID, "sdkIdentityId": id})
+			if code != 400 {
+				t.Fatalf("invalid identity %q accepted: %d", id, code)
+			}
+		}
+	})
 	var historical int64
 	t.Run("bound-node-capability-result-and-secret-isolation", func(t *testing.T) {
 		task := launch(key)

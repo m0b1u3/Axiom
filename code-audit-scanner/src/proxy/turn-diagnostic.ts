@@ -85,7 +85,7 @@ export class UpstreamTurnDiagnostic {
  * are explicit in the closing summary, not silently treated as complete capture. */
 export class ValidationTransportJournal {
  private fd:number|null=null;private bytes=0;private received=0;private omitted=0;private failed=false;
- constructor(output:string,private readonly maximumBytes=4*1024*1024){try{const folder=path.join(output,'logs');mkdirSync(folder,{recursive:true,mode:0o700});this.fd=openSync(path.join(folder,'validation-transport.jsonl'),'wx',0o600);}catch{this.failed=true;}}
+ constructor(output:string,private readonly maximumBytes=4*1024*1024,name='validation-transport.jsonl'){try{if(!/^[a-z0-9-]+\.jsonl$/.test(name))throw new Error('Invalid diagnostic name');const folder=path.join(output,'logs');mkdirSync(folder,{recursive:true,mode:0o700});this.fd=openSync(path.join(folder,name),'wx',0o600);}catch{this.failed=true;}}
  record=(value:TurnDiagnostic)=>{this.received++;if(this.fd===null){this.omitted++;return;}const raw=Buffer.from(JSON.stringify({sequence:this.received,...value})+'\n');if(this.bytes+raw.length+1024>this.maximumBytes){this.omitted++;return;}try{this.write(raw);this.bytes+=raw.length;}catch{this.failed=true;this.omitted++;}};
  private write(raw:Buffer){let offset=0;while(offset<raw.length){const n=writeSync(this.fd!,raw,offset);if(!n)throw new Error('short write');offset+=n;}}
  close(){const summary={schemaVersion:1,received:this.received,omitted:this.omitted,state:this.failed||this.omitted?'incomplete':'complete'};if(this.fd!==null){try{this.write(Buffer.from(JSON.stringify({summary})+'\n'));fsyncSync(this.fd);}catch{summary.state='incomplete';}finally{try{closeSync(this.fd);}catch{summary.state='incomplete';}this.fd=null;}}return summary;}

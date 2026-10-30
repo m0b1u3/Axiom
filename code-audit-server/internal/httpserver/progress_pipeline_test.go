@@ -38,7 +38,9 @@ func assertProgressPipeline(t *testing.T, s *store.Store, url, token string, tas
 	if !reflect.DeepEqual(disk, archived) {
 		t.Fatal("Scanner snapshot changed across Agent heartbeat and Server")
 	}
-	if disk.Phase != "partial" || disk.Cost == nil || disk.Cost.EstimatedUSD == nil || *disk.Cost.EstimatedUSD != 1.125 || *disk.Cost.InputTokens != 0 || disk.PhaseCounts != nil {
+	// Individual Worker observations remain visible; the SDK owns the final
+	// completed outcome after reconciling its children and coverage.
+	if disk.Phase != "completed" || disk.Cost != nil || disk.PhaseCounts != nil {
 		t.Fatal("cost/phase cleanup mismatch", disk)
 	}
 	if len(disk.Workers) != 2 || disk.Workers[0].Status != "failed" || disk.Workers[1].Status != "waiting" || disk.Error == nil || disk.Error.Code != "rate_limit" {
@@ -49,7 +51,7 @@ func assertProgressPipeline(t *testing.T, s *store.Store, url, token string, tas
 		t.Fatal(err)
 	}
 	lifecycle, err := contracts.DecodeSDKLifecycle(lifecycleRaw, nil)
-	if err != nil || lifecycle.Authentication == nil || lifecycle.Authentication.Verified || lifecycle.TrustedAccess == nil || *lifecycle.TrustedAccess != "not_granted" || !lifecycle.ScanStarted || !lifecycle.OutputReady || lifecycle.BudgetApproaching == nil || lifecycle.BudgetApproaching.Action != "retain_limit" {
+	if err != nil || lifecycle.Authentication == nil || lifecycle.Authentication.Verified || lifecycle.TrustedAccess == nil || *lifecycle.TrustedAccess != "not_granted" || !lifecycle.ScanStarted || !lifecycle.OutputReady || lifecycle.BudgetApproaching != nil {
 		t.Fatal("SDK lifecycle did not survive Agent and Server persistence", err, lifecycle)
 	}
 	status, body := getJSON(t, url+fmt.Sprintf("/api/v1/scans/%d", task.ID), token)
@@ -94,7 +96,7 @@ func assertProgressPipeline(t *testing.T, s *store.Store, url, token string, tas
 			}
 			types[event.Type] = true
 		}
-		for _, kind := range []contracts.EventTypeV2{"scan.progress", "scan.worker", "scan.worker_status", "scan.activity", "scan.cost", "scan.error", "scan.reconnect", "scan.warning", "scan.finished"} {
+		for _, kind := range []contracts.EventTypeV2{"scan.progress", "scan.worker", "scan.worker_status", "scan.activity", "scan.usage", "scan.error", "scan.reconnect", "scan.warning", "scan.finished"} {
 			if !types[kind] {
 				t.Fatal("missing event", kind)
 			}

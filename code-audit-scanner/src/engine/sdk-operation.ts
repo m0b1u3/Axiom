@@ -1,7 +1,9 @@
+import {providerMcpOverrides} from '../runtime/provider-mcp.js';
 import {validationOutputMode} from '../proxy/validation-output-mode.js';
 import {ValidationTransportJournal} from '../proxy/turn-diagnostic.js';
 import {frozenInterimReview,reviewDigest,interimReviewModelFinding,interimReviewSourceInventory} from '../runtime/interim-review.js';
 import {ACTIVE_SDK_VERSION} from '../runtime/sdk-version.js';
+import {sdkForTask} from '../runtime/sdk-runtime.js';
 import {selectedSDKAuth} from "../runtime/sdk-identity.js";
 import {sdkScanTarget} from '../runtime/git-target.js';
 import {mkdir,writeFile,realpath} from 'node:fs/promises';
@@ -12,8 +14,7 @@ import type {ScanTask} from '../contract/scan-task.js';
 import type {ScanResult} from '../contract/scan-result.js';
 import {mapEngineError} from './error-mapping.js';
 import {validateScanTask,normalizeIncludePath} from '../contract/validate-task.js';
-import {sdkScanInputOptions} from '../contract/sdk-scan-input.js';
-import {deepScanOptions} from '../contract/deep-policy.js';
+import {sdkScanOptions} from '../contract/sdk-scan-options.js';
 import {buildCodexOverrides,nativeOpenAI} from '../provider/model-provider.js';
 import {ensureModelCatalog,startResponsesTransport} from './codex-security-engine.js';
 import {withIsolatedScanEnvironment} from '../runtime/scan-environment.js';
@@ -38,22 +39,22 @@ export async function runSDKOperation(task:ScanTask,signal:AbortSignal):Promise<
   try {
     const candidateReview=frozenInterimReview(operation.finding,task.sourceContentHash??'',operation.origin);
     await mkdir(raw,{recursive:true,mode:0o700});
-    const target=await sdkScanTarget(task,signal);
-    const overrides=buildCodexOverrides(task);
+    await sdkScanTarget(task,signal);
+    const overrides=await providerMcpOverrides(task,buildCodexOverrides(task));
     if(overrides){const catalog=await ensureModelCatalog(task);if(catalog)overrides.model_catalog_json=catalog.replaceAll('\\','/');}
     const outputMode=operation.kind==='validate'&&!task.mock?validationOutputMode(process.env['AXIOM_VALIDATION_OUTPUT_MODE']):'native_schema';
     if(outputMode==='json_object'&&(!overrides||!overrides.model_providers))throw new Error('JSON 兼容模式仅支持经本地适配器连接的 OpenAI-compatible 上游；当前连接不能应用此设置。');
     if(operation.kind==='validate'){await mkdir(path.join(task.outputPath,'logs'),{recursive:true,mode:0o700});await writeFile(path.join(task.outputPath,'logs/validation-output-mode.json'),JSON.stringify({schemaVersion:1,mode:outputMode,source:'scanner_environment',localValidation:'sdk_strict_schema_and_report_body',automaticFallback:false})+'\n',{mode:0o600});}
     // Preflight has no transport or inference; validation uses the same provider adapter.
     if(operation.kind==='validate'&&!task.mock){transportJournal=new ValidationTransportJournal(task.outputPath);shim=await startResponsesTransport(task,overrides,message=>{void sink.warning(message).catch(()=>undefined);},transportJournal.record,outputMode,candidateReview!==null);}
-    security=new CodexSecurity(overrides?{codexOverrides:overrides}:{});
+    security=new (await sdkForTask(task)).CodexSecurity(overrides?{codexOverrides:overrides}:{});
     await sink.operationStep(operation.kind==='preflight'?'preflight':'validation');
     await sink.activity({kind:'message',status:'running',description:operation.kind==='preflight'?'检查 SDK 目标、模型和扫描配置':'独立复核已冻结的漏洞证据；费用未知'});
     const source=await realpath(task.sourcePath),output=await realpath(task.outputPath),roots={[source]:'$SOURCE',[task.sourcePath]:'$SOURCE',[output]:'$OUTPUT',[task.outputPath]:'$OUTPUT'};
     await withIsolatedScanEnvironment(task,async()=>{
       if(operation.kind==='preflight') {
-        const options=await sdkScanInputOptions(task);
-        const value=await security!.preflight(task.sourcePath,{...options,...deepScanOptions(task),mode:task.scanMode,outputDir:raw,...(target!==undefined?{target}:{}),...(task.maxCostUsd!==undefined?{maxCostUsd:task.maxCostUsd}:{}),...(task.mock?{mock:true}:nativeOpenAI(task)?{auth:selectedSDKAuth(task)}:{}),signal});
+        const options=await sdkScanOptions(task,signal);
+        const value=await security!.preflight(task.sourcePath,{...options,outputDir:raw});
         outcome.preflight=sanitizeSDKData(value,roots) as JsonObject;
         await writeFile(path.join(raw,'sdk-operation-native.json'),JSON.stringify(outcome.preflight)+'\n',{mode:0o600});
       } else if(task.mock) {
@@ -63,7 +64,6 @@ export async function runSDKOperation(task:ScanTask,signal:AbortSignal):Promise<
         const value=await security!.validate({repositoryPath:task.sourcePath,finding:candidateReview?interimReviewModelFinding(candidateReview,await interimReviewSourceInventory(task.sourcePath)):operation.finding!,outputDir:raw,...(nativeOpenAI(task)?{auth:selectedSDKAuth(task)}:{}),signal});
         await writeFile(path.join(raw,'sdk-operation-native.json'),JSON.stringify(sanitizeSDKData(value,roots))+'\n',{mode:0o600});
         outcome.validation={disposition:value.disposition,report:sanitizeSDKData(value.report) as string,threadId:value.threadId};
- result.executionUsage=shim?.tokenUsage?.(execution,true);
       }
     });
     if(candidateReview&&outcome.validation){
@@ -73,7 +73,6 @@ export async function runSDKOperation(task:ScanTask,signal:AbortSignal):Promise<
     if(operation.kind==='validate'&&!task.mock&&outcome.validation&&validationReportBodyState(outcome.validation.report)!=='body_present')throw new IncompleteScanError('复核报告输出不完整：报告结构不完整，未识别到独立评估正文（正文可能粘连在标题行）；原始响应与标签已保留；当前候选仍待核查，未自动重试模型。');
     try{decode('SDKOperationResult',JSON.stringify(outcome),execution);}catch{outcome.preflight=null;outcome.validation=null;throw new Error('SDK 原生响应超出当前操作合同或展示容量；完整响应保留在 sdk-operation-native.json。');}
   } catch(error) {
- result.executionUsage=shim?.tokenUsage?.(execution,false);
     const mapped=mapEngineError(error);result.status=signal.aborted?'canceled':mapped.status;
     const originalMessage=sanitizeSDKData(error instanceof Error?error.message:String(error)) as string;
     const fullMessage=sanitizeSDKData(mapped.message) as string;
@@ -83,6 +82,10 @@ export async function runSDKOperation(task:ScanTask,signal:AbortSignal):Promise<
   } finally {
     try{await security?.close();}catch{await sink.warning('SDK 操作已返回；运行环境关闭失败，请保留执行产物。');}
     await shim?.close();
+    // Drain the transport before taking the final receipt total, including on
+    // failure. Usage completeness is independent of whether any price exists.
+    result.executionUsage=shim?.tokenUsage?.(execution,result.status==='completed'&&!result.error);
+    if(result.executionUsage)await sink.executionUsage(result.executionUsage);
     if(transportJournal?.close().state==='incomplete')await sink.warning('复核传输摘要记录不完整；原始 SDK 结果仍保留，不能据此判定模型或网关原因。');
   }
   outcome.finishedAt=result.finishedAt=new Date().toISOString();

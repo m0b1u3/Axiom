@@ -12,6 +12,7 @@ export async function describeScanner() {
     schemaVersion:SCANNER_DESCRIPTION_VERSION,
  sdkResultAdapterVersion:SDK_RESULT_ADAPTER_VERSION,
  sdkDeepResumeVersion:1,
+ tokenBudgetVersion:1,
  sdkIdentityVersion:1,
  sdkParametersVersion:1,
  sdkConcurrencyVersion:1,

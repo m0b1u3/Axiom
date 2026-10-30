@@ -53,7 +53,6 @@ onMounted(()=>void pull());onUnmounted(()=>{disposed=true;clearTimeout(timer);})
  </dl>
  <dl v-if="progress?.snapshot" class="execution-observations">
   <div><dt>观察来源</dt><dd>{{progressSources[progress.snapshot.source]}} · {{localLogTime(progress.snapshot.observedAt)}} · 修订 {{progress.snapshot.revision}}<span v-if="!running">最后归档快照</span><span v-else>观察时间不代表当前仍在执行该动作</span></dd></div>
-  <div v-if="!operationKind"><dt>SDK 回调估算</dt><dd>{{progress.snapshot.cost?.estimatedUsd==null?'尚未上报':progress.snapshot.cost.estimatedUsd>0&&progress.snapshot.cost.estimatedUsd<0.0001?'< $0.0001':`$${progress.snapshot.cost.estimatedUsd.toFixed(4)}`}} · 输入 {{progress.snapshot.cost?.inputTokens??'—'}} / 输出 {{progress.snapshot.cost?.outputTokens??'—'}} Token<span v-if="progress.snapshot.cost?.reportedModel">{{progress.snapshot.cost.reportedModel}}</span><span>SDK 回调估算不代表平台按配置单价计算的金额；费用依据见任务预算与费用</span></dd></div>
  </dl>
  <dl v-if="usage.value" class="execution-observations" aria-label="SDK Token 观察">
   <div><dt>已观测 Token</dt><dd><template v-if="usage.value.componentIndex!==undefined">最近组件 {{usage.value.componentIndex+1}} · </template>输入 {{usage.value.inputTokens??'—'}} / 输出 {{usage.value.outputTokens??'—'}} / 总计 {{usage.value.totalTokens??'—'}}<span>缓存读取 {{usage.value.cachedInputTokens??'—'}} · 缓存写入 {{usage.value.cacheWriteInputTokens??'—'}} · 推理输出 {{usage.value.reasoningOutputTokens??'—'}}</span><span>SDK {{usage.value.sdkVersion}} · {{localLogTime(usage.value.observedAt)}}；Token 观察不代表费用已知或完整结算</span></dd></div>

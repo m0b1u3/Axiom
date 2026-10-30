@@ -15,15 +15,13 @@ export function processMismatch(completion:ExecutionCompletion|null|undefined):b
   return completion.process.signal!=null || completion.process.code!==codes[completion.result.status];
 }
 
-export function nativeCostSections(result:ScanResult):Array<{title:string;rows:Array<{key:string;label:string;value:string}>}>{
+export function nativeUsageSections(result:ScanResult):Array<{title:string;rows:Array<{key:string;label:string;value:string}>}>{
   const object=(v:JsonValue|undefined):Record<string,JsonValue>|null=>v && typeof v==='object' && !Array.isArray(v)?v:null;
   const sdk=object(result.extensions?.sdk),turn=object(sdk?.turn);
-  const cost=object(sdk?.cost),observed=object(result.extensions?.lastObservedCost),usage=object(turn?.usage);
+  const usage=object(turn?.usage);
   const labels:Record<string,string>={estimatedUsdRange:'Token 估算范围（非账单）',pricing:'SDK 定价依据',estimatedUsd:'估算基准（USD）',model:'计费模型',inputTokens:'输入 Token',outputTokens:'输出 Token',cachedInputTokens:'缓存输入 Token',cacheWriteInputTokens:'缓存写入 Token',input_tokens:'输入 Token',output_tokens:'输出 Token',cached_input_tokens:'缓存输入 Token',cache_write_input_tokens:'缓存写入 Token',reasoning_output_tokens:'推理输出 Token',total_tokens:'总 Token',observedAt:'观测时间',source:'来源'};
   const rows=(v:Record<string,JsonValue>)=>Object.entries(v).map(([key,value])=>({key,label:labels[key]??key,value:value===null?'未知':typeof value==='object'?JSON.stringify(value):String(value)}));
   const sections=[];
-  if(cost)sections.push({title:'SDK 原生费用记录',rows:rows(cost)});
-  else if(observed)sections.push({title:'最后收到的 SDK 费用回调（非最终账单）',rows:rows(observed)});
   if(usage)sections.push({title:'SDK 原生 Token 用量',rows:rows(usage)});
   return sections;
 }

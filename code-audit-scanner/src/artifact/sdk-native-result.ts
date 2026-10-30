@@ -1,6 +1,5 @@
 import {ACTIVE_SDK_VERSION} from '../runtime/sdk-version.js';
-import {estimateScanCost} from '@openai/codex-security';
-import {validate,type ArtifactRef,type ExecutionRef,type JsonObject,type JsonValue,type SDKCostEstimate,type SDKNativeExport,type SDKNativeResult,type SDKRepositoryFinding} from '@axiom/contracts';
+import {validate,type ArtifactRef,type JsonObject,type SDKNativeExport,type SDKNativeResult,type SDKRepositoryFinding} from '@axiom/contracts';
 import {readFile,realpath} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import path from 'node:path';
@@ -9,19 +8,6 @@ import type {ScanResult} from '../contract/scan-result.js';
 
 const object=(v:unknown):Record<string,unknown>|null=>v!==null&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:null;
 const id=(v:unknown):string|null=>typeof v==='string'&&v.length>0&&v.length<=512?v:null;
-
-export function sdkUsageEstimate(execution:ExecutionRef,snapshot:Record<string,unknown>|undefined):SDKCostEstimate {
-  const turn=object(snapshot?.turn),model=id(turn?.model),usage=(turn?.usage??null) as JsonValue;
-  const value:SDKCostEstimate={schemaVersion:1,execution,sdkVersion:ACTIVE_SDK_VERSION,method:'estimateScanCost',scope:'returned_turn_usage',observedAt:new Date().toISOString(),model,status:'unavailable',reason:null,estimatedUsd:null,inputTokens:null,cachedInputTokens:null,cacheWriteInputTokens:null,outputTokens:null,usage,currency:'USD',isEstimate:true};
-  if(!model){value.status='missing_model';value.reason='SDK 未报告本轮模型，无法按锁定定价估算。';}
-  else if(usage===null){value.status='missing_usage';value.reason='SDK 未提供本轮 Token 用量，无法估算。';}
-  else {
-    const cost=estimateScanCost(model,usage);
-    if(cost){Object.assign(value,{status:'estimated',estimatedUsd:cost.estimatedUsd,inputTokens:cost.inputTokens,cachedInputTokens:cost.cachedInputTokens,cacheWriteInputTokens:cost.cacheWriteInputTokensReported===false?null:cost.cacheWriteInputTokens,outputTokens:cost.outputTokens,nativeEstimate:JSON.parse(JSON.stringify(cost))});}
-    else{value.status='unsupported_model_or_usage';value.reason='该模型定价或用量格式不受 SDK 0.5.0 的估算函数支持。';}
-  }
-  validate('SDKCostEstimate',value,execution);return value;
-}
 
 function repositoryHistory(value:unknown):SDKNativeResult['repositoryHistory'] {
   if(value===undefined||value===null)return {state:'not_reported',records:[],reason:'SDK 未返回仓库级漏洞历史；不据此认定仓库没有历史漏洞。'};
@@ -76,7 +62,7 @@ async function nativeExport(task:ScanTask,format:'markdown'|'sarif',snapshot:Rec
 export async function buildSDKNativeResult(task:ScanTask,result:ScanResult,artifacts:ArtifactRef[]):Promise<SDKNativeResult> {
   const execution={taskId:String(task.taskId),attempt:task.executionAttempt!},snapshot=result.sdkRaw;
   const history=repositoryHistory(snapshot?.repositoryFindings),manifest=object(snapshot?.manifest),scan=object(manifest?.scan),target=object(scan?.target);
-  const native:SDKNativeResult={diagnosticJournal:artifacts.find(a=>a.relativePath==='logs/sdk-diagnostics.jsonl')??null,diagnosticJournalError:null,schemaVersion:1,execution,sdkVersion:ACTIVE_SDK_VERSION,observedAt:new Date().toISOString(),scanId:id(scan?.id),targetId:id(target?.targetId)??id(target?.id),reports:{markdown:await nativeExport(task,'markdown',snapshot,artifacts),sarif:await nativeExport(task,'sarif',snapshot,artifacts)},repositoryHistory:history,usageEstimate:sdkUsageEstimate(execution,snapshot),diagnostics:result.sdkDiagnostics??{schemaVersion:1,execution,warningCount:0,observerErrorCount:0,omittedCount:0,entries:[]}};
+  const native:SDKNativeResult={diagnosticJournal:artifacts.find(a=>a.relativePath==='logs/sdk-diagnostics.jsonl')??null,diagnosticJournalError:null,schemaVersion:1,execution,sdkVersion:ACTIVE_SDK_VERSION,observedAt:new Date().toISOString(),scanId:id(scan?.id),targetId:id(target?.targetId)??id(target?.id),reports:{markdown:await nativeExport(task,'markdown',snapshot,artifacts),sarif:await nativeExport(task,'sarif',snapshot,artifacts)},repositoryHistory:history,usageEstimate:null,diagnostics:result.sdkDiagnostics??{schemaVersion:1,execution,warningCount:0,observerErrorCount:0,omittedCount:0,entries:[]}};
   const expectedCount=native.diagnostics.warningCount+native.diagnostics.observerErrorCount;
   if(expectedCount||native.diagnosticJournal){
     try{

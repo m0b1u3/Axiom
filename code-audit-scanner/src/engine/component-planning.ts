@@ -1,4 +1,6 @@
+import {providerMcpOverrides} from '../runtime/provider-mcp.js';
 import {ACTIVE_SDK_VERSION} from '../runtime/sdk-version.js';
+import {sdkForTask} from '../runtime/sdk-runtime.js';
 import {planComponents,normalizeComponentPlan,VERSION} from '@openai/codex-security';
 import {validate,type ComponentPlanningResult,type ComponentPlanDocument} from '@axiom/contracts';
 import {mkdir,writeFile,realpath} from 'node:fs/promises';
@@ -34,9 +36,10 @@ export async function runComponentPlanning(task:ScanTask,signal:AbortSignal):Pro
   let proposed:unknown=op.document;
   if(op.kind==='suggest'){
    if(task.mock)throw new Error('模拟模式不执行自动组件规划，请手工编辑计划；没有调用模型。');
-   const overrides=buildCodexOverrides(task);if(overrides){const catalog=await ensureModelCatalog(task);if(catalog)overrides.model_catalog_json=catalog.replaceAll('\\','/');}
+   const overrides=await providerMcpOverrides(task,buildCodexOverrides(task));if(overrides){const catalog=await ensureModelCatalog(task);if(catalog)overrides.model_catalog_json=catalog.replaceAll('\\','/');}
    shim=await startResponsesTransport(task,overrides,()=>undefined);
-   proposed=await withIsolatedScanEnvironment(task,()=>planComponents(task.sourcePath,{...(overrides?{config:{codexOverrides:overrides}}:{}),environment:process.env,signal}));
+   const sdk=await sdkForTask(task);
+   proposed=await withIsolatedScanEnvironment(task,()=>sdk.planComponents(task.sourcePath,{...(overrides?{config:{codexOverrides:overrides}}:{}),environment:process.env,signal}));
   }
   const native=sanitizeSDKData(proposed,roots);await writeFile(path.join(raw,'component-plan-native.json'),JSON.stringify(native)+'\n',{mode:0o600});
   validate('ComponentPlanDocument',proposed);const normalized=await normalizeComponentPlan(task.sourcePath,proposed,signal) as ComponentPlanDocument;validate('ComponentPlanDocument',normalized);

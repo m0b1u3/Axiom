@@ -1,0 +1,86 @@
+{
+  "checkedAt": "2026-10-28T13:36:46+08:00",
+  "status": "local-real-auth-passed-vps-device-auth-http403",
+  "vps": {
+    "deviceLoginAttempts": 1,
+    "result": "failed-before-instructions",
+    "rawFailureReason": "not retained by deployed application",
+    "authorizationPageGetStatus": 302,
+    "networkConclusion": "Authorization webpage GET was reachable (302), but real SDK device-code login was rejected (403). General internet outage is not established; specific rejection policy remains unknown.",
+    "postDeploymentDeviceLoginAttempts": 1,
+    "postDeploymentBlocker": "Device-code login returned HTTP 403 before instructions; no automatic retry. Exact rejection policy is not established.",
+    "preDeploymentImage": "axiom-vps/agent:vps-model-pricing-20261027-01",
+    "image": "axiom-vps/agent:vps-chatgpt-auth-20261028-01",
+    "postDeploymentResult": {
+      "requestedAt": "2026-10-28T13:36:43+08:00",
+      "completedAt": "2026-10-28T13:36:46+08:00",
+      "status": "failed",
+      "diagnosticCode": "sdk_auth_forbidden",
+      "httpStatus": 403,
+      "deviceCodeIssued": false
+    },
+    "administratorLogin": "User-provided existing credential succeeded; no credential change."
+  },
+  "local": {
+    "url": "http://127.0.0.1:5175/models?tab=accounts",
+    "agent": "agent-local-auth-acceptance",
+    "deviceLoginAttempts": 1,
+    "realDeviceInstructionsReceived": true,
+    "authenticated": true,
+    "deadline": "2026-10-28T12:06:37+08:00",
+    "isolatedDatabase": true,
+    "loginCompletedAt": "2026-10-28T12:01:15+08:00",
+    "freshAccountQueryCompletedAt": "2026-10-28T12:01:33+08:00",
+    "credentialPermissions": [
+      {
+        "fileMode": "0o600",
+        "parentMode": "0o700"
+      }
+    ]
+  },
+  "checks": {
+    "scannerUnitTests": 6,
+    "sdkAuthRuntimeFixture": "passed, includes 403 diagnostic secrecy",
+    "serverDiagnosticUnit": "passed",
+    "identityPipeline": "passed, 11 subtests"
+  },
+  "realModelCalls": 0,
+  "automaticLoginRetries": 0,
+  "deployed": true,
+  "deployment": {
+    "status": "passed",
+    "at": "2026-10-28T04:07:43.161376+00:00",
+    "tag": "vps-chatgpt-auth-20261028-01",
+    "backup": "/opt/axiom/backups/before-chatgpt-auth-20261028-02",
+    "services": {
+      "server": {
+        "image": "axiom-vps/server:vps-chatgpt-auth-20261028-01",
+        "healthy": true
+      },
+      "agent": {
+        "image": "axiom-vps/agent:vps-chatgpt-auth-20261028-01",
+        "healthy": true
+      },
+      "web": {
+        "image": "axiom-vps/web:web-page-recovery-20261027-01",
+        "healthy": true
+      },
+      "postgres": {
+        "image": "postgres:16.15-alpine3.24@sha256:1a66d744c1b459e13b05a8fca341da84cb63383e99ce262210efee5a319d4551",
+        "healthy": true
+      }
+    },
+    "protectedTablesUnchanged": 41,
+    "businessAndCredentialFilesUnchanged": 8008,
+    "schemaUnchanged": true,
+    "defaultModel": "deepseek-flash",
+    "wireAPI": "responses",
+    "outputMode": "native_schema",
+    "realModelCalls": 0,
+    "newTasks": 0,
+    "localCredentialsUploaded": false,
+    "firstActivationRolledBack": "Deployment guard compared environment variable order. Values were unchanged; comparison corrected and same candidate successfully deployed."
+  },
+  "evidenceScope": "Local real login and fresh SDK account query only; GPT model invocation, token refresh expiry and cross-host credential migration not tested.",
+  "diagnosisReference": "chatgpt-device-auth-diagnosis-20261028.json"
+}

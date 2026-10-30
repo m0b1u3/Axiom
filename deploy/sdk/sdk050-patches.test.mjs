@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-const root=new URL('../../',import.meta.url),sdk=new URL('code-audit-scanner/node_modules/@openai/codex-security/',root);
+const root=new URL('../../',import.meta.url),sdk=new URL('code-audit-scanner/node_modules/@axiom/codex-security-compat-v1/',root),native=new URL('code-audit-scanner/node_modules/@openai/codex-security/',root);
 const json=async p=>JSON.parse(await readFile(new URL(p,import.meta.url),'utf8'));
 const sha=v=>createHash('sha256').update(v).digest('hex');
 test('all seven 0.5 patches are version-bound, complete and preserve the legacy baseline',async()=>{
@@ -18,6 +18,8 @@ test('all seven 0.5 patches are version-bound, complete and preserve the legacy 
  }
 });
 test('delegation rebases do not restore removed old workflow helpers or silently change permissions',async()=>{
+ const official=await readFile(new URL('dist/config.js',native),'utf8');assert.match(official,/multi_agent_v2: Object\.freeze/);assert.doesNotMatch(official,/multi_agent: true/);
+ const manifest=await json('manifest.json');for(const patch of manifest.patches)assert.equal(sha(await readFile(new URL(patch.path.slice('@openai/codex-security/'.length),native))),patch.before);
  const config=await readFile(new URL('dist/config.js',sdk),'utf8');assert.match(config,/multi_agent: true/);assert.doesNotMatch(config,/multi_agent_v2: Object\.freeze/);
  const ledger=await readFile(new URL('_bundled_plugin/skills/security-scan/references/scan-artifacts-and-ledger.md',sdk),'utf8');
  assert.match(ledger,/fork_context: false/);assert.doesNotMatch(ledger,/rank_candidates\.py|rank_worklist\.py/);

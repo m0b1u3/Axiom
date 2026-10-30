@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 2,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "revision": 1,
+  "phase": "discovery",
+  "source": "engine_callback",
+  "observedAt": "2026-10-13T01:00:00Z",
+  "reportedAt": null,
+  "files": {
+    "completed": 0,
+    "total": 0,
+    "unit": "files",
+    "basis": "reported"
+  },
+  "phaseCounts": {
+    "completed": 0,
+    "total": 3,
+    "unit": "checks",
+    "basis": "observed"
+  },
+  "deep": {
+    "completed": 0,
+    "active": 0,
+    "maximum": 9
+  },
+  "workers": [
+    {
+      "worker": {
+        "threadId": "thread-1",
+        "index": 0,
+        "parentThreadId": null
+      },
+      "status": "waiting",
+      "activity": {
+        "kind": "tool",
+        "status": "running",
+        "description": "failed command（只是文字，不是失败状态）",
+        "id": "activity-1",
+        "toolName": "read_file",
+        "worker": {
+          "threadId": "thread-1",
+          "index": 0,
+          "parentThreadId": null
+        },
+        "paths": [
+          "src/中文,a.ts"
+        ]
+      },
+      "source": "engine_callback",
+      "observedAt": "2026-10-13T01:00:00Z"
+    }
+  ],
+  "workerStatus": {
+    "kind": "preflight",
+    "delegation": "available",
+    "configuredSlots": 0,
+    "observedAt": "2026-10-13T01:00:00Z"
+  },
+  "activity": {
+    "kind": "tool",
+    "status": "running",
+    "description": "failed command（只是文字，不是失败状态）",
+    "id": "activity-1",
+    "toolName": "read_file",
+    "worker": {
+      "threadId": "thread-1",
+      "index": 0,
+      "parentThreadId": null
+    },
+    "paths": [
+      "src/中文,a.ts"
+    ]
+  },
+  "cost": {
+    "estimatedUsd": 0,
+    "inputTokens": 0,
+    "outputTokens": 17,
+    "cachedInputTokens": 0,
+    "cacheWriteInputTokens": 3,
+    "currency": "USD",
+    "isEstimate": true,
+    "observedAt": "2026-10-13T01:00:00Z",
+    "source": "engine_callback",
+    "reportedModel": "fixture-reported"
+  },
+  "reconnect": {
+    "attempt": 1,
+    "maximum": 3,
+    "reason": "network",
+    "retryAfterSeconds": 0
+  },
+  "error": {
+    "code": "rate_limit",
+    "origin": "engine",
+    "message": "fixture 错误，预算 ≠ 配额",
+    "retryable": true,
+    "extensions": {
+      "native": {
+        "requestId": "fixture-1"
+      }
+    }
+  },
+  "reconnectAt": "2026-10-13T01:00:00Z",
+  "extensions": {
+    "componentScan": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      },
+      "planId": "9",
+      "version": 1,
+      "versionSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "source": {
+        "snapshotId": "7",
+        "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "headCommit": null
+      },
+      "phase": "finished",
+      "observedAt": "2026-10-17T01:00:00Z",
+      "grantMicros": 4000001,
+      "reservedMicros": 0,
+      "observedMicros": 250000,
+      "components": [
+        {
+          "index": 0,
+          "status": "completed",
+          "allocatedMicros": 2000001,
+          "observedMicros": 125000,
+          "finalMicros": 125000,
+          "findingCount": 0,
+          "scanId": "fixture-component-0",
+          "resultArtifact": {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/component-1.json",
+            "sizeBytes": 20,
+            "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          },
+          "error": null,
+          "phase": "reporting",
+          "activity": "Fixtures / Mock"
+        },
+        {
+          "index": 1,
+          "status": "completed",
+          "allocatedMicros": 2000000,
+          "observedMicros": 125000,
+          "finalMicros": 125000,
+          "findingCount": 0,
+          "scanId": "fixture-component-1",
+          "resultArtifact": {
+            "kind": "engine_raw",
+            "relativePath": "raw/codex-security/component-2.json",
+            "sizeBytes": 20,
+            "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          },
+          "error": null,
+          "phase": "reporting",
+          "activity": "Fixtures / Mock"
+        }
+      ],
+      "matching": {
+        "status": "completed",
+        "costState": "unknown",
+        "reason": "Fixture matching fees unavailable",
+        "native": {
+          "confirmedGroups": 0,
+          "uncertainPairs": 1
+        }
+      }
+    },
+    "componentMatchingEstimate": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      },
+      "method": "configured_token_prices",
+      "pricingSnapshot": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "9007199254740993",
+          "attempt": 2
+        },
+        "modelConfigId": 2,
+        "revision": 1,
+        "capturedAt": "2026-10-27T08:00:00Z",
+        "provider": "deepseek",
+        "model": "fixture-model",
+        "pricing": {
+          "schemaVersion": 1,
+          "currency": "USD",
+          "unit": "per_million_tokens",
+          "cacheMode": "cache_read",
+          "inputPerMillion": "1",
+          "cacheReadPerMillion": "0.1",
+          "cacheWritePerMillion": null,
+          "outputPerMillion": "4",
+          "note": "Fixtures / Mock pricing only"
+        },
+        "reason": ""
+      },
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "9007199254740993",
+          "attempt": 2
+        },
+        "source": "sdk_on_usage",
+        "complete": false,
+        "inputTokens": 100000,
+        "cachedInputTokens": 20000,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 10000,
+        "reasoningOutputTokens": 5000,
+        "totalTokens": 110000,
+        "requestCount": null
+      },
+      "status": "unknown",
+      "currency": "USD",
+      "amountMicros": 122000,
+      "reason": "usage_incomplete",
+      "computedAt": "2026-10-27T08:01:00Z"
+    }
+  }
+}

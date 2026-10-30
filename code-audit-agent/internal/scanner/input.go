@@ -38,6 +38,7 @@ func entryArguments(directory string) []string {
 
 // Probe does not supply scan credentials and must not load or start the SDK.
 type Capabilities struct {
+	TokenBudgetVersion int
 	DeepResumeVersion  int
 	ConcurrencyVersion int
 	ParametersVersion  int
@@ -74,6 +75,12 @@ func parseDescription(raw []byte) (Capabilities, error) {
 	}
 	var value any
 	switch h.SchemaVersion {
+	case 15:
+		v, e := contracts.DecodeScannerDescriptionV15(raw, nil)
+		if e != nil {
+			return Capabilities{}, e
+		}
+		value = v
 	case 14:
 		v, e := contracts.DecodeScannerDescriptionV14(raw, nil)
 		if e != nil {
@@ -166,6 +173,7 @@ func parseDescription(raw []byte) (Capabilities, error) {
 		return Capabilities{}, e
 	}
 	var d struct {
+		TokenBudgetVersion int    `json:"tokenBudgetVersion"`
 		ConcurrencyVersion int    `json:"sdkConcurrencyVersion"`
 		ParametersVersion  int    `json:"sdkParametersVersion"`
 		IdentityVersion    int    `json:"sdkIdentityVersion"`
@@ -185,7 +193,7 @@ func parseDescription(raw []byte) (Capabilities, error) {
 	if e = json.Unmarshal(canonical, &d); e != nil {
 		return Capabilities{}, e
 	}
-	c := Capabilities{DeepResumeVersion: d.DeepResumeVersion, ConcurrencyVersion: d.ConcurrencyVersion, ParametersVersion: d.ParametersVersion, IdentityVersion: d.IdentityVersion, DescriptionVersion: h.SchemaVersion, Build: d.Version, Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}, MaxCostUSD: d.Capabilities.MaxCostUSD}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
+	c := Capabilities{TokenBudgetVersion: d.TokenBudgetVersion, DeepResumeVersion: d.DeepResumeVersion, ConcurrencyVersion: d.ConcurrencyVersion, ParametersVersion: d.ParametersVersion, IdentityVersion: d.IdentityVersion, DescriptionVersion: h.SchemaVersion, Build: d.Version, Input: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{}, JobVersions: []contracts.SchemaVersion{}, MaxCostUSD: d.Capabilities.MaxCostUSD}, Result: contracts.NoResultCapabilities(), Observation: contracts.NoObservationCapabilities()}
 	if h.SchemaVersion >= 2 && d.Capabilities.JobFile {
 		for _, v := range d.Runtime.Versions.Assignment {
 			if v == 1 {

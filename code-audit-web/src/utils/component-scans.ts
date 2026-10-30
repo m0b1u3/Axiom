@@ -1,12 +1,12 @@
 import {validate} from '../../../contracts/ts/src/index';
-import type {ComponentScanRequest,ComponentScanSnapshot,ComponentScanReceipt,ComponentFindingBinding,ComponentScanResult} from '../contracts';
-export type ComponentAttempt={request:ComponentScanRequest;snapshot:ComponentScanSnapshot|null;status:string};
+import type {ComponentScanRequest,ComponentScanSnapshot,ComponentScanReceipt,ComponentFindingBinding,ComponentScanResult,TokenCostEstimate} from '../contracts';
+export type ComponentAttempt={request:ComponentScanRequest;snapshot:ComponentScanSnapshot|null;status:string;matchingEstimate?:TokenCostEstimate};
 export interface ComponentExecutionsView {request:ComponentScanRequest;attempts:ComponentAttempt[]}
 const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
 export function checkedComponentExecutions(value:unknown,taskId:number):ComponentExecutionsView{
  const v=value as ComponentExecutionsView;
  validate('ComponentScanRequest',v.request);if(v.request.execution.taskId!==String(taskId)||!Array.isArray(v.attempts))throw new Error('组件父任务身份不匹配');
- for(const a of v.attempts){validate('ComponentScanRequest',a.request);if(a.request.execution.taskId!==String(taskId)||a.request.planVersion.sha256!==v.request.planVersion.sha256||!same(a.request.planVersion.source,v.request.planVersion.source))throw new Error('组件历史版本身份不匹配');if(a.snapshot){validate('ComponentScanSnapshot',a.snapshot,a.request.execution);if(a.snapshot.versionSha256!==a.request.planVersion.sha256||a.snapshot.planId!==a.request.planVersion.planId||!same(a.snapshot.source,a.request.planVersion.source))throw new Error('组件进度源码身份不匹配')}}
+ for(const a of v.attempts){validate('ComponentScanRequest',a.request);if(a.request.execution.taskId!==String(taskId)||a.request.planVersion.sha256!==v.request.planVersion.sha256||!same(a.request.planVersion.source,v.request.planVersion.source))throw new Error('组件历史版本身份不匹配');if(a.snapshot){validate('ComponentScanSnapshot',a.snapshot,a.request.execution);if(a.snapshot.versionSha256!==a.request.planVersion.sha256||a.snapshot.planId!==a.request.planVersion.planId||!same(a.snapshot.source,a.request.planVersion.source))throw new Error('组件进度源码身份不匹配')}if(a.matchingEstimate!==undefined)validate('TokenCostEstimate',a.matchingEstimate,a.request.execution);}
  return v;
 }
 export function componentRows(v:ComponentExecutionsView,attempt?:number):Array<{index:number;receipt:ComponentScanReceipt|null;attempt:number|null}>{

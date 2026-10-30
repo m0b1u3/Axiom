@@ -23,7 +23,7 @@ func (c *Client) HeartbeatContract(ctx context.Context, h contracts.ExecutionHea
 }
 func (c *Client) claimObservations(ctx context.Context, id string) (*Lease, error) {
 	var v control.ObservationLease
-	e := c.callAt(ctx, "/api/internal/v4/executions/", "claim", control.ObservationClaimRequest{SDKDeepResumeVersion: c.SDKDeepResumeVersion, SDKConcurrencyVersion: c.SDKConcurrencyVersion, SDKParametersVersion: c.SDKParametersVersion, SDKIdentityVersion: c.SDKIdentityVersion, ContractClaimRequest: control.ContractClaimRequest{AgentID: id, InputCapabilities: c.capabilities().Input, ResultCapabilities: c.capabilities().Result}, ObservationCapabilities: c.capabilities().Observation}, &v)
+	e := c.callAt(ctx, "/api/internal/v4/executions/", "claim", control.ObservationClaimRequest{TokenBudgetVersion: c.TokenBudgetVersion, SDKDeepResumeVersion: c.SDKDeepResumeVersion, SDKConcurrencyVersion: c.SDKConcurrencyVersion, SDKParametersVersion: c.SDKParametersVersion, SDKIdentityVersion: c.SDKIdentityVersion, ContractClaimRequest: control.ContractClaimRequest{AgentID: id, InputCapabilities: c.capabilities().Input, ResultCapabilities: c.capabilities().Result}, ObservationCapabilities: c.capabilities().Observation}, &v)
 	if e != nil {
 		return nil, e
 	}
@@ -54,6 +54,20 @@ func (c *Client) claimObservations(ctx context.Context, id string) (*Lease, erro
 			}
 			lease.DeepResume = &checked
 		}
+	}
+	if v.TokenBudget != nil {
+		raw, _ := contracts.EncodeJSON(v.TokenBudget)
+		value, e := contracts.DecodeTokenBudgetAssignment(raw, &lease.Execution)
+		if e != nil || c.TokenBudgetVersion != 1 || lease.Assignment == nil || !lease.Assignment.Policy.MaxCostUSD.Present {
+			return nil, errors.New("invalid token budget assignment")
+		}
+		if value.PricingSnapshot.Execution != lease.Execution || value.PricingSnapshot.Provider != string(lease.Assignment.Model.ProviderID) || value.PricingSnapshot.Model != lease.Assignment.Model.Model {
+			return nil, errors.New("token budget price identity mismatch")
+		}
+		lease.TokenBudget = &value
+	}
+	if c.TokenBudgetVersion == 1 && lease.Assignment != nil && lease.Assignment.Policy.MaxCostUSD.Present && lease.TokenBudget == nil {
+		return nil, errors.New("budgeted execution is missing its frozen token prices")
 	}
 	if v.SDKParameters != nil {
 		raw, _ := contracts.EncodeJSON(v.SDKParameters)

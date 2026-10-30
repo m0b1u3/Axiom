@@ -68,6 +68,7 @@ export type ScanErrorCode =
   | "unknown";
 
 export interface ScanResult {
+  componentMatchingEstimate?:import('@axiom/contracts').TokenCostEstimate;
   executionUsage?:import('@axiom/contracts').ExecutionTokenUsage|undefined;
   interimReviewOutcome?:import("@axiom/contracts").InterimReviewOutcome;
   componentScan?:import("@axiom/contracts").ComponentScanResult;

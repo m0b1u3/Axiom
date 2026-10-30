@@ -38,7 +38,8 @@ test('pinned SDK pure validator and all adapter fields agree at native integer b
  assert.equal(check({mode:'deep',maxTimeHours:96}).maxTimeHours,96);
  assert.throws(()=>check({mode:'deep',maxTimeHours:96.01}));
  assert.throws(()=>check({mode:'standard',workers:65}));
- assert.equal(deepScanOptions({...base,deepMaxDiscoveryRuns:1001,deepStopAfterNoNew:1002}).maxTimeHours,47/60);
+ assert.equal(deepScanOptions({...base,deepMaxDiscoveryRuns:1001,deepStopAfterNoNew:1002}).maxTimeMinutes,47);
+ assert.deepEqual(check({mode:'deep',...deepScanOptions(base)}),check({mode:'deep',maxTimeHours:47/60}),'native minute setting preserves the old Deep discovery limit');
 });
 
 test('native component scheduler runs nine components concurrently and naturally bounds by selected count',async t=>{

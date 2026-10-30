@@ -69,7 +69,14 @@
           "$ref": "#/$defs/SDKRepositoryHistory"
         },
         "usageEstimate": {
-          "$ref": "https://axiom.invalid/contracts/v1/sdk-cost-estimate.schema.json#/$defs/SDKCostEstimate"
+          "anyOf": [
+            {
+              "$ref": "https://axiom.invalid/contracts/v1/sdk-cost-estimate.schema.json#/$defs/SDKCostEstimate"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "diagnostics": {
           "$ref": "https://axiom.invalid/contracts/v1/sdk-diagnostics.schema.json#/$defs/SDKDiagnostics"

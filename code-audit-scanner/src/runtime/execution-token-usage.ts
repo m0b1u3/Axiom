@@ -16,14 +16,36 @@ export function sdkExecutionUsage(execution:ExecutionRef,value:unknown,complete:
   totalTokens:count(v.total_tokens),requestCount:null});
 }
 
+/** Sum disjoint transports, never a mix of parent and child cumulative callbacks.
+ * A missing field stays unknown; it is not a zero contribution. */
+export function sumExecutionUsage(execution:ExecutionRef,scopes:readonly (ExecutionTokenUsage|undefined)[],complete:boolean):ExecutionTokenUsage {
+ for(const usage of scopes)if(usage)validate('ExecutionTokenUsage',usage,execution);
+ const sum=(key:'inputTokens'|'cachedInputTokens'|'cacheWriteInputTokens'|'outputTokens'|'reasoningOutputTokens'|'totalTokens'|'requestCount'):number|null=>{
+  let total=0;
+  for(const usage of scopes){const value=usage?.[key];if(value===undefined||value===null||!Number.isSafeInteger(total+value))return null;total+=value;}
+  return total;
+ };
+ return checkedUsage({schemaVersion:1,execution,source:scopes.some(v=>v?.source==='sdk_on_usage')?'sdk_on_usage':'responses_usage',
+  complete:complete&&scopes.length>0&&scopes.every(v=>v?.complete===true),
+  inputTokens:sum('inputTokens'),cachedInputTokens:sum('cachedInputTokens'),cacheWriteInputTokens:sum('cacheWriteInputTokens'),
+  outputTokens:sum('outputTokens'),reasoningOutputTokens:sum('reasoningOutputTokens'),totalTokens:sum('totalTokens'),requestCount:sum('requestCount')});
+}
+
+/** Only for a scope that was never dispatched. An absent API field is not
+ * invented even when no request was needed for this scope. */
+export function undispatchedUsage(execution:ExecutionRef):ExecutionTokenUsage {
+ return {schemaVersion:1,execution,source:'responses_usage',complete:true,inputTokens:0,cachedInputTokens:0,cacheWriteInputTokens:null,outputTokens:0,reasoningOutputTokens:0,totalTokens:0,requestCount:0};
+}
+
 type Receipt={id:string|null;complete:boolean;usage:Omit<ExecutionTokenUsage,'schemaVersion'|'execution'|'source'|'complete'|'requestCount'>|null};
 
 /** Metadata only. No prompts, answers, credentials, prices or model requests. */
 export class ResponseUsageReceipts {
  private receipts:Receipt[]=[];
- begin():{observe:(response:unknown,complete?:boolean)=>void} {
+ begin():{observe:(response:unknown,complete?:boolean)=>void;summary:(execution:ExecutionRef)=>ExecutionTokenUsage} {
   const receipt:Receipt={id:null,complete:false,usage:null};this.receipts.push(receipt);
-  return {observe:(response,complete=false)=>{
+  return {summary:execution=>checkedUsage({schemaVersion:1,execution,source:'responses_usage',complete:receipt.complete,
+   inputTokens:null,cachedInputTokens:null,cacheWriteInputTokens:null,outputTokens:null,reasoningOutputTokens:null,totalTokens:null,...receipt.usage,requestCount:1}),observe:(response,complete=false)=>{
    const r=record(response),u=record(r?.usage);if(!r||!u)return;
    const input=record(u.input_tokens_details),output=record(u.output_tokens_details);
    receipt.id=typeof r.id==='string'?r.id:null;

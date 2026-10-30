@@ -88,7 +88,7 @@ func runEvidenceGraphPipeline(t *testing.T, sdk050 bool) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	config, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Name: "Fixture evidence model", Provider: "openai", Model: "fixture-evidence-model", ApiKeyEncrypted: encrypted})
+	config, e := s.CreateModelConfig(t.Context(), store.ModelConfigRow{Pricing: inputFixturePrice(), Name: "Fixture evidence model", Provider: "openai", Model: "fixture-evidence-model", ApiKeyEncrypted: encrypted})
 	if e != nil {
 		t.Fatal(e)
 	}

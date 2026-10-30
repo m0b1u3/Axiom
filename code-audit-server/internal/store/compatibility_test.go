@@ -9,7 +9,8 @@ import (
 )
 
 func richPresence() AgentPresence {
-	return AgentPresence{AgentID: "fixture", Online: true, InputCapabilities: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{1}, JobVersions: []contracts.SchemaVersion{1}, MaxCostUSD: true}, ResultCapabilities: contracts.ResultCapabilities{JobVersions: []int64{2}, ResultVersions: []int64{1}, CompletionVersions: []int64{1}, CommitVersions: []int64{1}}, ObservationCapabilities: contracts.ObservationCapabilities{JobVersions: []int64{3}, ProgressVersions: []int64{2}, EventVersions: []int64{2}, HeartbeatVersions: []int64{1}}}
+	version := int64(15)
+	return AgentPresence{Runtime: &contracts.AgentRuntime{SchemaVersion: 1, AgentBuild: "Fixtures-Mock", ControlAPI: 4, State: "ready", MatrixHash: control.MatrixHash, ScannerDescriptionVersion: &version}, AgentID: "fixture", Online: true, InputCapabilities: contracts.InputCapabilities{AssignmentVersions: []contracts.SchemaVersion{1}, JobVersions: []contracts.SchemaVersion{1}, MaxCostUSD: true}, ResultCapabilities: contracts.ResultCapabilities{JobVersions: []int64{2}, ResultVersions: []int64{1}, CompletionVersions: []int64{1}, CommitVersions: []int64{1}}, ObservationCapabilities: contracts.ObservationCapabilities{JobVersions: []int64{3}, ProgressVersions: []int64{2}, EventVersions: []int64{2}, HeartbeatVersions: []int64{1}}}
 }
 
 func TestPostgresRuntimeAdmissionAndStaleDiagnostics(t *testing.T) {
@@ -105,12 +106,12 @@ func TestCompatibilityReasonsUseWholeNodeAndPreserveUnknowns(t *testing.T) {
 		t.Fatal("combined different nodes", v)
 	}
 	a = richPresence()
-	a.Runtime = &contracts.AgentRuntime{State: contracts.AgentRuntimeStateBlocked, ControlAPI: 4, MatrixHash: control.MatrixHash}
+	a.Runtime = &contracts.AgentRuntime{ScannerDescriptionVersion: func() *int64 { v := int64(15); return &v }(), State: contracts.AgentRuntimeStateBlocked, ControlAPI: 4, MatrixHash: control.MatrixHash}
 	if v := evaluateTaskCompatibility(task, []AgentPresence{a}); v.Reason != "scanner_incompatible" {
 		t.Fatal(v)
 	}
 	a = richPresence()
-	a.Runtime = &contracts.AgentRuntime{State: contracts.AgentRuntimeStateReady, ControlAPI: 2, MatrixHash: control.MatrixHash}
+	a.Runtime = &contracts.AgentRuntime{ScannerDescriptionVersion: func() *int64 { v := int64(15); return &v }(), State: contracts.AgentRuntimeStateReady, ControlAPI: 2, MatrixHash: control.MatrixHash}
 	if v := evaluateTaskCompatibility(task, []AgentPresence{a}); v.Reason != "control_incompatible" {
 		t.Fatal(v)
 	}

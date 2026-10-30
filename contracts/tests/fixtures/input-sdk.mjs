@@ -1,4 +1,4 @@
-// Synthetic SDK boundary for input conformance. No model or network requests.
+// Synthetic SDK boundary. No model requests; budget scenarios use loopback only.
 import {writeFile,mkdir,readFile,rm,appendFile} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 import {createHash} from 'node:crypto';
@@ -9,7 +9,7 @@ import {DatabaseSync} from 'node:sqlite';
 export const VERSION='fixture-input-sdk';
 // The public estimate function is pure. Resolve from this fixture directory so
 // the runtime replacement loader does not replace the real estimator itself.
-export {DiffTarget,estimateScanCost,normalizeComponentPlan} from '../../../code-audit-scanner/node_modules/@openai/codex-security/dist/index.js';
+export {DiffTarget,estimateScanCost,normalizeComponentPlan,bundledPluginRoot,loadContract} from '../../../code-audit-scanner/node_modules/@openai/codex-security/dist/index.js';
 export async function runComponentScans(options){if(process.env.AXIOM_COMPONENT_SCAN_FIXTURE!=='1')throw new Error('Component fixtures not enabled');await writeFile(process.env.AXIOM_INPUT_TEST_CAPTURE+'.component-options',JSON.stringify({fixtureOnly:true,workers:options.workers,componentCount:options.components.length}));return actualComponentScans(options)}
 export async function planComponents(source,options){
   const file=process.env.AXIOM_INPUT_TEST_CAPTURE;
@@ -37,6 +37,15 @@ export class CodexSecurity {
   async validate(options){
     await this.captureOperation('validate',options.repositoryPath,options);
     const scenario=process.env.AXIOM_OPERATION_TEST_SCENARIO??'reportable';
+    if(scenario==='validation-usage-replay'){
+      const config=this.config.codexOverrides,base=config?.model_providers?.[config.model_provider]?.base_url;
+      if(!base||new URL(base).hostname!=='127.0.0.1')throw new Error('Usage replay requires a loopback-only fixture');
+      const {format}=JSON.parse(await readFile(new URL('../../fixtures/sdk050-standalone-validation-format.json',import.meta.url),'utf8'));
+      for(let i=0;i<2;i++){
+        const reply=await fetch(base+'/responses',{method:'POST',signal:options.signal,body:JSON.stringify({model:config.model,input:[{role:'user',content:'Fixtures / Mock usage replay only'}],stream:true,text:{format}})});
+        await reply.text();if(!reply.ok)throw new Error('Fixtures / Mock validation HTTP '+reply.status);
+      }
+    }
     if(scenario==='validation-hold')await new Promise((resolve,reject)=>{const timer=setTimeout(resolve,15000);options.signal?.addEventListener('abort',()=>{clearTimeout(timer);reject(new ScanInterruptedError('Fixture validation canceled'));},{once:true});});
     if(scenario==='headline-reportable'||scenario==='headline-not-applicable')return {disposition:scenario==='headline-reportable'?'reportable':'not_applicable',report:scenario==='headline-reportable'?'## 静态发现评估：用户输入直接拼接进 SQL 语句（CWE-89）':'## Static Finding Assessment — 用户输入直接拼接进 SQL 语句 (CWE-89)',threadId:'fixture-validation-thread',outputDir:options.outputDir};
     if(scenario==='validation-failure')throw new AuthenticationRequiredError('Fixture account not available; Bearer fixture-private-operation-token');
@@ -66,6 +75,17 @@ export class CodexSecurity {
     for(let i=0;i<73;i++)options.onSessionEvent?.({threadId:'fixture-native-thread',parentThreadId:null,worker:0,event:{type:i%2?'response_item':'future_session_type',payload:{sequence:i,authorization:'Bearer fixture-private-session-token',text:'Fixtures / Mock: full callback event'}}});
     options.onProgress?.({phase:'discovery',filesTotal:2,filesCompleted:2});
     const scenario=process.env.AXIOM_RESULT_TEST_SCENARIO??'rich';
+    if(scenario==='token-budget-limit'||scenario==='token-budget-missing'){
+      const directory=path.join(options.outputDir,'artifacts/checkpoints');await mkdir(directory,{recursive:true});
+      await writeFile(path.join(directory,'fixture-worker.json'),JSON.stringify({checkpoint:'Fixtures / Mock budget interruption',candidates:[{id:'fixture-budget-candidate',title:'Fixtures / Mock partial candidate',severity:'high',summary:'Synthetic partial result retained at budget stop',evidence:['src/query.ts:1-2']}]}));
+      const providers=this.config.codexOverrides?.model_providers,base=providers?.[Object.keys(providers)[0]]?.base_url;
+      if(!base||!['127.0.0.1','localhost','[::1]'].includes(new URL(base).hostname))throw new Error('Budget fixture requires loopback transport');
+      for(let i=0;i<3;i++){
+        const response=await fetch(base+'/responses',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({model:this.config.codexOverrides.model,input:'Fixtures / Mock only',text:{format:{type:'json_schema',name:'fixture_report',strict:true,schema:{type:'object',properties:{report:{type:'string'}},required:['report'],additionalProperties:false}}}}),signal:options.signal});
+        const text=await response.text();if(!response.ok)throw new Error(text);
+      }
+      throw new Error('Budget fixture unexpectedly dispatched all turns');
+    }
     if(scenario==='interim-failure'||scenario==='interim-timeout'){
       const directory=path.join(options.outputDir,'artifacts/checkpoints');await mkdir(directory,{recursive:true});
       const count=process.env.AXIOM_INTERIM_REVIEW_SOURCE==='1'?3:scenario==='interim-failure'?25:2;
@@ -94,7 +114,7 @@ export class CodexSecurity {
     const sdk050=process.env.AXIOM_SDK050_FIXTURE==='1';
     if(sdk050){options.onProgress?.({phase:'discovery'});options.onWorkerStatus?.({kind:'dispatch',phase:'discovery',planned:2,started:1});options.onWorkerEvent?.({kind:'observed',worker:1});options.onUsage?.({input_tokens:123,cached_input_tokens:20,cache_write_input_tokens:0,output_tokens:0,reasoning_output_tokens:0,total_tokens:123});}
     const cost=(scenario==='empty'||sdk050)?null:{model:'fixture-reported-model',estimatedUsd:1.125,inputTokens:0,cachedInputTokens:0,cacheWriteInputTokens:3,outputTokens:17};
-    if(cost)options.onCost?.(cost);
+    if(cost){options.onUsage?.({input_tokens:0,cached_input_tokens:0,cache_write_input_tokens:0,output_tokens:17,reasoning_output_tokens:0,total_tokens:17});options.onCost?.(cost);}
     if(scenario==='observations'||scenario==='observation-cancel'){
       options.onAuthentication?.({method:'api_key',source:'OPENAI_API_KEY',verified:false});
       options.onTrustedAccessStatus?.('not_granted');
@@ -180,9 +200,9 @@ export class CodexSecurity {
     if(!this.output)return;
     if(scenario==='late-exit')throw new Error('Synthetic late SDK close failure');
     const file=path.join(this.output,'normalized/result.json'),markerFile=path.join(this.output,'normalized/result.commit.json');
-    if(scenario==='native-old'||scenario==='native-future'){
+    if(['native-old','native-future','native-historical-estimate'].includes(scenario)){
       const value=JSON.parse(await readFile(file,'utf8')),marker=JSON.parse(await readFile(markerFile,'utf8'));
-      if(scenario==='native-old')delete value.extensions.sdkNative;else value.extensions.sdkNative.schemaVersion=99;
+      if(scenario==='native-old')delete value.extensions.sdkNative;else if(scenario==='native-future')value.extensions.sdkNative.schemaVersion=99;else{const historical=JSON.parse(await readFile(new URL('../../fixtures/v1/sdk050-estimate-range.json',import.meta.url),'utf8'));historical.execution=value.execution;value.extensions.sdkNative.usageEstimate=historical;}
       const bytes=Buffer.from(JSON.stringify(value));marker.sizeBytes=bytes.length;marker.sha256=createHash('sha256').update(bytes).digest('hex');await writeFile(file,bytes);await writeFile(markerFile,JSON.stringify(marker));return;
     }
     if(scenario==='no-commit'){await rm(markerFile,{force:true});return;}

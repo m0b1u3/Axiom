@@ -2,6 +2,7 @@ package store
 
 import (
 	"axiom/contracts"
+	"axiom/contracts/control"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -46,6 +47,12 @@ func TestPostgresInputDispatch(t *testing.T) {
 	caps := noBudget
 	caps.MaxCostUSD = true
 	if err = s.ReportAgentWithInput(ctx, "modern", 1, caps); err != nil {
+		t.Fatal(err)
+	}
+	limits.TokenBudgetCapable = true
+	version := int64(15)
+	build := "Fixtures-Mock-scanner"
+	if err = s.ReportAgentRuntime(ctx, "modern", contracts.AgentRuntime{SchemaVersion: 1, AgentBuild: "Fixtures-Mock", ScannerBuild: &build, ScannerDescriptionVersion: &version, ControlAPI: 4, State: "ready", MatrixHash: control.MatrixHash}); err != nil {
 		t.Fatal(err)
 	}
 	task, err := s.ClaimExecutionWithInput(ctx, "modern", limits, caps)

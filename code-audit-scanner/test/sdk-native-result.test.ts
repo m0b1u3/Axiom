@@ -2,21 +2,10 @@ import {test} from 'node:test';import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm} from 'node:fs/promises';import {tmpdir} from 'node:os';import path from 'node:path';import {createHash} from 'node:crypto';
 import {decode,validate,type ArtifactRef} from '@axiom/contracts';
 import {scanTaskFromJob} from '../src/contract/scanner-job.js';
-import {buildSDKNativeResult,sdkUsageEstimate} from '../src/artifact/sdk-native-result.js';
+import {buildSDKNativeResult} from '../src/artifact/sdk-native-result.js';
 import {SDKDiagnosticTracker} from '../src/runtime/sdk-diagnostics.js';
 import type {ScanResult} from '../src/contract/scan-result.js';
 const execution={taskId:'42',attempt:2};
-test('public SDK estimate uses observed usage, preserves zeros and refuses unsupported pricing or invalid usage',()=>{
- const estimate=(model:unknown,usage:unknown)=>sdkUsageEstimate(execution,{turn:{model,usage}});
- assert.equal(estimate('gpt-5.6',{input_tokens:0,output_tokens:0}).estimatedUsd,0);
- const known=estimate('gpt-5.6',{input_tokens:100,cached_input_tokens:20,cache_write_input_tokens:10,output_tokens:5,reasoning_output_tokens:1});
- assert.equal(known.estimatedUsd,0.000438);assert.equal(known.scope,'returned_turn_usage');assert.equal(known.cacheWriteInputTokens,10);
- assert.equal(estimate(undefined,{input_tokens:1,output_tokens:1}).status,'missing_model');
- assert.equal(estimate('gpt-5.6',null).status,'missing_usage');
- for(const [model,usage] of [['fixture-unknown',{input_tokens:1,output_tokens:1}],['gpt-5.6',{input_tokens:1,cached_input_tokens:2,output_tokens:1}]]){
-  const v=estimate(model,usage);assert.equal(v.estimatedUsd,null);assert.equal(v.status,'unsupported_model_or_usage');
- }
-});
 test('diagnostics keep bounded snapshot, complete ordered JSONL and redact credentials without changing terminal status',async t=>{
  const root=await mkdtemp(path.join(tmpdir(),'axiom-native-diagnostics-'));t.after(()=>rm(root,{recursive:true,force:true}));
  const tracker=new SDKDiagnosticTracker(execution,root);
@@ -38,7 +27,7 @@ async function nativeFixture(t:{after:(f:()=>Promise<void>)=>void}){
 }
 test('native Markdown and SARIF are exact archived bytes; malformed and escaping exports do not discard core results',async t=>{
  const f=await nativeFixture(t);await f.artifact('report.md','# 合成报告\n<script>fixture-only</script>');await f.artifact('exports/results.sarif',JSON.stringify({version:'2.1.0',runs:[]}));
- let native=await buildSDKNativeResult(f.task,f.result,f.refs);assert.equal(native.reports.markdown.status,'available');assert.equal(native.reports.sarif.status,'available');assert.equal(native.targetId,'fixture-target');assert.equal(native.usageEstimate.estimatedUsd,0);assert.equal(native.repositoryHistory.state,'reported');assert.deepEqual(native.repositoryHistory.records,[]);
+ let native=await buildSDKNativeResult(f.task,f.result,f.refs);assert.equal(native.reports.markdown.status,'available');assert.equal(native.reports.sarif.status,'available');assert.equal(native.targetId,'fixture-target');assert.equal(native.usageEstimate,null);assert.equal(native.repositoryHistory.state,'reported');assert.deepEqual(native.repositoryHistory.records,[]);
  await writeFile(path.join(f.task.outputPath,'raw/codex-security/exports/results.sarif'),'{');native=await buildSDKNativeResult(f.task,f.result,f.refs);assert.equal(native.reports.sarif.status,'invalid');assert.equal(native.reports.markdown.status,'available');
  f.result.sdkRaw!.reportPath='/fixture/outside/report.md';native=await buildSDKNativeResult(f.task,f.result,f.refs);assert.equal(native.reports.markdown.status,'invalid');assert.equal(native.reports.markdown.artifact,null);
 });
@@ -63,4 +52,14 @@ test('Deep continuation exports use only certified original raw paths and retain
  const old=path.join(root,'scans/42/attempt-1/raw/codex-security/report.md'),relative='raw/codex-security/report.md',bytes='# Fixtures / Mock original continuation report';await mkdir(path.dirname(old),{recursive:true});await writeFile(old,bytes);await mkdir(path.join(f.task.outputPath,'raw/codex-security'),{recursive:true});await writeFile(path.join(f.task.outputPath,relative),bytes);f.result.sdkRaw!.reportPath=old;const before=JSON.stringify(f.result.sdkRaw);const refs=[{kind:'report' as const,relativePath:relative,sizeBytes:Buffer.byteLength(bytes),sha256:createHash('sha256').update(bytes).digest('hex')}];
  const native=await buildSDKNativeResult(f.task,f.result,refs);assert.equal(native.reports.markdown.status,'available');assert.equal(native.reports.markdown.artifact?.relativePath,relative);assert.equal(JSON.stringify(f.result.sdkRaw),before);
  f.result.sdkRaw!.reportPath=path.join(root,'scans/41/attempt-1/raw/codex-security/report.md');assert.equal((await buildSDKNativeResult(f.task,f.result,refs)).reports.markdown.status,'invalid');
+});
+
+// No SDK pricing function should run for a new result, even for a model known
+// to the SDK. Its complete raw usage/cost evidence remains unchanged.
+test('new native results omit SDK estimates and preserve raw token/cost evidence',async t=>{
+ const f=await nativeFixture(t);f.result.sdkRaw!.cost={estimatedUsd:123,currency:'USD'};
+ const original=JSON.stringify(f.result.sdkRaw);
+ const native=await buildSDKNativeResult(f.task,f.result,f.refs);
+ assert.equal(native.usageEstimate,null);assert.equal(JSON.stringify(f.result.sdkRaw),original);
+ decode('SDKNativeResult',JSON.stringify(native),native.execution);
 });

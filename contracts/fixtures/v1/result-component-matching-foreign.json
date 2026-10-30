@@ -1,0 +1,316 @@
+{
+  "schemaVersion": 1,
+  "execution": {
+    "taskId": "9007199254740993",
+    "attempt": 2
+  },
+  "status": "completed",
+  "startedAt": "2026-10-13T00:00:00Z",
+  "finishedAt": "2026-10-13T00:01:00Z",
+  "engine": {
+    "name": "fixture-engine",
+    "version": "fixture-1",
+    "pluginVersion": null,
+    "patchRevision": null
+  },
+  "model": {
+    "providerId": "fixture-provider",
+    "connectionType": "openai_compatible",
+    "model": "fixture-model",
+    "baseUrl": "https://fixture.invalid/v1",
+    "wireApi": "responses",
+    "credentialEnv": "FIXTURE_API_KEY",
+    "configurationRevision": "fixture-revision-1"
+  },
+  "findings": [
+    {
+      "fingerprint": "fixture-only-fingerprint",
+      "title": "Contract fixture, not a real vulnerability",
+      "severity": "info",
+      "description": "Synthetic fixture for field retention.",
+      "severityScore": 0,
+      "scoringSystem": "fixture",
+      "confidence": {
+        "level": "unknown",
+        "rationale": null,
+        "value": null
+      },
+      "category": "fixture",
+      "cwe": [],
+      "filePath": "src/a,b.ts",
+      "startLine": 1,
+      "endLine": 1,
+      "evidence": "fixture evidence",
+      "remediation": "fixture recommendation",
+      "rootCause": "fixture root cause",
+      "attackPath": "fixture path",
+      "entrypoint": "fixture entry",
+      "source": "fixture source",
+      "dataflow": "fixture flow",
+      "sink": "fixture sink",
+      "reachability": "unknown",
+      "impact": "fixture impact",
+      "likelihood": "unknown",
+      "attackSteps": [],
+      "preconditions": [],
+      "codeEvidence": [
+        {
+          "id": "fixture-evidence",
+          "label": "Fixture",
+          "path": "src/a,b.ts",
+          "startLine": 1,
+          "endLine": 1,
+          "language": "typescript",
+          "role": "fixture",
+          "code": "// fixture, not production code",
+          "explanation": "Contract field retention only"
+        }
+      ],
+      "validation": {
+        "fixtureOnly": true,
+        "observed": false
+      },
+      "remediationTests": [],
+      "preventiveControls": [],
+      "provenance": null,
+      "extensions": {
+        "future": {
+          "nested": [
+            0,
+            false,
+            null,
+            ""
+          ]
+        }
+      },
+      "raw": {
+        "fixtureOnly": true,
+        "opaque": {
+          "unchanged": [
+            true,
+            null,
+            0
+          ]
+        }
+      },
+      "engineFindingId": "fixture-finding",
+      "engineOccurrenceId": "fixture-occurrence",
+      "ruleId": "fixture-rule"
+    }
+  ],
+  "coverage": {
+    "completeness": "complete",
+    "details": {
+      "surfaces": [],
+      "futureField": {
+        "retained": true
+      }
+    }
+  },
+  "artifacts": [
+    {
+      "kind": "evidence",
+      "relativePath": "artifacts/evidence.json",
+      "sizeBytes": 0,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "cost": null,
+  "extensions": {
+    "fixtureOnly": true,
+    "componentScan": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "9007199254740993",
+        "attempt": 2
+      },
+      "sdkVersion": "0.1.25",
+      "request": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "9007199254740993",
+          "attempt": 2
+        },
+        "planVersion": {
+          "schemaVersion": 1,
+          "planId": "9",
+          "source": {
+            "snapshotId": "7",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "headCommit": null
+          },
+          "version": 1,
+          "revision": 1,
+          "document": {
+            "components": [
+              {
+                "name": "API",
+                "paths": [
+                  "api"
+                ]
+              },
+              {
+                "name": "Web",
+                "paths": [
+                  "web"
+                ]
+              }
+            ]
+          },
+          "coverage": {
+            "inventoryHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "fileCount": 3,
+            "coveredFileCount": 3,
+            "uncoveredPaths": [],
+            "overlapCount": 0,
+            "overlaps": [],
+            "emptyComponents": [],
+            "duplicateNames": [],
+            "valid": true
+          },
+          "origin": "manual",
+          "validationExecution": {
+            "taskId": "9007199254740993",
+            "attempt": 2
+          },
+          "resultSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "confirmedBy": "1",
+          "confirmedAt": "2026-10-17T01:00:00Z"
+        },
+        "selectedIndices": [
+          0,
+          1
+        ],
+        "workers": 2,
+        "componentLimitMicros": 3000000,
+        "grantMicros": 4000001,
+        "acknowledgeMatchingCost": true
+      },
+      "snapshot": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "9007199254740993",
+          "attempt": 2
+        },
+        "planId": "9",
+        "version": 1,
+        "versionSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "source": {
+          "snapshotId": "7",
+          "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "headCommit": null
+        },
+        "phase": "finished",
+        "observedAt": "2026-10-17T01:00:00Z",
+        "grantMicros": 4000001,
+        "reservedMicros": 0,
+        "observedMicros": 250000,
+        "components": [
+          {
+            "index": 0,
+            "status": "completed",
+            "allocatedMicros": 2000001,
+            "observedMicros": 125000,
+            "finalMicros": 125000,
+            "findingCount": 0,
+            "scanId": "fixture-component-0",
+            "resultArtifact": {
+              "kind": "engine_raw",
+              "relativePath": "raw/codex-security/component-1.json",
+              "sizeBytes": 20,
+              "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            },
+            "error": null,
+            "phase": "reporting",
+            "activity": "Fixtures / Mock"
+          },
+          {
+            "index": 1,
+            "status": "completed",
+            "allocatedMicros": 2000000,
+            "observedMicros": 125000,
+            "finalMicros": 125000,
+            "findingCount": 0,
+            "scanId": "fixture-component-1",
+            "resultArtifact": {
+              "kind": "engine_raw",
+              "relativePath": "raw/codex-security/component-2.json",
+              "sizeBytes": 20,
+              "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            },
+            "error": null,
+            "phase": "reporting",
+            "activity": "Fixtures / Mock"
+          }
+        ],
+        "matching": {
+          "status": "completed",
+          "costState": "unknown",
+          "reason": "Fixture matching fees unavailable",
+          "native": {
+            "confirmedGroups": 0,
+            "uncertainPairs": 1
+          }
+        }
+      },
+      "native": {
+        "fixtureOnly": true
+      },
+      "error": null
+    },
+    "componentMatchingEstimate": {
+      "schemaVersion": 1,
+      "execution": {
+        "taskId": "9007199254740993",
+        "attempt": 3
+      },
+      "method": "configured_token_prices",
+      "pricingSnapshot": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "9007199254740993",
+          "attempt": 2
+        },
+        "modelConfigId": 2,
+        "revision": 1,
+        "capturedAt": "2026-10-27T08:00:00Z",
+        "provider": "deepseek",
+        "model": "fixture-model",
+        "pricing": {
+          "schemaVersion": 1,
+          "currency": "USD",
+          "unit": "per_million_tokens",
+          "cacheMode": "cache_read",
+          "inputPerMillion": "1",
+          "cacheReadPerMillion": "0.1",
+          "cacheWritePerMillion": null,
+          "outputPerMillion": "4",
+          "note": "Fixtures / Mock pricing only"
+        },
+        "reason": ""
+      },
+      "usage": {
+        "schemaVersion": 1,
+        "execution": {
+          "taskId": "9007199254740993",
+          "attempt": 2
+        },
+        "source": "sdk_on_usage",
+        "complete": true,
+        "inputTokens": 100000,
+        "cachedInputTokens": 20000,
+        "cacheWriteInputTokens": null,
+        "outputTokens": 10000,
+        "reasoningOutputTokens": 5000,
+        "totalTokens": 110000,
+        "requestCount": null
+      },
+      "status": "estimated",
+      "currency": "USD",
+      "amountMicros": 122000,
+      "reason": "",
+      "computedAt": "2026-10-27T08:01:00Z"
+    }
+  }
+}

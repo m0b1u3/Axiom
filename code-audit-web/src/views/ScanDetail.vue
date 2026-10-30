@@ -595,7 +595,7 @@ function sourceName(t: ScanTask): string {
     <div v-if="queueError" class="request-error" role="alert">调度状态暂不可用：{{queueError}}<Button variant="ghost" size="sm" @click="load">重新加载</Button></div>
     <SDKIdentityBinding v-if="task.sdkIdentity" :identity="task.sdkIdentity"/>
     <p v-if="actionError" class="request-error" role="alert">{{actionError}}。当前任务和历史结果已保留，可重试原操作。</p>
-    <p v-if="task.sdkOperation" class="deep-policy-summary">{{task.sdkOperation.kind==='validate'?'SDK 独立复核 · 完整源码快照 · SDK 未提供费用，不支持费用上限，不能自动重跑':'SDK 原生预检 · 只检查本地输入与配置，不启动模型'}} <RouterLink v-if="task.sdkOperation.origin" :to="'/scans/'+task.sdkOperation.origin.taskId+'?attempt='+task.sdkOperation.origin.attempt">来源执行 #{{task.sdkOperation.origin.taskId}} / {{task.sdkOperation.origin.attempt}}</RouterLink></p>
+    <p v-if="task.sdkOperation" class="deep-policy-summary">{{task.sdkOperation.kind==='validate'?'SDK 独立复核 · 完整源码快照 · 费用按配置单价与实际 Token 估算，不支持费用上限，不能自动重跑':'SDK 原生预检 · 只检查本地输入与配置，不启动模型'}} <RouterLink v-if="task.sdkOperation.origin" :to="'/scans/'+task.sdkOperation.origin.taskId+'?attempt='+task.sdkOperation.origin.attempt">来源执行 #{{task.sdkOperation.origin.taskId}} / {{task.sdkOperation.origin.attempt}}</RouterLink></p>
     <p v-else-if="task.componentPlanning" class="deep-policy-summary">{{task.componentPlanning.kind==='normalize'?'组件计划本地校验 · 不调用模型':'组件划分建议 · 费用未知'}} · <RouterLink :to="'/component-plans/'+task.componentPlanning.planId">返回组件计划</RouterLink></p>
     <SDKOperations v-else-if="task.inputContractVersion && task.sourceSnapshotId && !task.componentScan" :task="task" :revision="sdkOperationRevision"/>
     <InterimReviewDetails v-if="task.interimReviewGroupId" :group-id="task.interimReviewGroupId" @archived="loadFindings();load()"/>

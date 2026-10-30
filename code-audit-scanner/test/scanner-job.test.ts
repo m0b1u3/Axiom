@@ -18,7 +18,7 @@ test("job input uses explicit deadlines and preserves SDK worker defaults",async
  const value=JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/job-deep.json',import.meta.url),'utf8'));
  value.policy.timeBudget={scanSeconds:2820,finalizationGraceSeconds:120};delete value.policy.workers;delete value.policy.maxCostUsd;
  const task=scanTaskFromJob(decode('ScannerJob',JSON.stringify(value)));
- assert.equal(task.workers,undefined);assert.equal(task.maxCostUsd,undefined);assert.equal(hardTimeoutMinutes(task),49);assert.equal(deepScanOptions(task).maxTimeHours,47/60);
+ assert.equal(task.workers,undefined);assert.equal(task.maxCostUsd,undefined);assert.equal(hardTimeoutMinutes(task),49);assert.equal(deepScanOptions(task).maxTimeMinutes,47);
 });
 test("resolved providers are supported by connection metadata without a brand preset",async()=>{
  const value=JSON.parse(await readFile(new URL('../../contracts/fixtures/v1/job-windows.json',import.meta.url),'utf8'));

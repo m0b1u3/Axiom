@@ -11,7 +11,7 @@ import (
 
 func (s *Server) describeExecutions(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
-	httputil.OK(w, control.ServerDescription{SDKDeepResumeVersion: 1, SDKConcurrencyVersion: 1, TaskDispatch: control.DispatchUnbounded, SDKParametersVersion: 1, SDKIdentityVersion: 1, ControlAPIs: control.ControlAPIs(), MatrixHash: control.MatrixHash})
+	httputil.OK(w, control.ServerDescription{TokenBudgetVersion: 1, SDKDeepResumeVersion: 1, SDKConcurrencyVersion: 1, TaskDispatch: control.DispatchUnbounded, SDKParametersVersion: 1, SDKIdentityVersion: 1, ControlAPIs: control.ControlAPIs(), MatrixHash: control.MatrixHash})
 }
 func (s *Server) reportAgentRuntime(w http.ResponseWriter, r *http.Request) {
 	var v control.RuntimeReport
