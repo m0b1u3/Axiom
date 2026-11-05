@@ -26,9 +26,13 @@ const report={schemaVersion:1,stage:'native-stage0',platform:process.platform,ar
   run:{commit:process.env.GITHUB_SHA??null,runId:process.env.GITHUB_RUN_ID??null,runnerImage:process.env.ImageVersion??null},
   sourceSnapshot:lock.sourceSnapshot,dependencyLockSha256:createHash('sha256').update(await readFile(path.join(here,'dependencies.lock.json'))).digest('hex'),
   fixtureOnly:true,realModelCalls:0,realSDKLogins:0,checks:[],runtimePreparation:runtime.components};
+report.status='running';
+const checkpoint=()=>writeFile(path.join(out,'current-report.json'),JSON.stringify(report,null,2)+'\n');
 async function check(id,fn){
+  report.currentStep=id;await checkpoint();
   try{const detail=await fn();const row={id,status:'passed',...detail};report.checks.push(row);console.log(JSON.stringify(row));return detail;}
   catch(error){const row={id,status:'failed',error:String(error.message),...(error.stderr?{stderr:error.stderr}:{}),...(error.stdout?{stdout:error.stdout}:{})};report.checks.push(row);console.log(JSON.stringify(row));return null;}
+  finally{report.currentStep=null;await checkpoint();}
 }
 const original=process.env;
 const environment={};
@@ -157,7 +161,11 @@ for(const [label,shell] of shells)await check('sdk-native-shell-'+label,async()=
   const deadline=setTimeout(()=>controller.abort(new Error('Native diagnostic fixture did not finish within 120 seconds')),120000);
   try{await security.run(source,{mode:'standard',outputDir:raw,archiveExisting:true,scanPrompt:'Fixtures / Mock only. Run the supplied native diagnostic tool. No real security assessment.',signal:controller.signal});}
   catch(error){terminalError=String(error.message);}
-  finally{clearTimeout(deadline);await security.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
+  finally{
+    clearTimeout(deadline);
+    await writeFile(path.join(out,'sdk-'+label+'-before-close.json'),JSON.stringify({requests,fixtureError,terminalError,toolOutput},null,2)+'\n');
+    await security.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
+  }
   await writeFile(path.join(out,'sdk-'+label+'.json'),JSON.stringify({requests,fixtureError,terminalError,toolOutput},null,2)+'\n');
   assert.equal(fixtureError,null,fixtureError);assert.ok(toolOutput,'No native shell evidence: '+terminalError);
   const line=toolOutput.split('\n').find(s=>s.startsWith('AXIOM_NATIVE_PROOF='));assert.ok(line,toolOutput);
@@ -192,6 +200,7 @@ await check('pdf-browser-runtime',async()=>{
   return {version:version.stdout.trim(),pdfBytes:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex'),existingPdfNoSandboxFlag:true,fontSha256:createHash('sha256').update(await readFile(runtime.font)).digest('hex')};
 });
 report.status=report.checks.every(c=>c.status==='passed')?'passed':'partial';report.completedAt=new Date().toISOString();
+await checkpoint();
 await writeFile(path.join(out,'report.json'),JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify({status:report.status,passed:report.checks.filter(c=>c.status==='passed').length,failed:report.checks.filter(c=>c.status==='failed').map(c=>c.id),realModelCalls:0}));
 if(report.status!=='passed')process.exitCode=1;
