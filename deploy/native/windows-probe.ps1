@@ -38,6 +38,10 @@ try {
         $rule = [Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($identity), [Security.AccessControl.FileSystemRights]::FullControl, [Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit', [Security.AccessControl.PropagationFlags]::None, [Security.AccessControl.AccessControlType]::Allow)
         $acl.AddAccessRule($rule)
     }
+    # The sandbox's separate local account must traverse this parent. This
+    # read/execute ACE applies to this directory only; private state children
+    # inherit only the fixture user, SYSTEM, and Administrators grants above.
+    $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new('S-1-5-32-545'), [Security.AccessControl.FileSystemRights]::ReadAndExecute, [Security.AccessControl.AccessControlType]::Allow))
     $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($runnerSid), [Security.AccessControl.FileSystemRights]::ReadAndExecute, [Security.AccessControl.AccessControlType]::Allow))
     Set-Acl -LiteralPath $workParent -AclObject $acl
     $credential = [PSCredential]::new("$env:COMPUTERNAME\$user", $password)

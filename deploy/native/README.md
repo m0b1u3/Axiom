@@ -26,7 +26,9 @@ python deploy/native/install_probe_sdk.py <report-directory>/runtime.json
 <locked-node-executable> deploy/native/probe.mjs --out <report-directory> --runtime <report-directory>/runtime.json --work <new-fixture-working-directory>
 ```
 
-Windows 的探针必须由普通账户执行，不能将管理员账户的成功结果当作用户态运行证据。现有包装脚本 `windows-probe.ps1` 将运行负载放在 Program Files，在 ProgramData 创建受保护的状态目录，管理员使用经过哈希校验的 CLI 预置 elevated 沙箱，再以专用普通账户调用原版 SDK。安装与执行分开，依据 [OpenAI 的 Windows 沙箱预置说明](https://learn.chatgpt.com/docs/windows/windows-sandbox)；锁定版本是否支持该路径以实际运行报告为准。该脚本仅为一次性 GitHub runner 管理账户和 ACL，不是供生产系统使用的安装器。
+Windows 的探针必须由普通账户执行，不能将管理员账户的成功结果当作用户态运行证据。现有包装脚本 `windows-probe.ps1` 将运行负载放在 Program Files，在系统卷根目录下创建独立的受保护状态目录，管理员使用经过哈希校验的 CLI 预置 elevated 沙箱，再以专用普通账户调用原版 SDK。安装与执行分开，依据 [OpenAI 的 Windows 沙箱预置说明](https://learn.chatgpt.com/docs/windows/windows-sandbox)；锁定版本是否支持该路径以实际运行报告为准。该脚本仅为一次性 GitHub runner 管理账户和 ACL，不是供生产系统使用的安装器。
+
+探针保留卷根、ProgramData、Program Files 的原始 SDDL，不修改这些公共祖先目录的 ACL。SDK 会检查完整祖先链；已观测到共享临时目录和该 runner 的 ProgramData 被拒绝，不能用“末级目录已经私有”代替这项校验。
 
 ## 检查范围
 

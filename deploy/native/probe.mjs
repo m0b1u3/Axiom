@@ -49,6 +49,12 @@ if(runtime.codexPath)environment.CODEX_CLI_PATH=runtime.codexPath;
 for(const key of ['HOME','CODEX_HOME','CODEX_SECURITY_STATE_DIR','APPDATA','LOCALAPPDATA','TEMP'])await mkdir(environment[key],{recursive:true,mode:0o700});
 for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,environment);
 process.chdir(work);
+if(process.platform==='win32'){
+  // A separate elevated-sandbox account needs to traverse the fixture parent.
+  // No inheritance: source access still comes from the SDK's own policy, and
+  // credential state retains its private DACL under the separate state root.
+  await execute('icacls.exe',[work,'/grant','*S-1-5-32-545:(RX)'],{env:environment});
+}
 const source=path.join(work,'源码 with spaces'),foreign=path.join(work,'foreign');
 await mkdir(source,{recursive:true});await mkdir(foreign,{recursive:true});
 const example=path.join(source,'example.py'),originalSource='print("Fixtures / Mock native stage 0")\n';
@@ -174,6 +180,10 @@ for(const [label,shell] of shells)await check('sdk-native-shell-'+label,async()=
     clearTimeout(deadline);
     await writeFile(path.join(out,'sdk-'+label+'-before-close.json'),JSON.stringify({requests,catalogRequests,fixtureError,terminalError,toolOutput},null,2)+'\n');
     await security.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
+    if(process.platform==='win32'){
+      const diagnostic=await execute('powershell.exe',['-NoProfile','-Command',"ConvertFrom-Json $env:AXIOM_FIXTURE_ACL_PATHS | ForEach-Object { $a = Get-Acl -LiteralPath $_; @{path=$_;owner=$a.Owner;sddl=$a.Sddl} } | ConvertTo-Json -Depth 5"],{env:{...environment,AXIOM_FIXTURE_ACL_PATHS:JSON.stringify([work,source,helper,example,raw])}});
+      await writeFile(path.join(out,'windows-fixture-acls.json'),diagnostic.stdout);
+    }
   }
   await writeFile(path.join(out,'sdk-'+label+'.json'),JSON.stringify({requests,catalogRequests,fixtureError,terminalError,toolOutput},null,2)+'\n');
   assert.equal(fixtureError,null,fixtureError);assert.ok(toolOutput,'No native shell evidence: '+terminalError);
