@@ -2,11 +2,11 @@
 // fixture only. No production task configuration or real model credentials.
 import assert from 'node:assert/strict';
 import {createHash,randomUUID} from 'node:crypto';
-import {execFile} from 'node:child_process';
+import {execFile,spawn} from 'node:child_process';
 import {createServer} from 'node:http';
 import {createServer as tcpServer} from 'node:net';
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
-import {existsSync} from 'node:fs';
+import {existsSync,openSync,closeSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
@@ -38,12 +38,14 @@ const original=process.env;
 const environment={};
 for(const [name,value] of Object.entries(original))if(/^(SystemRoot|WINDIR|ComSpec|PATHEXT|OS|NUMBER_OF_PROCESSORS|PROCESSOR_ARCHITECTURE)$/i.test(name))environment[name]=value;
 environment.PATH=runtime.path.join(path.delimiter);
-Object.assign(environment,{HOME:path.join(work,'home'),USERPROFILE:path.join(work,'home'),
-  CODEX_HOME:path.join(work,'home','.codex'),CODEX_SECURITY_STATE_DIR:path.join(work,'sdk-state'),
-  APPDATA:path.join(work,'home','AppData','Roaming'),LOCALAPPDATA:path.join(work,'home','AppData','Local'),
+const userHome=runtime.userHome??path.join(work,'home');
+Object.assign(environment,{HOME:userHome,USERPROFILE:userHome,
+  CODEX_HOME:path.join(userHome,'.codex'),CODEX_SECURITY_STATE_DIR:runtime.sdkStateRoot??path.join(work,'sdk-state'),
+  APPDATA:path.join(userHome,'AppData','Roaming'),LOCALAPPDATA:path.join(userHome,'AppData','Local'),
   TEMP:path.join(work,'tmp'),TMP:path.join(work,'tmp'),TMPDIR:path.join(work,'tmp'),
   PYTHON:runtime.python,CODEX_MCP_NODE_PATH:process.execPath,
   CUSTOM_API_KEY:'fixture-native-stage0-no-real-key'});
+if(runtime.codexPath)environment.CODEX_CLI_PATH=runtime.codexPath;
 for(const key of ['HOME','CODEX_HOME','CODEX_SECURITY_STATE_DIR','APPDATA','LOCALAPPDATA','TEMP'])await mkdir(environment[key],{recursive:true,mode:0o700});
 for(const key of Object.keys(process.env))delete process.env[key];Object.assign(process.env,environment);
 process.chdir(work);
@@ -88,7 +90,7 @@ await check('sdk-load-platform-and-integrity',async()=>{
   assert.equal(config.DEFAULT_CODEX_CONFIG.windows.sandbox,'elevated');
   const manifest=JSON.parse(await readFile(path.join(root,'deploy/sdk/manifest.json'),'utf8'));
   const platform=process.platform+'-'+process.arch,entry=manifest.packages.find(p=>p.platform===platform);assert.ok(entry,'No full platform binary inventory');
-  const moduleRoot=path.join(root,'code-audit-scanner/node_modules',entry.path);
+  const moduleRoot=runtime.codexModuleRoot??path.join(root,'code-audit-scanner/node_modules',entry.path);
   for(const [relative,want] of Object.entries(entry.files))assert.equal(createHash('sha256').update(await readFile(path.join(moduleRoot,relative))).digest('hex'),want,relative);
   const command=candidateRuntime.resolveCodexCommand(environment).command;
   assert.ok(command.replaceAll('\\','/').includes('/'+entry.path+'/'),'SDK selected an unpinned platform binary');
@@ -184,6 +186,16 @@ for(const [label,shell] of shells)await check('sdk-native-shell-'+label,async()=
 
 await check('postgres-runtime',async()=>{
   const bin=runtime.postgresBin,exe=name=>path.join(bin,name+(process.platform==='win32'?'.exe':''));
+  async function control(arguments_){
+    const log=path.join(out,'postgres-control.log'),fd=openSync(log,'a');
+    try{
+      const code=await new Promise((resolve,reject)=>{
+        const child=spawn(exe('pg_ctl'),arguments_,{env:environment,stdio:['ignore',fd,fd],windowsHide:true});
+        child.once('error',reject);child.once('exit',resolve);
+      });
+      assert.equal(code,0,'PostgreSQL control failed: '+await readFile(log,'utf8'));
+    }finally{closeSync(fd);}
+  }
   const version=await execute(exe('postgres'),['--version'],{env:environment});assert.ok(version.stdout.includes(lock.runtime.postgresql));
   const database=path.join(work,'postgres'),passwordFile=path.join(work,'pg-password');
   const password=randomUUID();await writeFile(passwordFile,password,{mode:0o600});
@@ -191,10 +203,10 @@ await check('postgres-runtime',async()=>{
   const socket=tcpServer();await new Promise(resolve=>socket.listen(0,'127.0.0.1',resolve));const port=socket.address().port;await new Promise(resolve=>socket.close(resolve));
   let started=false;
   try{
-    await execute(exe('pg_ctl'),['-D',database,'-l',path.join(work,'pg.log'),'-o','-h 127.0.0.1 -p '+port,'start'],{env:environment});started=true;
+    await control(['-D',database,'-l',path.join(work,'pg.log'),'-o','-h 127.0.0.1 -p '+port,'start']);started=true;
     const result=await execute(exe('psql'),['-h','127.0.0.1','-p',String(port),'-U','axiom_probe','-d','postgres','-At','-c',"select version(),current_setting('server_encoding')"],{env:{...environment,PGPASSWORD:password}});
     assert.ok(result.stdout.includes('UTF8'));return {version:version.stdout.trim(),localEphemeralDatabase:true,authentication:'scram-sha-256'};
-  }finally{if(started)await execute(exe('pg_ctl'),['-D',database,'-m','fast','stop'],{env:environment});}
+  }finally{if(started)await control(['-D',database,'-m','fast','stop']);}
 });
 await check('pdf-browser-runtime',async()=>{
   const version=await execute(runtime.browser,['--version'],{env:environment});assert.ok(version.stdout.includes(lock.runtime.chromium));

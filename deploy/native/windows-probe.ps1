@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $root = (Get-Location).Path
 $out = Join-Path $env:RUNNER_TEMP 'native-stage0-out'
-$workParent = Join-Path $env:RUNNER_TEMP 'Axiom native fixture'
+$workParent = Join-Path $env:ProgramData ('AxiomNativeStage0-' + [Guid]::NewGuid().ToString('N'))
 $runtime = Get-Content (Join-Path $out 'runtime.json') -Raw | ConvertFrom-Json
 $user = 'AxiomNativeProbe'
 $password = ConvertTo-SecureString ([Guid]::NewGuid().ToString() + 'aA9!') -AsPlainText -Force
@@ -16,7 +16,7 @@ try {
     # Only the disposable account receives access; scanning stays non-admin.
     & icacls.exe $root /grant "*${sid}:(OI)(CI)(RX)" /T /C | Out-File (Join-Path $out 'windows-acl.log')
     if ($LASTEXITCODE -ne 0) { throw 'Could not grant read access to the test payload' }
-    & icacls.exe (Join-Path $env:RUNNER_TEMP 'native-stage0-runtime') /grant "*${sid}:(OI)(CI)(RX)" /T /C | Out-File (Join-Path $out 'windows-runtime-acl.log')
+    & icacls.exe $runtime.root /grant "*${sid}:(OI)(CI)(RX)" /T /C | Out-File (Join-Path $out 'windows-runtime-acl.log')
     if ($LASTEXITCODE -ne 0) { throw 'Could not grant read access to the test runtime' }
     # Reports contain synthetic evidence, not credential state. Keep the
     # uploader's existing access and add only the fixture user's write access.
@@ -26,19 +26,40 @@ try {
     # and do not let the launcher's ordinary user SID inherit into children.
     $acl = [Security.AccessControl.DirectorySecurity]::new()
     $acl.SetAccessRuleProtection($true, $false)
+    $acl.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'))
     foreach ($identity in @($sid, 'S-1-5-18', 'S-1-5-32-544')) {
         $rule = [Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($identity), [Security.AccessControl.FileSystemRights]::FullControl, [Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit', [Security.AccessControl.PropagationFlags]::None, [Security.AccessControl.AccessControlType]::Allow)
         $acl.AddAccessRule($rule)
     }
     $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($runnerSid), [Security.AccessControl.FileSystemRights]::ReadAndExecute, [Security.AccessControl.AccessControlType]::Allow))
     Set-Acl -LiteralPath $workParent -AclObject $acl
+    $credential = [PSCredential]::new("$env:COMPUTERNAME\$user", $password)
+    $homeArguments = ('"' + (Join-Path $root 'deploy/native/windows-home.mjs') + '" "' + $workParent + '"')
+    $homeProcess = Start-Process -FilePath $runtime.node -ArgumentList $homeArguments -Credential $credential -LoadUserProfile -WorkingDirectory $workParent -PassThru
+    if (-not $homeProcess.WaitForExit(30000)) { throw 'Private fixture home initialization did not finish' }
+    if ($homeProcess.ExitCode -ne 0) { throw 'Private fixture home initialization failed' }
+    # Administrative setup uses a hash-verified CLI copied to Program Files.
+    # The subsequent SDK run remains under the ordinary fixture account.
+    $platformPackage = (Get-Content (Join-Path $root 'deploy/sdk/manifest.json') -Raw | ConvertFrom-Json).packages | Where-Object { $_.platform -eq 'win32-x64' }
+    $module = Join-Path $runtime.root 'sdk\@openai\codex-win32-x64'
+    New-Item -ItemType Directory -Path $module -Force | Out-Null
+    Copy-Item (Join-Path $root 'code-audit-scanner\node_modules\@openai\codex-win32-x64\*') -Destination $module -Recurse -Force
+    $relative = ($platformPackage.files.PSObject.Properties | Where-Object { $_.Name.EndsWith('/bin/codex.exe') }).Name
+    $codex = Join-Path $module $relative
+    if ((Get-FileHash -LiteralPath $codex -Algorithm SHA256).Hash.ToLowerInvariant() -ne $platformPackage.files.$relative) { throw 'Trusted CLI copy differs from the platform inventory' }
+    $runtime | Add-Member -NotePropertyName codexModuleRoot -NotePropertyValue $module -Force
+    $runtime | Add-Member -NotePropertyName codexPath -NotePropertyValue $codex -Force
+    $runtime | Add-Member -NotePropertyName userHome -NotePropertyValue (Join-Path $workParent 'profile') -Force
+    $runtime | Add-Member -NotePropertyName sdkStateRoot -NotePropertyValue (Join-Path $workParent 'sdk-state') -Force
+    $runtime | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $out 'runtime.json')
+    & $codex sandbox setup --elevated --user "$env:COMPUTERNAME\$user" --codex-home (Join-Path $workParent 'sdk-state\codex-home') *> (Join-Path $out 'windows-sandbox-setup.log')
+    @{exitCode=$LASTEXITCODE; backend='elevated'; user=$user; scanRunsAsAdministrator=$false} | ConvertTo-Json | Set-Content (Join-Path $out 'windows-sandbox-setup.json')
     $arguments = @(
         ('"' + (Join-Path $root 'deploy/native/probe.mjs') + '"'),
         '--out', ('"' + $out + '"'),
         '--runtime', ('"' + (Join-Path $out 'runtime.json') + '"'),
         '--work', ('"' + (Join-Path $workParent 'work') + '"')
     ) -join ' '
-    $credential = [PSCredential]::new("$env:COMPUTERNAME\$user", $password)
     $process = Start-Process -FilePath $runtime.node -ArgumentList $arguments -Credential $credential -LoadUserProfile -WorkingDirectory $workParent -PassThru -RedirectStandardOutput (Join-Path $out 'probe.log') -RedirectStandardError (Join-Path $out 'probe.stderr.log')
     # Start-Process -Wait includes detached descendants and can prevent the
     # cleanup below from running. Wait for this diagnostic Node process only.

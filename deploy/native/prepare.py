@@ -99,7 +99,7 @@ def main():
     paths = [str(node_bin), str(python.parent), str(git.parent), str(postgres), *system_path]
     if windows:
         paths.insert(3, str(prefix / "git/mingw64/bin"))
-    result = {"schemaVersion": 1, "target": target, "node": str(node_bin / ("node.exe" if windows else "node")),
+    result = {"schemaVersion": 1, "target": target, "root": str(prefix), "node": str(node_bin / ("node.exe" if windows else "node")),
               "npmCli": str(node_dir / ("node_modules/npm/bin/npm-cli.js" if windows else "lib/node_modules/npm/bin/npm-cli.js")),
               "python": str(python), "git": str(git), "postgresBin": str(postgres), "browser": str(browser), "font": str(font), "path": paths, "components": components}
     (args.output / "runtime.json").write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

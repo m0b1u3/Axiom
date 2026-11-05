@@ -49,7 +49,7 @@ jobs:
       - name: Assemble locked Windows native runtimes
         if: runner.os == 'Windows'
         shell: pwsh
-        run: python deploy/native/prepare.py --destination "$env:RUNNER_TEMP/native-stage0-runtime" --output "$env:RUNNER_TEMP/native-stage0-out"
+        run: python deploy/native/prepare.py --destination "$env:ProgramFiles/AxiomNativeStage0Runtime" --output "$env:RUNNER_TEMP/native-stage0-out"
       - name: Install and verify original SDK on Linux
         if: runner.os == 'Linux'
         shell: bash
