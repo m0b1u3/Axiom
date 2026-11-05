@@ -130,11 +130,18 @@ for(const [label,shell] of shells)await check('sdk-native-shell-'+label,async()=
   assert.ok(sdk&&runtimeApi,'SDK failed to load');
   const controller=new AbortController(),raw=path.join(work,'executions',label,'raw/codex-security');
   await mkdir(raw,{recursive:true,mode:0o700});
-  let requests=0,toolOutput=null,fixtureError=null,terminalError=null;
+  let requests=0,catalogRequests=0,toolOutput=null,fixtureError=null,terminalError=null;
   const command=(process.platform==='win32'?'& ':'')+[runtime.python,helper,example,path.join(foreign,'unapproved.txt')].map(quote).join(' ');
   const server=createServer(async(req,res)=>{
     try{
-      assert.equal(req.method,'POST');assert.ok(req.url.endsWith('/responses'));assert.equal(req.headers.authorization,'Bearer fixture-native-stage0-no-real-key');
+      assert.equal(req.headers.authorization,'Bearer fixture-native-stage0-no-real-key');
+      const route=new URL(req.url,'http://127.0.0.1').pathname;
+      if(req.method==='GET'&&(route.endsWith('/models')||route.endsWith('/models/fixture-native-stage0'))){
+        catalogRequests++;
+        const model={id:'fixture-native-stage0',object:'model'};
+        res.writeHead(200,{'content-type':'application/json'});res.end(JSON.stringify(route.endsWith('/models')?{object:'list',data:[model]}:model));return;
+      }
+      assert.equal(req.method,'POST');assert.ok(route.endsWith('/responses'));
       let data='';for await(const part of req)data+=part;const body=JSON.parse(data);requests++;
       if(requests===1){
         // Registration has completed before the first model request. Creating
@@ -163,16 +170,16 @@ for(const [label,shell] of shells)await check('sdk-native-shell-'+label,async()=
   catch(error){terminalError=String(error.message);}
   finally{
     clearTimeout(deadline);
-    await writeFile(path.join(out,'sdk-'+label+'-before-close.json'),JSON.stringify({requests,fixtureError,terminalError,toolOutput},null,2)+'\n');
+    await writeFile(path.join(out,'sdk-'+label+'-before-close.json'),JSON.stringify({requests,catalogRequests,fixtureError,terminalError,toolOutput},null,2)+'\n');
     await security.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));
   }
-  await writeFile(path.join(out,'sdk-'+label+'.json'),JSON.stringify({requests,fixtureError,terminalError,toolOutput},null,2)+'\n');
+  await writeFile(path.join(out,'sdk-'+label+'.json'),JSON.stringify({requests,catalogRequests,fixtureError,terminalError,toolOutput},null,2)+'\n');
   assert.equal(fixtureError,null,fixtureError);assert.ok(toolOutput,'No native shell evidence: '+terminalError);
   const line=toolOutput.split('\n').find(s=>s.startsWith('AXIOM_NATIVE_PROOF='));assert.ok(line,toolOutput);
   const proof=JSON.parse(line.slice('AXIOM_NATIVE_PROOF='.length));assert.equal(proof.sourceRead,originalSource);assert.deepEqual(proof.denied,[true,true]);
   assert.equal(await readFile(example,'utf8'),originalSource);assert.equal(existsSync(path.join(foreign,'unapproved.txt')),false);
   assert.ok(path.resolve(proof.temporaryFile).startsWith(path.resolve(raw)+path.sep),'Native temporary file escaped this execution');
-  return {shell,fixtureResponsesRequests:requests,sourceRead:true,sourceWriteDenied:true,foreignWriteDenied:true,temporaryFileScopedToExecution:true,completedAudit:false};
+  return {shell,fixtureResponsesRequests:requests,catalogRequests,sourceRead:true,sourceWriteDenied:true,foreignWriteDenied:true,temporaryFileScopedToExecution:true,completedAudit:false};
 });
 
 await check('postgres-runtime',async()=>{
