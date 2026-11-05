@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 1,
+  "stage": "native-stage0",
+  "sourceSnapshot": {
+    "version": "0.1.0-beta.2",
+    "sourceTreeSha256": "4b1050169c74755716ebeb19ac4ee28386aced06f6b8b30cd5c87b071896ffc9",
+    "revision": null,
+    "scope": "immutable initial working tree; remote probes execute the separately hashed selected inputs"
+  },
+  "runtime": {
+    "sdk": "0.5.0",
+    "codex": "0.163.0",
+    "node": "24.21.0",
+    "python": "3.12.10",
+    "postgresql": "16.15",
+    "gitLinux": "2.56.0",
+    "gitWindows": "2.56.0.windows.4",
+    "chromium": "153.0.8010.12",
+    "font": "Sans2.004@523d033d6cb47f4a80c58a35753646f5c3608a78"
+  },
+  "sourceInputs": {
+    "code-audit-scanner/package.json": "74447ab9d4eddc0d2187811b935c95df53687a17a4bca402bbb2d60cc76faa33",
+    "code-audit-scanner/package-lock.json": "83a2afb9aa910ca2775bf6962c70e59938b6521a6de40b1aa9bc8bcd06960a34",
+    "contracts/package.json": "4283a79ded2195146b5443598aab6e12a20c922498c8487f364f166e8ff70e2c",
+    "contracts/package-lock.json": "d967e25e91cedbdd99699df4eb5e2a79d37cdc6c048c2d059939a1a90f08e266",
+    "contracts/ts/package.json": "23d9dc77927396c6122457d6c35e05f7b18d59aef10aec8f990c40ef3b281885",
+    "deploy/sdk/manifest.json": "c80a3b9780bc9d3da73ebbd9a6e2484d6802cc3f43abe40699a0f1f78249ae74",
+    "deploy/sdk/integration.json": "aea84a34561db4621ec4b1d3e687b2b226ad425699dd71774a1e2021f586f698",
+    "deploy/sdk/recovery-baseline.json": "1ab460888cd6cdb3073e61ed0640603465825166c1f959033a97370b129f753d",
+    "contracts/COMPATIBILITY.md": "bad4c3a613ceb8ee126334c3d58e1068b2ef935dc11c93f23abd1e947dd174e2"
+  },
+  "targets": {
+    "linux-x64": {
+      "os": "Ubuntu 24.04 x64",
+      "nativeEvidence": "not-run"
+    },
+    "win32-x64": {
+      "os": "Windows Server 2022 x64; Windows 11 requires separate acceptance",
+      "nativeEvidence": "not-run"
+    }
+  },
+  "assets": [
+    {
+      "id": "node-linux-x64",
+      "version": "24.21.0",
+      "targets": [
+        "linux-x64"
+      ],
+      "url": "https://nodejs.org/dist/v24.21.0/node-v24.21.0-linux-x64.tar.xz",
+      "filename": "node-v24.21.0-linux-x64.tar.xz",
+      "kind": "binary",
+      "integritySource": "publisher-sha256",
+      "sha256": "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6",
+      "sizeBytes": 31890184
+    },
+    {
+      "id": "node-win32-x64",
+      "version": "24.21.0",
+      "targets": [
+        "win32-x64"
+      ],
+      "url": "https://nodejs.org/dist/v24.21.0/node-v24.21.0-win-x64.zip",
+      "filename": "node-v24.21.0-win-x64.zip",
+      "kind": "binary",
+      "integritySource": "publisher-sha256",
+      "sha256": "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
+      "sizeBytes": 37618919
+    },
+    {
+      "id": "python-linux-source",
+      "version": "3.12.10",
+      "targets": [
+        "linux-x64"
+      ],
+      "url": "https://www.python.org/ftp/python/3.12.10/Python-3.12.10.tar.xz",
+      "filename": "Python-3.12.10.tar.xz",
+      "kind": "source",
+      "integritySource": "sha256-of-downloaded-publisher-artifact",
+      "sha256": "07ab697474595e06f06647417d3c7fa97ded07afc1a7e4454c5639919b46eaea",
+      "sizeBytes": 20520960
+    },
+    {
+      "id": "python-windows",
+      "version": "3.12.10",
+      "targets": [
+        "win32-x64"
+      ],
+      "url": "https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip",
+      "filename": "python-3.12.10-embed-amd64.zip",
+      "kind": "binary",
+      "integritySource": "sha256-of-downloaded-publisher-artifact",
+      "sha256": "4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3",
+      "sizeBytes": 11133606
+    },
+    {
+      "id": "git-linux-source",
+      "version": "2.56.0",
+      "targets": [
+        "linux-x64"
+      ],
+      "url": "https://www.kernel.org/pub/software/scm/git/git-2.56.0.tar.xz",
+      "filename": "git-2.56.0.tar.xz",
+      "kind": "source",
+      "integritySource": "sha256-of-downloaded-publisher-artifact",
+      "sha256": "26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3",
+      "sizeBytes": 8489656
+    },
+    {
+      "id": "git-windows",
+      "version": "2.56.0.windows.4",
+      "targets": [
+        "win32-x64"
+      ],
+      "url": "https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.4/MinGit-2.56.0.4-64-bit.zip",
+      "filename": "MinGit-2.56.0.4-64-bit.zip",
+      "kind": "binary",
+      "integritySource": "publisher-sha256",
+      "sha256": "e3bf78351fe777fba47ddee5950082f8a98bb0f02604fdc7ba3ee2cb68ffa877",
+      "sizeBytes": 39846926
+    },
+    {
+      "id": "postgres-linux-source",
+      "version": "16.15",
+      "targets": [
+        "linux-x64"
+      ],
+      "url": "https://ftp.postgresql.org/pub/source/v16.15/postgresql-16.15.tar.bz2",
+      "filename": "postgresql-16.15.tar.bz2",
+      "kind": "source",
+      "integritySource": "sha256-of-downloaded-publisher-artifact",
+      "sha256": "c1575341fa7bd40f5274ea465b34390f4dc64cdd0770af327005caaeb9f6b7ed",
+      "sizeBytes": 25181309
+    },
+    {
+      "id": "postgres-windows",
+      "version": "16.15-1",
+      "targets": [
+        "win32-x64"
+      ],
+      "url": "https://get.enterprisedb.com/postgresql/postgresql-16.15-1-windows-x64-binaries.zip",
+      "filename": "postgresql-16.15-1-windows-x64-binaries.zip",
+      "kind": "binary",
+      "integritySource": "sha256-of-downloaded-publisher-artifact",
+      "sha256": "25e6fcdfb8caec38691bf461125e7564508760666f7b8e5dc6a5f0818f58f81e",
+      "sizeBytes": 332441502
+    },
+    {
+      "id": "chromium-linux-x64",
+      "version": "153.0.8010.12",
+      "targets": [
+        "linux-x64"
+      ],
+      "url": "https://cdn.playwright.dev/builds/cft/153.0.8010.12/linux64/chrome-headless-shell-linux64.zip",
+      "filename": "chrome-headless-shell-linux64.zip",
+      "kind": "binary",
+      "integritySource": "sha256-of-downloaded-publisher-artifact",
+      "sha256": "a9da028861a0cf789ff25c2fed45f5f1aaf969ed9247835b6a7821a4f7af9d1d",
+      "sizeBytes": 119809080
+    },
+    {
+      "id": "chromium-win32-x64",
+      "version": "153.0.8010.12",
+      "targets": [
+        "win32-x64"
+      ],
+      "url": "https://cdn.playwright.dev/builds/cft/153.0.8010.12/win64/chrome-headless-shell-win64.zip",
+      "filename": "chrome-headless-shell-win64.zip",
+      "kind": "binary",
+      "integritySource": "sha256-of-downloaded-publisher-artifact",
+      "sha256": "7aec872f3090e639c4237467624ea863c20fe2878914c93a6556bdbb52aa6c4c",
+      "sizeBytes": 120200717
+    },
+    {
+      "id": "font-NotoSansCJKsc-Regular.otf",
+      "version": "Sans2.004@523d033d6cb47f4a80c58a35753646f5c3608a78",
+      "targets": [
+        "linux-x64",
+        "win32-x64"
+      ],
+      "url": "https://raw.githubusercontent.com/notofonts/noto-cjk/523d033d6cb47f4a80c58a35753646f5c3608a78/Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf",
+      "filename": "NotoSansCJKsc-Regular.otf",
+      "kind": "font",
+      "integritySource": "sha256-of-downloaded-publisher-artifact",
+      "sha256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b",
+      "sizeBytes": 16437364
+    },
+    {
+      "id": "font-LICENSE",
+      "version": "Sans2.004@523d033d6cb47f4a80c58a35753646f5c3608a78",
+      "targets": [
+        "linux-x64",
+        "win32-x64"
+      ],
+      "url": "https://raw.githubusercontent.com/notofonts/noto-cjk/523d033d6cb47f4a80c58a35753646f5c3608a78/LICENSE",
+      "filename": "LICENSE",
+      "kind": "notice",
+      "integritySource": "sha256-of-downloaded-publisher-artifact",
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+      "sizeBytes": 4301
+    },
+    {
+      "id": "@openai/codex-linux-x64",
+      "version": "0.163.0-linux-x64",
+      "targets": [
+        "linux-x64"
+      ],
+      "url": "https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-linux-x64.tgz",
+      "filename": "codex-0.163.0-linux-x64.tgz",
+      "kind": "npm",
+      "integritySource": "npm-sha512",
+      "npmIntegrity": "sha512-uwRaOsrYogLQhcxAM/GoeWrw0QIWEMRo7c9gM8sKAviVkZQHlu9kRLJ5PkufbV+ABGjyZgIwiFdJ0LCJ0N6e8w==",
+      "sha256": "30efc97738b975940d78b59a9bea115fa34040b732807d54ec35ae6b7528de94",
+      "sizeBytes": 162055867
+    },
+    {
+      "id": "@openai/codex-win32-x64",
+      "version": "0.163.0-win32-x64",
+      "targets": [
+        "win32-x64"
+      ],
+      "url": "https://registry.npmjs.org/@openai/codex/-/codex-0.163.0-win32-x64.tgz",
+      "filename": "codex-0.163.0-win32-x64.tgz",
+      "kind": "npm",
+      "integritySource": "npm-sha512",
+      "npmIntegrity": "sha512-QQGQ/q9dCJ5C5jqhgFrwycpWG3szIyFNThMiKl6hYtu6N/eM3Qd7StesgnCFAfzVED8IkE3N3oH71szzcludqw==",
+      "sha256": "81377fd73b502a9e7208e32a4da2d468cdb3fc978e0b818c4707d846ad94eb1e",
+      "sizeBytes": 167618721
+    },
+    {
+      "id": "@openai/codex-security",
+      "version": "0.5.0",
+      "targets": [
+        "linux-x64",
+        "win32-x64"
+      ],
+      "url": "https://registry.npmjs.org/@openai/codex-security/-/codex-security-0.5.0.tgz",
+      "filename": "codex-security-0.5.0.tgz",
+      "kind": "npm",
+      "integritySource": "npm-sha512",
+      "npmIntegrity": "sha512-D70NByC4SDHp1nOsoOsoh0qjU1VByNLYttUniK8Yd260sNOn/TnzGnHkUwP/Kn24pJYFscnuE9O+n3H6NmsC3g==",
+      "sha256": "415f262ac78570944fbc60402c96b99e713cefb84d6284d72f0872cd9bda9559",
+      "sizeBytes": 3615670
+    },
+    {
+      "id": "@openai/codex-sdk",
+      "version": "0.163.0",
+      "targets": [
+        "linux-x64",
+        "win32-x64"
+      ],
+      "url": "https://registry.npmjs.org/@openai/codex-sdk/-/codex-sdk-0.163.0.tgz",
+      "filename": "codex-sdk-0.163.0.tgz",
+      "kind": "npm",
+      "integritySource": "npm-sha512",
+      "npmIntegrity": "sha512-o10d8dqxFjhzoWp75MUrhaN8C6QrXPQqUJGwVnySj++ztAnrA322UuFRzHZvSa903lFgjjaimuf5rkqVsj0RHg==",
+      "sha256": "4d70dfef77dd868d7d5c6af8b93f9108ac2e2e2a5c1616665297c45bf1df0073",
+      "sizeBytes": 21407
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+name: Native stage 0 runtime conditions
+
+on:
+  push:
+    branches: ['codex/native-stage0-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12.10'
+      - name: Verify input tooling
+        run: python -m unittest discover -s deploy/native -p '*_test.py' -v
+      - name: Prepare Linux source-build prerequisites
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev libffi-dev liblzma-dev libncurses-dev libcurl4-openssl-dev libexpat1-dev libicu-dev bison flex
+          mkdir -p "$RUNNER_TEMP/native-stage0-out"
+          dpkg-query -W > "$RUNNER_TEMP/native-stage0-out/host-packages.log"
+      - name: Assemble locked Linux native runtimes
+        if: runner.os == 'Linux'
+        shell: bash
+        run: python deploy/native/prepare.py --destination "$RUNNER_TEMP/native-stage0-runtime" --output "$RUNNER_TEMP/native-stage0-out"
+      - name: Assemble locked Windows native runtimes
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: python deploy/native/prepare.py --destination "$env:RUNNER_TEMP/native-stage0-runtime" --output "$env:RUNNER_TEMP/native-stage0-out"
+      - name: Install and verify original SDK on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: python deploy/native/install_probe_sdk.py "$RUNNER_TEMP/native-stage0-out/runtime.json"
+      - name: Install and verify original SDK on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: python deploy/native/install_probe_sdk.py "$env:RUNNER_TEMP/native-stage0-out/runtime.json"
+      - name: Probe Linux as the ordinary runner account
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          runtime="$RUNNER_TEMP/native-stage0-out/runtime.json"
+          native_node="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["node"])' "$runtime")"
+          "$native_node" deploy/native/probe.mjs --out "$RUNNER_TEMP/native-stage0-out" --runtime "$runtime" --work "$RUNNER_TEMP/Axiom native fixture/work" > "$RUNNER_TEMP/native-stage0-out/probe.log" 2> "$RUNNER_TEMP/native-stage0-out/probe.stderr.log"
+      - name: Probe Windows as a disposable non-administrator account
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./deploy/native/windows-probe.ps1
+      - name: Retain fixture reports and runtime build logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-stage0-${{ matrix.os }}-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/native-stage0-out/*.json
+            ${{ runner.temp }}/native-stage0-out/*.log
