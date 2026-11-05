@@ -6,7 +6,7 @@ import {execFile} from 'node:child_process';
 import {createServer} from 'node:http';
 import {createServer as tcpServer} from 'node:net';
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
-import {existsSync,mkdirSync} from 'node:fs';
+import {existsSync} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {pathToFileURL,fileURLToPath} from 'node:url';
@@ -133,6 +133,9 @@ for(const [label,shell] of shells)await check('sdk-native-shell-'+label,async()=
       assert.equal(req.method,'POST');assert.ok(req.url.endsWith('/responses'));assert.equal(req.headers.authorization,'Bearer fixture-native-stage0-no-real-key');
       let data='';for await(const part of req)data+=part;const body=JSON.parse(data);requests++;
       if(requests===1){
+        // Registration has completed before the first model request. Creating
+        // this earlier violates the original SDK's empty-output invariant.
+        await mkdir(path.join(raw,'artifacts/tmp'),{recursive:true,mode:0o700});
         const tool=body.tools.find(t=>t.type==='function'&&t.name==='exec_command');assert.ok(tool,'Original SDK did not expose native exec_command');
         emit(res,[{id:'fixture-call',type:'function_call',call_id:'fixture-call',name:tool.name,arguments:JSON.stringify({cmd:command,shell,login:false,yield_time_ms:10000}),status:'completed'}],'fixture-first');
       }else{
@@ -152,7 +155,7 @@ for(const [label,shell] of shells)await check('sdk-native-shell-'+label,async()=
   // This deadline contains a finite diagnostic fixture only. It is outside
   // Axiom's task input and never changes scan/review settings or SDK defaults.
   const deadline=setTimeout(()=>controller.abort(new Error('Native diagnostic fixture did not finish within 120 seconds')),120000);
-  try{await security.run(source,{mode:'standard',outputDir:raw,archiveExisting:false,scanPrompt:'Fixtures / Mock only. Run the supplied native diagnostic tool. No real security assessment.',onOutputDirReady:()=>mkdirSync(path.join(raw,'artifacts/tmp'),{recursive:true,mode:0o700}),signal:controller.signal});}
+  try{await security.run(source,{mode:'standard',outputDir:raw,archiveExisting:true,scanPrompt:'Fixtures / Mock only. Run the supplied native diagnostic tool. No real security assessment.',signal:controller.signal});}
   catch(error){terminalError=String(error.message);}
   finally{clearTimeout(deadline);await security.close();server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
   await writeFile(path.join(out,'sdk-'+label+'.json'),JSON.stringify({requests,fixtureError,terminalError,toolOutput},null,2)+'\n');
