@@ -2,11 +2,15 @@
 
 本目录提供 Linux x64 与 Windows x64 的依赖锁定和原生运行探针，具体改造阶段见[原生安装包方案](../../docs/NATIVE_INSTALLATION_PLAN.md)。探针使用未修改的 SDK 0.5.0、原生 Codex 0.163.0、合成源码和仅监听 loopback 的 Responses Fixture，不执行真实模型扫描或登录。
 
+2026-11-05 的[验收记录](../../docs/acceptance/native-stage0-20261105.md)：Linux 配置宿主策略后 11/11 项通过，Windows 8/9 项通过，私有源码的原生沙箱读取仍被阻断。脚本保留该失败，不关闭 SDK 校验取得通过。
+
 ## 锁定内容
 
 `dependencies.lock.json` 记录 16 个固定上游文件的 URL、大小和 SHA-256，覆盖 Node、Python、Git、PostgreSQL、Chromium、中文字体与 SDK。Node 校验值来自官方 SHASUMS，Git for Windows 校验值来自官方 Release，npm 归档核对现有锁文件的 SHA-512；其余 SHA-256 记录从明确版本的发布来源实际下载的文件，不声称额外完成了发布者签名验证。
 
 Linux Python、Git 和 PostgreSQL 从锁定的源码构建。Windows 使用锁定的嵌入式 Python、MinGit 和 PostgreSQL 二进制包。平台二进制清单位于 `../sdk/manifest.json`，增加 Windows 条目不会将 Windows 自动标记为已验收，也不会改变 `official-v2` 与 `legacy-v1` 的隔离方式。
+
+本次原生探针使用 Node 24.21.0 归档内的 npm 11.19.0 执行现有 npm 锁文件。SDK 清单头部原有的 Node 22.23.3／npm 10.9.8 是历史校验元数据；本次原生组合以本目录的依赖锁和运行报告为准，不覆盖旧基线的含义。
 
 `system-prerequisites.lock.json` 另行固定 Microsoft C++ 运行库安装器的完整下载地址、版本与 SHA-256。Windows 工作流核对该文件的 Authenticode 签名及版本，记录 runner 已有运行库 DLL 的版本，不在阶段 0 安装或升级它。已有开发 runner 上的运行结果不能代替后续干净 Windows 系统的安装验收。
 

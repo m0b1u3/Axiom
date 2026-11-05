@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "sourceTreeSha256": "4b1050169c74755716ebeb19ac4ee28386aced06f6b8b30cd5c87b071896ffc9",
+  "files": {
+    "code-audit-agent/go.mod": {
+      "sha256": "8c3e1331f7a395f69d98b7e9105bd62abf8297cff3eaf724ffde9cb7b9e11ea8",
+      "sizeBytes": 322
+    },
+    "code-audit-agent/go.sum": {
+      "sha256": "190d9eb7b0bf958a72cdfa38e70887ba644442b0389537f21fcf5eff3daf325f",
+      "sizeBytes": 527
+    },
+    "code-audit-server/go.mod": {
+      "sha256": "2505237fcd842496b14f18dbe74f3180e09ce379f42a883c42fc7db7e56130d8",
+      "sizeBytes": 1042
+    },
+    "code-audit-server/go.sum": {
+      "sha256": "05e9ea81e124a92b028a3f7cb74b9d2754680ca47dd148fa5c1722b876c6302c",
+      "sizeBytes": 6450
+    },
+    "code-audit-server/internal/store/migrations/001_business.sql": {
+      "sha256": "508975f218415db8c8778ec3b8bb131a199fb3f9db0d5ae135fc6bd026bd196e",
+      "sizeBytes": 3837
+    },
+    "code-audit-server/internal/store/migrations/002_execution.sql": {
+      "sha256": "e42e1d41e1c7c897ffc4e2777514292218ce23ac5c3947bd9f98cbd7bad54495",
+      "sizeBytes": 1327
+    },
+    "code-audit-server/internal/store/migrations/003_legacy_attempt_counter.sql": {
+      "sha256": "6dd0c1e46b364529877ca13a60cadca5e8f5b77261273cb6583e7da9f9ae6a3b",
+      "sizeBytes": 326
+    },
+    "code-audit-server/internal/store/migrations/004_task_management.sql": {
+      "sha256": "e5bd1286899f0c89c3ee996d264644e67493f4d4d211aa79a406e9fc97079ed1",
+      "sizeBytes": 2162
+    },
+    "code-audit-server/internal/store/migrations/005_scan_observability.sql": {
+      "sha256": "b4cc6f4f7d54e30e3ce073cb827d78cd895f9305b1a1bc9446c69b072375dd2e",
+      "sizeBytes": 272
+    },
+    "code-audit-server/internal/store/migrations/006_exploitability.sql": {
+      "sha256": "cabd1de68d65c391684d5de242965d4746fb7e1a6d58bdad2f5c9cd381982ebe",
+      "sizeBytes": 251
+    },
+    "code-audit-server/internal/store/migrations/007_input_contract.sql": {
+      "sha256": "15a677bec1ee3a5058311423658c50fea1e4e03a6a1ab9145c954ca3fe669f0e",
+      "sizeBytes": 776
+    },
+    "code-audit-server/internal/store/migrations/008_result_contract.sql": {
+      "sha256": "3f3979b3c2d1281f3c3e7d103d32a18fccd59d2e0f7c211c9e004d03b5bd3113",
+      "sizeBytes": 489
+    },
+    "code-audit-server/internal/store/migrations/009_observation_contract.sql": {
+      "sha256": "0f217096c461c4dc682973f18ec9b80806983589e1d97a7e8351bdf24ec31da2",
+      "sizeBytes": 623
+    },
+    "code-audit-server/internal/store/migrations/010_runtime_compatibility.sql": {
+      "sha256": "4bd789441d3fbb060e6be350397933e26484d8e2c18f0c6f7202c90977d298fb",
+      "sizeBytes": 176
+    },
+    "code-audit-server/internal/store/migrations/011_authentication.sql": {
+      "sha256": "5464b26cf76b1dc71b8f7a45e08574dd685bc7272c70bc823a600ee149e4208f",
+      "sizeBytes": 1218
+    },
+    "code-audit-server/internal/store/migrations/012_task_budget.sql": {
+      "sha256": "250d09bdec6b0274e66217c0e65af163bcf41734b7413bb529561b6a45fae1c4",
+      "sizeBytes": 1182
+    },
+    "code-audit-server/internal/store/migrations/013_storage.sql": {
+      "sha256": "fd9b367e34f8ddadb143c424758f03ca94bddb3a75e07d963430433cf346f3dd",
+      "sizeBytes": 751
+    },
+    "code-audit-server/internal/store/migrations/014_scan_input_knowledge.sql": {
+      "sha256": "e6abd76c1cf4560cabc8a336354aa6436c851e6ac2cf2391069e2e23f43511d7",
+      "sizeBytes": 1062
+    },
+    "code-audit-server/internal/store/migrations/015_sdk_native_results.sql": {
+      "sha256": "87bfda0a498a5b6a319e40f3c3f59d763d72ef14dc8d9b4adf2a91e7c0134311",
+      "sizeBytes": 380
+    },
+    "code-audit-server/internal/store/migrations/016_sdk_operations.sql": {
+      "sha256": "d173002508cc25904249c66939161c24c8fc27123d4676949625fac6346e14eb",
+      "sizeBytes": 555
+    },
+    "code-audit-server/internal/store/migrations/017_result_recovery.sql": {
+      "sha256": "4095d26f8f703482204588aef7725b93f5d0bd0cb70f48457a1ba8d6c528cc06",
+      "sizeBytes": 566
+    },
+    "code-audit-server/internal/store/migrations/018_git_diff.sql": {
+      "sha256": "d5f8e82ef8ec4798bdfbbadea0980f495e93f473b5a0a983ca639b56aec373e4",
+      "sizeBytes": 521
+    },
+    "code-audit-server/internal/store/migrations/019_component_plans.sql": {
+      "sha256": "276c9afd3c6730ff514dccbc5c3d35583d909b427c21e3ecb80bec67ce47813b",
+      "sizeBytes": 1354
+    },
+    "code-audit-server/internal/store/migrations/020_component_scans.sql": {
+      "sha256": "7fbac51c4afed0fd7db1416280407d99d7b9efd0e18daa19b0e32a0dd39744f6",
+      "sizeBytes": 1074
+    },
+    "code-audit-server/internal/store/migrations/021_sdk_identities.sql": {
+      "sha256": "6434fd3621446829f4fb5796e1dcbc4510fa7cd6b3fce57acdd183e4886e17f9",
+      "sizeBytes": 1283
+    },
+    "code-audit-server/internal/store/migrations/022_sdk_parameters.sql": {
+      "sha256": "bd6cda25e70623dae2942c626fd0cd94b7e0b91605d0920720e2ea8ee8875461",
+      "sizeBytes": 160
+    },
+    "code-audit-server/internal/store/migrations/023_unbounded_dispatch.sql": {
+      "sha256": "2ab9bbf1e787dc0f46df5b9bb8c1cdbbdae26cf8046470a6e3f748c417ec8f17",
+      "sizeBytes": 337
+    },
+    "code-audit-server/internal/store/migrations/024_sdk_native_concurrency.sql": {
+      "sha256": "13dfaa0801748980cce59266eada9662656667878094635792621cbaebacaca5",
+      "sizeBytes": 1576
+    },
+    "code-audit-server/internal/store/migrations/025_deep_resume.sql": {
+      "sha256": "7447153e0f5a01fc4bdd17d90e00d3ec2dd7b75090be682685c0e09f34a1ad34",
+      "sizeBytes": 958
+    },
+    "code-audit-server/internal/store/migrations/026_interim_reviews.sql": {
+      "sha256": "0a2f0a53c24b39bc6842374d07e6009a1e30f2b8bd43bfd7e74cf3668373c123",
+      "sizeBytes": 1766
+    },
+    "code-audit-server/internal/store/migrations/027_model_compatibility.sql": {
+      "sha256": "01012166a81730403c06d6ef033c77087602fe1298ee4be8d8b6c73cd49830d5",
+      "sizeBytes": 264
+    },
+    "code-audit-server/internal/store/migrations/028_model_token_pricing.sql": {
+      "sha256": "201b38d872fb4af28d4e6baeaa586d1a8526716f54fd61f32ee94c6814e5d58f",
+      "sizeBytes": 796
+    },
+    "contracts/data/compatibility.json": {
+      "sha256": "306f9386c257e6170ca4ca2b02cb0d8f9d1eb1825b980116575437d0373f30a8",
+      "sizeBytes": 585
+    },
+    "contracts/data/component-planning-compatibility.json": {
+      "sha256": "8f57d5b6d0a3fb30557793325406b52241aa89d7ae8f1eb787b3e7eada068fdd",
+      "sizeBytes": 137
+    },
+    "contracts/data/component-scan-compatibility.json": {
+      "sha256": "0a28f32ce9b2b3f3cc028971ee9858637eea38365d91cf5746df0ae3a92422bd",
+      "sizeBytes": 137
+    },
+    "contracts/data/execution-compatibility.json": {
+      "sha256": "f2947398419ab74a0f7463deb00be0127af4dd72c40ff02579cbebfdaa2a653c",
+      "sizeBytes": 2289
+    },
+    "contracts/data/git-diff-compatibility.json": {
+      "sha256": "b7be19008aab1d01537eb3c81a7551dbbd99fb95da851f75e3c6f5d4ee197987",
+      "sizeBytes": 234
+    },
+    "contracts/data/scan-input-compatibility.json": {
+      "sha256": "8594c2e9123e09773e64bd80d06a386850c24c9f7538017dcab11c8d0ae4ed96",
+      "sizeBytes": 394
+    },
+    "contracts/data/sdk-adapter-compatibility.json": {
+      "sha256": "53eedfda1e5b24d00c4432c6e89be49a59cd0c4898ad10d88c492cf564d1d440",
+      "sizeBytes": 366
+    },
+    "contracts/data/sdk-concurrency-compatibility.json": {
+      "sha256": "9716192d3fc46c65e1b6e6c658b92fa3a55c089f42968c5c69eaf259019645a3",
+      "sizeBytes": 419
+    },
+    "contracts/data/sdk-identity-compatibility.json": {
+      "sha256": "bf89f395ce7ca137ff1afdc1c9c3417f9ca830ee7eec003a020ddd572f4f2178",
+      "sizeBytes": 493
+    },
+    "contracts/data/sdk-operation-compatibility.json": {
+      "sha256": "7113382c4292148ef77dfd7fbddcd5eafe8d01fea44ebd3de0d6986f9420b602",
+      "sizeBytes": 296
+    },
+    "contracts/data/sdk-parameters-compatibility.json": {
+      "sha256": "f35cdc61f8f4ce9204a5a6944f4f15471a40412f17b49a8f038d57f515c651ed",
+      "sizeBytes": 239
+    },
+    "contracts/data/structured-output-catalog.json": {
+      "sha256": "ef5357d62927f0ec265b95828238431430363bba61d7ef1760c1f2cdbf62eac4",
+      "sizeBytes": 34535
+    }
+  },
+  "latestMigration": "028_model_token_pricing.sql",
+  "goMinimum": "1.24.0",
+  "scope": "Frozen initial working-tree audit only. CI runs the separately pinned selected inputs; no complete application acceptance is claimed.",
+  "archive": {
+    "filename": "source-baseline.tar.gz",
+    "sha256": "91e302e8a2b979fdf4af0fcda5d917b7f6292ed0c02246d96ad8b75ead2c3cc7",
+    "sizeBytes": 2277963
+  },
+  "sourceFileCount": 1714
+}
