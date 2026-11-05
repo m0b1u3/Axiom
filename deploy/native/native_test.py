@@ -6,6 +6,7 @@ from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+from unittest.mock import patch
 
 HERE = Path(__file__).parent
 
@@ -22,6 +23,28 @@ inventory = module("platform_manifest")
 
 
 class NativeInputTests(unittest.TestCase):
+    def test_network_checksum_failure_does_not_leave_an_usable_asset(self):
+        class Response(io.BytesIO):
+            url = "https://example.invalid/runtime.zip"
+        with tempfile.TemporaryDirectory() as directory:
+            asset = {"filename": "runtime.zip", "url": Response.url, "sha256": hashlib.sha256(b"expected").hexdigest()}
+            with patch.object(fetcher.urllib.request, "urlopen", return_value=Response(b"changed")):
+                with self.assertRaisesRegex(ValueError, "does not match"):
+                    fetcher.fetch(asset, directory)
+            self.assertEqual(list(Path(directory).iterdir()), [])
+
+    def test_native_lock_has_exact_pins_and_matches_selected_source_inputs(self):
+        import json
+        root = HERE.resolve().parents[1]
+        lock = json.loads((HERE / "dependencies.lock.json").read_text())
+        self.assertEqual(lock["runtime"]["sdk"], "0.5.0")
+        for asset in lock["assets"]:
+            self.assertRegex(asset["sha256"], r"^[a-f0-9]{64}$")
+            self.assertGreater(asset["sizeBytes"], 0)
+            self.assertTrue(asset["url"].startswith("https://"))
+        for name, expected in lock["sourceInputs"].items():
+            self.assertEqual(hashlib.sha256((root / name).read_bytes()).hexdigest(), expected, name)
+
     def test_cached_asset_must_match_lock_and_cannot_be_a_link(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "runtime.zip"
