@@ -55,10 +55,11 @@ class NativeInputTests(unittest.TestCase):
         root = HERE.resolve().parents[1]
         lock = json.loads((HERE / "dependencies.lock.json").read_text())
         self.assertEqual(lock["runtime"]["sdk"], "0.5.0")
-        for asset in lock["assets"]:
-            self.assertRegex(asset["sha256"], r"^[a-f0-9]{64}$")
-            self.assertGreater(asset["sizeBytes"], 0)
-            self.assertTrue(asset["url"].startswith("https://"))
+        for filename in ("dependencies.lock.json", "system-prerequisites.lock.json"):
+            for asset in json.loads((HERE / filename).read_text())["assets"]:
+                self.assertRegex(asset["sha256"], r"^[a-f0-9]{64}$")
+                self.assertGreater(asset["sizeBytes"], 0)
+                self.assertTrue(asset["url"].startswith("https://"))
         for name, expected in lock["sourceInputs"].items():
             self.assertEqual(hashlib.sha256((root / name).read_bytes()).hexdigest(), expected, name)
 

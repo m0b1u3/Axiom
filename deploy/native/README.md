@@ -8,6 +8,8 @@
 
 Linux Python、Git 和 PostgreSQL 从锁定的源码构建。Windows 使用锁定的嵌入式 Python、MinGit 和 PostgreSQL 二进制包。平台二进制清单位于 `../sdk/manifest.json`，增加 Windows 条目不会将 Windows 自动标记为已验收，也不会改变 `official-v2` 与 `legacy-v1` 的隔离方式。
 
+`system-prerequisites.lock.json` 另行固定 Microsoft C++ 运行库安装器的完整下载地址、版本与 SHA-256。Windows 工作流核对该文件的 Authenticode 签名及版本，记录 runner 已有运行库 DLL 的版本，不在阶段 0 安装或升级它。已有开发 runner 上的运行结果不能代替后续干净 Windows 系统的安装验收。
+
 初始工作树源码快照和选定依赖输入分别记录。远端探针基于专用验证分支，只执行其中锁定的输入及探针；初始工作树哈希不表示整个未提交工作树都已上传或通过发行认证。
 
 哈希锁定的输入和探针由根目录 `.gitattributes` 标记为逐字节保留，避免 Windows Git 的自动换行转换破坏依赖清单与源码身份。
