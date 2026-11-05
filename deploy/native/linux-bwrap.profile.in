@@ -1,0 +1,33 @@
+# Disposable host-prerequisite probe. Attachment is one hash-verified bwrap.
+# Namespace setup retains capabilities; executed children lose capabilities.
+# SDK filesystem and network policies remain independently enforced.
+abi <abi/4.0>,
+include <tunables/global>
+
+profile axiom-native-stage0-bwrap "@BWRAP@" flags=(attach_disconnected,mediate_deleted) {
+  /{**,} rwlkm,
+  network,
+  unix,
+  capability,
+  mount,
+  umount,
+  pivot_root,
+  userns,
+  signal,
+  ptrace,
+  /** pix -> &axiom-native-stage0-bwrap//&axiom-native-stage0-child,
+}
+
+profile axiom-native-stage0-child flags=(attach_disconnected,mediate_deleted) {
+  /{**,} rwlkm,
+  network,
+  unix,
+  mount,
+  umount,
+  pivot_root,
+  userns,
+  signal,
+  ptrace,
+  /** pix -> &axiom-native-stage0-child,
+  audit deny capability,
+}

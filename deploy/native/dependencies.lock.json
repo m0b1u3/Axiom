@@ -27,7 +27,8 @@
     "deploy/sdk/manifest.json": "c80a3b9780bc9d3da73ebbd9a6e2484d6802cc3f43abe40699a0f1f78249ae74",
     "deploy/sdk/integration.json": "aea84a34561db4621ec4b1d3e687b2b226ad425699dd71774a1e2021f586f698",
     "deploy/sdk/recovery-baseline.json": "1ab460888cd6cdb3073e61ed0640603465825166c1f959033a97370b129f753d",
-    "contracts/COMPATIBILITY.md": "bad4c3a613ceb8ee126334c3d58e1068b2ef935dc11c93f23abd1e947dd174e2"
+    "contracts/COMPATIBILITY.md": "bad4c3a613ceb8ee126334c3d58e1068b2ef935dc11c93f23abd1e947dd174e2",
+    ".gitattributes": "be5079998143a209ad255b4929f5566bcad1ff12aed57555e01d96a2bc478923"
   },
   "targets": {
     "linux-x64": {

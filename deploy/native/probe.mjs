@@ -17,7 +17,8 @@ const execute=promisify(execFile),here=path.dirname(fileURLToPath(import.meta.ur
 const args=Object.fromEntries(process.argv.slice(2).reduce((rows,value,i,list)=>i%2?rows:[...rows,[value.slice(2),list[i+1]]],[]));
 const root=path.resolve(here,'../..'),out=path.resolve(args.out),work=path.resolve(args.work);
 assert.ok(['linux','win32'].includes(process.platform),'Stage 0 requires a native Linux or Windows host');
-await mkdir(out,{recursive:true});await mkdir(work,{recursive:true,mode:0o700});
+assert.equal(existsSync(work),false,'Use a fresh fixture directory; existing data must not be overwritten');
+await mkdir(out,{recursive:true});await mkdir(path.dirname(work),{recursive:true,mode:0o700});await mkdir(work,{mode:0o700});
 const lock=JSON.parse(await readFile(path.join(here,'dependencies.lock.json'),'utf8'));
 const runtime=JSON.parse(await readFile(args.runtime,'utf8'));
 const report={schemaVersion:1,stage:'native-stage0',platform:process.platform,arch:process.arch,

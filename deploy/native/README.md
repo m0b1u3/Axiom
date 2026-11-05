@@ -10,6 +10,8 @@ Linux Python、Git 和 PostgreSQL 从锁定的源码构建。Windows 使用锁�
 
 初始工作树源码快照和选定依赖输入分别记录。远端探针基于专用验证分支，只执行其中锁定的输入及探针；初始工作树哈希不表示整个未提交工作树都已上传或通过发行认证。
 
+哈希锁定的输入和探针由根目录 `.gitattributes` 标记为逐字节保留，避免 Windows Git 的自动换行转换破坏依赖清单与源码身份。
+
 ## 运行方式
 
 推荐运行 `.github/workflows/native-stage0.yml`。它在 Ubuntu 24.04 和 Windows Server 2022 的原生 GitHub runner 上执行，不挂载业务目录或导入用户凭据。Windows 先以管理员安装测试负载，再由专用普通账户执行探针；Linux 由普通 runner 账户执行。准备步骤只适用于可销毁的验证主机。
@@ -36,6 +38,8 @@ Windows 的探针必须由普通账户执行，不能将管理员账户的成功
 Fixture 的有限两轮交互与诊断超时只用于结束探针，不写入 Axiom 任务配置，不改变 SDK 原生重试、扫描时限、读取量、输出或并发限制。
 
 `report.json` 逐项保留通过和失败，`sdk-*.json` 保留本地 Fixture 的工具输出及终止原因，构建日志和 `runtime.json` 记录负载准备结果。平台任一必要检查失败时，探针返回非零退出码并标记 `partial`，不能仅凭某一步成功声明平台可交付。Windows Server 2022 的结果不代替 Windows 11 验收。
+
+Linux 先保留 `default/` 下的默认宿主机结果。若原版 SDK 的 bwrap 预检被宿主机策略阻断，工作流再生成并临时加载仅匹配已校验 bwrap 路径的 AppArmor 配置，在 `profile/` 下独立复测；结束时卸载。该配置为命名空间准备保留必要能力，对执行子进程拒绝能力，不关闭全局 AppArmor、用户命名空间限制或 SDK 的源码只读边界。`linux_profile.py` 只生成配置并限定在一次性 Actions 主机使用，不是生产安装配置。原理参考 [Ubuntu 的用户命名空间限制说明](https://discourse.ubuntu.com/t/understanding-apparmor-user-namespace-restriction/58007)。
 
 ## 本地检查
 

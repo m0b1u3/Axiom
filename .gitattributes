@@ -4,3 +4,15 @@ deploy/sdk/upstream/** -text
 deploy/sdk/legacy/0.1.25/overrides/** -text
 deploy/sdk/patches/*.patch -text -whitespace
 deploy/sdk/legacy/0.1.25/patches/*.patch -text -whitespace
+# Native dependency inputs and probe sources have byte-level integrity checks.
+/.gitattributes -text
+/code-audit-scanner/package.json -text
+/code-audit-scanner/package-lock.json -text
+/contracts/package.json -text
+/contracts/package-lock.json -text
+/contracts/ts/package.json -text
+/contracts/COMPATIBILITY.md -text
+/deploy/sdk/manifest.json -text
+/deploy/sdk/integration.json -text
+/deploy/sdk/recovery-baseline.json -text
+/deploy/native/** -text

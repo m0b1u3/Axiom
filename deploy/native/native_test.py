@@ -2,6 +2,7 @@ import base64
 import hashlib
 import importlib.util
 import io
+import os
 from pathlib import Path
 import tarfile
 import tempfile
@@ -20,9 +21,25 @@ def module(name):
 
 fetcher = module("fetch")
 inventory = module("platform_manifest")
+profiles = module("linux_profile")
 
 
 class NativeInputTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "Linux AppArmor attachment paths are POSIX paths")
+    def test_host_policy_requires_the_locked_helper_and_child_capability_boundary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = Path(directory) / "bwrap"
+            binary.write_bytes(b"pinned fixture binary")
+            digest = hashlib.sha256(binary.read_bytes()).hexdigest()
+            template = (HERE / "linux-bwrap.profile.in").read_text()
+            result = profiles.profile_for(binary, digest, template)
+            self.assertIn(str(binary), result)
+            self.assertNotIn("@BWRAP@", result)
+            with self.assertRaisesRegex(ValueError, "differs"):
+                profiles.profile_for(binary, "0" * 64, template)
+            with self.assertRaisesRegex(ValueError, "boundary"):
+                profiles.profile_for(binary, digest, template.replace("audit deny capability,", "capability,"))
+
     def test_network_checksum_failure_does_not_leave_an_usable_asset(self):
         class Response(io.BytesIO):
             url = "https://example.invalid/runtime.zip"

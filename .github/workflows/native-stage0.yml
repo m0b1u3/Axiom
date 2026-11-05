@@ -49,12 +49,27 @@ jobs:
         shell: pwsh
         run: python deploy/native/install_probe_sdk.py "$env:RUNNER_TEMP/native-stage0-out/runtime.json"
       - name: Probe Linux as the ordinary runner account
+        id: baseline
+        continue-on-error: true
         if: runner.os == 'Linux'
         shell: bash
         run: |
           runtime="$RUNNER_TEMP/native-stage0-out/runtime.json"
           native_node="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["node"])' "$runtime")"
-          "$native_node" deploy/native/probe.mjs --out "$RUNNER_TEMP/native-stage0-out" --runtime "$runtime" --work "$RUNNER_TEMP/Axiom native fixture/work" > "$RUNNER_TEMP/native-stage0-out/probe.log" 2> "$RUNNER_TEMP/native-stage0-out/probe.stderr.log"
+          mkdir -p "$RUNNER_TEMP/native-stage0-out/default"
+          "$native_node" deploy/native/probe.mjs --out "$RUNNER_TEMP/native-stage0-out/default" --runtime "$runtime" --work "$RUNNER_TEMP/Axiom native fixture/work" > "$RUNNER_TEMP/native-stage0-out/default/probe.log" 2> "$RUNNER_TEMP/native-stage0-out/default/probe.stderr.log"
+      - name: Verify Linux with a helper-scoped host prerequisite policy
+        if: runner.os == 'Linux' && steps.baseline.outcome == 'failure'
+        shell: bash
+        run: |
+          runtime="$RUNNER_TEMP/native-stage0-out/runtime.json"
+          policy="$RUNNER_TEMP/native-stage0-out/bwrap.profile"
+          python deploy/native/linux_profile.py --baseline "$RUNNER_TEMP/native-stage0-out/default/report.json" --output "$policy"
+          trap 'sudo apparmor_parser -R "$policy"' EXIT
+          sudo apparmor_parser -r "$policy"
+          native_node="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["node"])' "$runtime")"
+          mkdir -p "$RUNNER_TEMP/native-stage0-out/profile"
+          "$native_node" deploy/native/probe.mjs --out "$RUNNER_TEMP/native-stage0-out/profile" --runtime "$runtime" --work "$RUNNER_TEMP/Axiom policy fixture/work" > "$RUNNER_TEMP/native-stage0-out/profile/probe.log" 2> "$RUNNER_TEMP/native-stage0-out/profile/probe.stderr.log"
       - name: Probe Windows as a disposable non-administrator account
         if: runner.os == 'Windows'
         shell: pwsh
@@ -66,5 +81,6 @@ jobs:
           name: native-stage0-${{ matrix.os }}-${{ github.sha }}
           if-no-files-found: error
           path: |
-            ${{ runner.temp }}/native-stage0-out/*.json
-            ${{ runner.temp }}/native-stage0-out/*.log
+            ${{ runner.temp }}/native-stage0-out/**/*.json
+            ${{ runner.temp }}/native-stage0-out/**/*.log
+            ${{ runner.temp }}/native-stage0-out/*.profile
