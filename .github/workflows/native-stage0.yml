@@ -4,6 +4,12 @@ on:
   push:
     branches: ['codex/native-stage0-*']
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Native platform to diagnose
+        type: choice
+        options: [all, linux, windows]
+        default: all
 
 permissions:
   contents: read
@@ -13,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2022]
+        os: ${{ fromJSON(inputs.platform == 'windows' && '["windows-2022"]' || inputs.platform == 'linux' && '["ubuntu-24.04"]' || '["ubuntu-24.04","windows-2022"]') }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803

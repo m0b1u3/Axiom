@@ -6,6 +6,9 @@ $runtime = Get-Content (Join-Path $out 'runtime.json') -Raw | ConvertFrom-Json
 $user = 'AxiomNativeProbe'
 $password = ConvertTo-SecureString ([Guid]::NewGuid().ToString() + 'aA9!') -AsPlainText -Force
 $account = New-LocalUser -Name $user -Password $password -AccountNeverExpires
+if (-not (Get-LocalGroupMember -SID 'S-1-5-32-545' | Where-Object { $_.SID.Value -eq $account.SID.Value })) {
+    Add-LocalGroupMember -SID 'S-1-5-32-545' -Member $account
+}
 New-Item -ItemType Directory -Path $workParent -Force | Out-Null
 $sid = $account.SID.Value
 $runnerSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
@@ -15,14 +18,20 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Could not grant read access to the test payload' }
     & icacls.exe (Join-Path $env:RUNNER_TEMP 'native-stage0-runtime') /grant "*${sid}:(OI)(CI)(RX)" /T /C | Out-File (Join-Path $out 'windows-runtime-acl.log')
     if ($LASTEXITCODE -ne 0) { throw 'Could not grant read access to the test runtime' }
-    # The artifact uploader may have a filtered administrator token. Preserve
-    # its actual user SID explicitly, rather than relying on Administrators.
-    & icacls.exe $out /inheritance:r /grant:r "*${sid}:(OI)(CI)(M)" "*${runnerSid}:(OI)(CI)(F)" '*S-1-5-18:(OI)(CI)(F)' '*S-1-5-32-544:(OI)(CI)(F)' /T /C | Out-File (Join-Path $out 'windows-private-acl.log')
-    if ($LASTEXITCODE -ne 0) { throw 'Could not protect evidence directory' }
-    # The launcher can access this parent, while new private credential
-    # directories do not inherit a second user's access entry.
-    & icacls.exe $workParent /inheritance:r /grant:r "*${sid}:(OI)(CI)(M)" "*${runnerSid}:(F)" '*S-1-5-18:(OI)(CI)(F)' '*S-1-5-32-544:(OI)(CI)(F)' | Out-File (Join-Path $out 'windows-private-acl.log') -Append
-    if ($LASTEXITCODE -ne 0) { throw 'Could not protect fixture directory' }
+    # Reports contain synthetic evidence, not credential state. Keep the
+    # uploader's existing access and add only the fixture user's write access.
+    & icacls.exe $out /grant "*${sid}:(OI)(CI)(M)" /T /C | Out-File (Join-Path $out 'windows-private-acl.log')
+    if ($LASTEXITCODE -ne 0) { throw 'Could not grant fixture evidence access' }
+    # Private SDK state is separate from reports. Construct its DACL explicitly
+    # and do not let the launcher's ordinary user SID inherit into children.
+    $acl = [Security.AccessControl.DirectorySecurity]::new()
+    $acl.SetAccessRuleProtection($true, $false)
+    foreach ($identity in @($sid, 'S-1-5-18', 'S-1-5-32-544')) {
+        $rule = [Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($identity), [Security.AccessControl.FileSystemRights]::FullControl, [Security.AccessControl.InheritanceFlags]'ContainerInherit,ObjectInherit', [Security.AccessControl.PropagationFlags]::None, [Security.AccessControl.AccessControlType]::Allow)
+        $acl.AddAccessRule($rule)
+    }
+    $acl.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new([Security.Principal.SecurityIdentifier]::new($runnerSid), [Security.AccessControl.FileSystemRights]::ReadAndExecute, [Security.AccessControl.AccessControlType]::Allow))
+    Set-Acl -LiteralPath $workParent -AclObject $acl
     $arguments = @(
         ('"' + (Join-Path $root 'deploy/native/probe.mjs') + '"'),
         '--out', ('"' + $out + '"'),
