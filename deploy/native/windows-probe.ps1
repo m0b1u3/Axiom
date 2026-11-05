@@ -1,7 +1,8 @@
 $ErrorActionPreference = 'Stop'
 $root = (Get-Location).Path
 $out = Join-Path $env:RUNNER_TEMP 'native-stage0-out'
-$workParent = Join-Path $env:ProgramData ('AxiomNativeStage0-' + [Guid]::NewGuid().ToString('N'))
+$volumeRoot = [IO.Path]::GetPathRoot($env:ProgramFiles)
+$workParent = Join-Path $volumeRoot ('AxiomNativeStage0-' + [Guid]::NewGuid().ToString('N'))
 $runtime = Get-Content (Join-Path $out 'runtime.json') -Raw | ConvertFrom-Json
 $user = 'AxiomNativeProbe'
 $password = ConvertTo-SecureString ([Guid]::NewGuid().ToString() + 'aA9!') -AsPlainText -Force
@@ -13,6 +14,12 @@ New-Item -ItemType Directory -Path $workParent -Force | Out-Null
 $sid = $account.SID.Value
 $runnerSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
 try {
+    # Inspect shared ancestors, but never change their ACL to satisfy the SDK.
+    $ancestors = foreach ($directory in @($volumeRoot, $env:ProgramData, $env:ProgramFiles)) {
+        $descriptor = Get-Acl -LiteralPath $directory
+        @{path=$directory; owner=$descriptor.Owner; sddl=$descriptor.Sddl}
+    }
+    $ancestors | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $out 'windows-ancestor-acls.json')
     # Only the disposable account receives access; scanning stays non-admin.
     & icacls.exe $root /grant "*${sid}:(OI)(CI)(RX)" /T /C | Out-File (Join-Path $out 'windows-acl.log')
     if ($LASTEXITCODE -ne 0) { throw 'Could not grant read access to the test payload' }

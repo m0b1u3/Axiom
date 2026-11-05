@@ -26,7 +26,7 @@ python deploy/native/install_probe_sdk.py <report-directory>/runtime.json
 <locked-node-executable> deploy/native/probe.mjs --out <report-directory> --runtime <report-directory>/runtime.json --work <new-fixture-working-directory>
 ```
 
-Windows 的探针必须由普通账户执行，不能将管理员账户的成功结果当作用户态运行证据。现有包装脚本 `windows-probe.ps1` 为一次性 GitHub runner 管理账户和 ACL，不是供生产系统使用的安装器。
+Windows 的探针必须由普通账户执行，不能将管理员账户的成功结果当作用户态运行证据。现有包装脚本 `windows-probe.ps1` 将运行负载放在 Program Files，在 ProgramData 创建受保护的状态目录，管理员使用经过哈希校验的 CLI 预置 elevated 沙箱，再以专用普通账户调用原版 SDK。安装与执行分开，依据 [OpenAI 的 Windows 沙箱预置说明](https://learn.chatgpt.com/docs/windows/windows-sandbox)；锁定版本是否支持该路径以实际运行报告为准。该脚本仅为一次性 GitHub runner 管理账户和 ACL，不是供生产系统使用的安装器。
 
 ## 检查范围
 
@@ -40,6 +40,10 @@ Windows 的探针必须由普通账户执行，不能将管理员账户的成功
 Fixture 的有限两轮交互与诊断超时只用于结束探针，不写入 Axiom 任务配置，不改变 SDK 原生重试、扫描时限、读取量、输出或并发限制。
 
 `report.json` 逐项保留通过和失败，`sdk-*.json` 保留本地 Fixture 的工具输出及终止原因，构建日志和 `runtime.json` 记录负载准备结果。平台任一必要检查失败时，探针返回非零退出码并标记 `partial`，不能仅凭某一步成功声明平台可交付。Windows Server 2022 的结果不代替 Windows 11 验收。
+
+`current-report.json` 在每项检查前后落盘，后台进程没有退出时仍可定位停留步骤。PostgreSQL 控制命令使用独立日志文件，避免 Windows 后台数据库继承管道后阻止诊断进程收尾。诊断结束只清理本次创建的普通账户及其进程。
+
+锁文件里的 `targets.*.nativeEvidence` 保留依赖冻结时的 `not-run`，不能当作当前验收状态；运行结果由独立验收记录及对应 commit、Actions run、锁文件哈希关联。
 
 Linux 先保留 `default/` 下的默认宿主机结果。若原版 SDK 的 bwrap 预检被宿主机策略阻断，工作流再生成并临时加载仅匹配已校验 bwrap 路径的 AppArmor 配置，在 `profile/` 下独立复测；结束时卸载。该配置为命名空间准备保留必要能力，对执行子进程拒绝能力，不关闭全局 AppArmor、用户命名空间限制或 SDK 的源码只读边界。`linux_profile.py` 只生成配置并限定在一次性 Actions 主机使用，不是生产安装配置。原理参考 [Ubuntu 的用户命名空间限制说明](https://discourse.ubuntu.com/t/understanding-apparmor-user-namespace-restriction/58007)。
 
